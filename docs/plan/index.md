@@ -84,7 +84,7 @@ able to reuse. (Know some? File an issue with a pointer.)
 
 The "ActivityPub Test Suite" originally created by Christine Lemmer-Webber in 2017
 ([link](https://gitlab.com/dustyweb/pubstrate/-/blob/master/pubstrate/aptestsuite.scm))
-and recently ported to Python by Steve Bates
+and recently ported to Python by Steve Bate
 ([link](https://github.com/steve-bate/rocks-testsuite)), is somewhat misnamed: a better
 name for it might be a self-assessment questionnaire. While potentially useful, it
 does not address the requirements addressed here.
