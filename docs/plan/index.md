@@ -178,7 +178,7 @@ It should be implemented in an easy-to-use, widely known programming language (e
 
 ![Architecture](test-suite-arch.png)
 
-### Addressing the challenges of app provisioning, observability and controllability: app drivers
+### Addressing the challenges of app provisioning, observability and controllability: App Drivers
 
 There are several practical challenges for the test framework in the interaction with specific apps:
 
@@ -244,6 +244,8 @@ result to observe and enter manually. This manual App Driver can be used with an
 but obviously requires lots of human time.
 
 App Drivers for apps may choose to implement a combination of fully automated and manual.
+
+App Drivers are most naturally implemented by the developer of the respective app.
 
 ## Organizational approach
 
