@@ -13,22 +13,22 @@ In practice, this is difficult, for the following reasons:
    [ActivityPub](https://www.w3.org/TR/activitypub/), but also including
    [WebFinger](https://datatracker.ietf.org/doc/html/rfc7033),
    [HTTP signatures](https://datatracker.ietf.org/doc/html/draft-cavage-http-signatures)
-   and more) is complex, and easily be implemented incorrectly.
+   and more) is complex; implementation errors are easily made.
 
 1. Many new implementations are being created by development teams with great
-   ideas but that are under-resourced; detailed protocol testing often falls by the wayside
-   due to resource constraints. This creates bad experiences for users, diminishing the
-   value of the Fediverse.
+   ideas but that are under-resourced; detailed protocol testing against many other apps
+   often falls by the wayside due to resource constraints. This creates bad experiences
+   for users, diminishing the value of the Fediverse.
 
 1. Several of the relevant standards comprising the technical protocol stack can be
-   implemented in a variety of different ways, that – even while staying within the bounds
-   that the standards permit — nevertheless lead to incompatible implementations.
+   implemented in a variety of different ways, that – even while staying within the
+   boundaries that the standards permit — nevertheless lead to incompatible implementations.
 
 1. As different Fediverse apps tend to have different feature sets (sometimes dramatically
    so; e.g. from microblogging to video sharing and reading list management), different
    apps often implement extensions or conventions for their particular domain, all of
    which need to be at least tolerated by all other Fediverse apps. Without systematically
-   testing this, users may be in for a (bad) surprise.
+   testing this, app users may be in for a (bad) surprise.
 
 1. There is a rich set of official and less official Fediverse extensions being created by
    many developers; implementations of those need to at least not conflict with others.
@@ -39,11 +39,11 @@ In practice, this is difficult, for the following reasons:
    less in the future.
 
 1. New app releases are frequent; in theory, every app should be tested in all of its
-   versions against all versions of all other apps. In the current state of affairs
-   – manual testing – this is completely impossible as the costs in time and effort
-   would be astronomical.
+   versions against all versions of all other apps, as it may encounter any of them
+   on the Fediverse. In the current state of affairs – manual testing – this is completely
+   impossible as the costs in time and effort would be astronomical.
 
-1. There is widespread concern in the community that Fediverse apps with an outsize
+1. There is widespread concern in the community that Fediverse apps with an outsized
    user base will not pay close attention to the underlying standards, under the
    assumption that smaller apps will have to interoperate with them regardless;
    a Fediverse test suite could at least make their non-compliance explicit.
@@ -56,7 +56,7 @@ In practice, this is difficult, for the following reasons:
    less likely to succeed due to the resulting, immediate negative publicity for
    the entity embarking on that strategy.
 
-A Fediverse test suite with good coverage could significantly contribute to:
+A Fediverse test suite with good coverage could thus significantly contribute to:
 
 * better user experiences, and higher utility due to higher quality of interoperability
   across the Fediverse;
@@ -65,7 +65,7 @@ A Fediverse test suite with good coverage could significantly contribute to:
   without being beholden to unaccountable commercial interests;
 
 * higher developer productivity and lower cost, leading to more value for users at
-  a lower cost of development;
+  a lower effort/cost of development;
 
 * a well-tested foundation enables higher-level innovation, while subtle interop
   problems largely prevent it.
@@ -98,7 +98,7 @@ scenarios:
 * A developer newly implementing Fediverse support in their app should be able to
   use the test suite to determine whether they correctly implemented the entirety of
   the relevant protocol stack, and with which other Fediverse apps their app is now
-  interoperable.
+  interoperable as users expect the interop to work.
 
 * The community associated with the maintenance and potential evolution of relevant
   standard (e.g. ActivityPub) should be able to use the test suite to determine
@@ -114,21 +114,25 @@ scenarios:
 In the longer term, the test suite should cover all aspects that need testing to ensure
 interoperability between the Fediverse apps used in the Fediverse today, and future ones
 as they are being developed. Ultimately, the best judge of whether interoperability
-between two apps is satisfactory is the user and their expectations.
+between two apps is satisfactory is the user and their interop expectations.
 
 We initially focus on:
 
 * ActivityPub server-to-server interoperability for commonly implemented activities and
-  object types (list is tbd)
-* Use of `@user@host` identifiers
-* Use of Webfinger to resolve identifiers into ActivityPub actor documents
-* Use of HTTP signatures to to authenticate senders
+  object types (list is tbd);
+
+* Use of `@user@host` identifiers;
+
+* Use of Webfinger to resolve identifiers into ActivityPub actor documents;
+
+* Use of HTTP signatures to authenticate senders;
+
 * Behavior of receiving apps consistent with the intent of the sending app (e.g.
   does the app indeed delete a note, or block a user, if requested; list tbd).
 
-We may add support later for:
+As more implementations become available, we may add support later for:
 
-* ActivityPub client-to-server interoperability, as there are currently few implementations.
+* ActivityPub client-to-server interoperability.
 
 ## Technical approach
 
@@ -140,12 +144,12 @@ The basic technical approach is to develop a Fediverse test suite:
 
 * That is a single framework from which all tests can be run;
 
-* That contains “single-app tests”, meaning tests that run against a single Fediverse app
+* That contains **“single-app tests”**, meaning tests that run against a single Fediverse app
   (e.g. to check whether the app publishes actor files correctly);
 
-* That contains “interop tests”, meaning tests in which two apps are tested against each
+* That contains **“interop tests”**, meaning tests in which two apps are tested against each
   other (e.g. to check whether a post made in app A will appear in the timeline of a
-  follower using app B);
+  follower using app B without corruption in the payload);
 
 * Where tests are typically defined independently of the tested app (e.g. does a post
   made in app A appear in the timeline of a follower using app B, where the test can
@@ -163,10 +167,10 @@ The basic technical approach is to develop a Fediverse test suite:
   theoretical ability guarantees that the test suite architecture can accommodate any
   subset (such as testing one app against the top-10 others) a tester may be interested in.
 
-* That produces an easy-to-understand test report.
+* That produces easy-to-understand test reports.
 
 It should be based on, or at least be informed by widely used test frameworks such as
-jUnit or the Python unittest framework. This will allow us to reuse test tooling as well.
+jUnit or the Python unittest framework. This wwould allow us to reuse test tooling as well.
 
 It should be implemented in an easy-to-use, widely known programming language (e.g. Python).
 
@@ -217,9 +221,9 @@ covered app. It defines methods for the above functionality, such as:
 
 * Observability-related methods:
 
-  * Is post X there;
+  * Is post X there?
 
-  * Has user Y been blocked;
+  * Has user Y been blocked?
 
   * Etc.
 
@@ -232,7 +236,7 @@ covered app. It defines methods for the above functionality, such as:
   * Edit a post.
 
 (The exact list of methods will only become clear once the test framework and the first
-actual tests are being implemented)
+actual tests are being implemented.)
 
 There is a default implementation for this App Driver instance, which is “manual”.
 This implementation merely tells the tester what operation to perform manually, and what
@@ -254,9 +258,9 @@ developers from any existing or new Fediverse app A:
 
 * To add new test cases that can be run not only against their own app B, but also by
   other developers for configurations that do not involve app A at all. (Example: app A
-  developer may discover that posts in the cyrillic alphabet get mangled in their app,
-  so they define an extra test case for their own app; this test case should now also
-  be usable by developers of other apps)
+  developer may discover that posts they receive that contains content using the cyrillic
+  alphabet get mangled in their app, so they define an extra test case for their own app;
+  this test case should now also be usable by developers of other apps)
 
 So we foresee a single Fediverse test suite that becomes a collaborative endeavor of many
 Fediverse developers, all of whom have an incentive to contribute to a single test suite
@@ -290,7 +294,7 @@ additional, indirect benefits:
 
 To illustrate how a tester might interact with the test suite, consider the following.
 Note that once we start implementing, the actual supported interactions may differ
-substantially; this is a straw proposal:
+substantially; so this is a straw proposal for illustrative purposes only:
 
 ### Setup
 
@@ -342,11 +346,11 @@ WARNING: Threads->Lemmy: post in cyrillic alphabet arrived with mangled characte
 > fediverse-test list-tests
 ```
 
-Shows all available tests
+Shows all available tests.
 
 ```
 > fediverse-test list-tests –app lemmy
 ```
 
-Shows all available tests for app lemmy
+Shows all available tests for app lemmy.
 
