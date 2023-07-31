@@ -52,9 +52,9 @@ In practice, this is difficult, for the following reasons:
    paid lip service to supporting an open protocol and instead used a strategy of subtle
    incompatibilities and extensions to subvert the open standard, and ultimately break
    the promise of interoperability across the respective network. While automated tests
-   can only do so much to make this less likely, a test suite would make this strategy
-   less likely to succeed due to the resulting, immediate negative publicity for
-   the entity embarking on that strategy.
+   can only do so much to make this less likely, a Fediverse test suite would make this
+   strategy less likely to succeed in the Fediverse due to the resulting, immediate negative
+   publicity for the entity embarking on that strategy.
 
 A Fediverse test suite with good coverage could thus significantly contribute to:
 
@@ -98,16 +98,17 @@ scenarios:
 * A developer newly implementing Fediverse support in their app should be able to
   use the test suite to determine whether they correctly implemented the entirety of
   the relevant protocol stack, and with which other Fediverse apps their app is now
-  interoperable as users expect the interop to work.
+  interoperable in a manner that is consistent with what users are likely to expect.
 
-* The community associated with the maintenance and potential evolution of relevant
+* The community associated with the maintenance and potential evolution of a relevant
   standard (e.g. ActivityPub) should be able to use the test suite to determine
   which apps implement their respective standard correctly, and which apps have which
   deficiencies in their standard support.
 
 * A developer about to release a new version of their Fediverse-enabled app should
   be able to integrate the test suite into their development and release process, such
-  as in an automated Continuous Integration workflow.
+  as in an automated Continuous Integration workflow, to be able to detect potential
+  regressions prior to release.
 
 ## Scope for this project
 
@@ -145,7 +146,7 @@ The basic technical approach is to develop a Fediverse test suite:
 * That is a single framework from which all tests can be run;
 
 * That contains **“single-app tests”**, meaning tests that run against a single Fediverse app
-  (e.g. to check whether the app publishes actor files correctly);
+  (e.g. to check whether the app publishes ActivityPub Actor files correctly);
 
 * That contains **“interop tests”**, meaning tests in which two apps are tested against each
   other (e.g. to check whether a post made in app A will appear in the timeline of a
@@ -153,7 +154,7 @@ The basic technical approach is to develop a Fediverse test suite:
 
 * Where tests are typically defined independently of the tested app (e.g. does a post
   made in app A appear in the timeline of a follower using app B, where the test can
-  with any Fediverse apps in the roles of A and B);
+  be run with any Fediverse apps in the roles of A and B);
 
 * But where it is also possible to add tests that apply only to specific apps, or
   specific combinations of specific apps;
@@ -170,7 +171,7 @@ The basic technical approach is to develop a Fediverse test suite:
 * That produces easy-to-understand test reports.
 
 It should be based on, or at least be informed by widely used test frameworks such as
-jUnit or the Python unittest framework. This wwould allow us to reuse test tooling as well.
+jUnit or the Python unittest framework. This would allow us to reuse test tooling as well.
 
 It should be implemented in an easy-to-use, widely known programming language (e.g. Python).
 
@@ -235,11 +236,15 @@ covered app. It defines methods for the above functionality, such as:
 
   * Edit a post.
 
+  * Follow an account.
+
+  * Etc.
+
 (The exact list of methods will only become clear once the test framework and the first
 actual tests are being implemented.)
 
-There is a default implementation for this App Driver instance, which is “manual”.
-This implementation merely tells the tester what operation to perform manually, and what
+There will be a default implementation for the App Driver interface, which is “manual”. This
+default implementation merely tells the tester what operation to perform manually, and what
 result to observe and enter manually. This manual App Driver can be used with any app,
 but obviously requires lots of human time.
 
