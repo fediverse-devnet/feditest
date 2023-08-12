@@ -197,7 +197,7 @@ A should be provisioned for the duration of the test run, and taken down afterwa
 **Observability:** automated tests need to have the ability to observe whether the state
 of an app instance indeed changed in response to a test as intended. Such state changes
 may not always be observable on publicly accessible HTTP endpoints, and even if observable,
-the location of the change may different dramatically by app, creating observability
+the location of the change may differ dramatically by app, creating observability
 challenges for the test framework. (E.g. did a private message arrive?)
 
 **Controllability:** automated tests need to have the ability to make an app “do something”,
