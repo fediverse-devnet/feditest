@@ -297,6 +297,8 @@ additional, indirect benefits:
   questions would have to be answered before any such thing can be accomplished;
   including, for example, the question of “interop profiles”.)
 
+* The testing framework could answer user questions about how the Fediverse behaves.  The behaviour of both individual apps and the Fediverse more widely is complicated and contradicts the experience of typical users on commercial applications.  This leads to questions, which currently tend to be answered with guesses and speculation.  This testing framework would allow those questions to be answered experimentally, definitively, taking some friction out of online discussions.
+
 ## Tester experience (straw proposal)
 
 To illustrate how a tester might interact with the test suite, consider the following.
