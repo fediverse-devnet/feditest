@@ -51,7 +51,9 @@ In practice, this is difficult, for the following reasons:
 1. Similarly, technology history is full of examples where large commercial interests
    paid lip service to supporting an open protocol and instead used a strategy of subtle
    incompatibilities and extensions to subvert the open standard, and ultimately break
-   the promise of interoperability across the respective network. While automated tests
+   the promise of interoperability across the respective network
+   (["Embrace, extend and extinguish"](https://en.wikipedia.org/wiki/Embrace,_extend,_and_extinguish)).
+   While automated tests
    can only do so much to make this less likely, a Fediverse test suite would make this
    strategy less likely to succeed in the Fediverse due to the resulting, immediate negative
    publicity for the entity embarking on that strategy.
