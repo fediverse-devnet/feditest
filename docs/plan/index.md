@@ -2,10 +2,13 @@
 
 ## The problem
 
-Core premise of the Fediverse is that users can use any app they chose (say “App A”)
-to interact with others on the Fediverse, even if they use a different “App B”, and
-when they do so, the interaction “will work”. Technically, this means that any two apps
-A and B must implement the same Fediverse protocol stack in compatible ways.
+Core premise of the Fediverse is that users can use any Fediverse servier-side app they
+choose (say “App A” such as Mastodon) to interact with others on the Fediverse, even if
+they use a different server-side “App B”, and when they do so, the interaction “will work”.
+Technically, this means that any two server-side Apps A and B must implement the same
+Fediverse protocol stack in compatible ways. (Note: we will use the term "app" to describe
+server-side Fediverse apps such as Mastodon. Don't confuse it with mobile apps; we don't
+talk about them here.)
 
 In practice, this is difficult, for the following reasons:
 
@@ -70,45 +73,63 @@ A Fediverse test suite with good coverage could thus significantly contribute to
 * a well-tested foundation enables higher-level innovation, while subtle interop
   problems largely prevent it.
 
-This has been proven true and successful for
-[other formats and protocol stacks](https://www.w3.org/QA/Test/), from test suites
-for markup languages like HTML and SVG to those for protocols like
-[WebMention](https://www.w3.org/TR/webmention/), which, like ActivityPub, is also
-maintained by the W3C.
+## Test suite application areas
+
+We found three "application areas" in which a Fediverse Test Suite is advantageous:
+
+1. **To support standards development and evolution**. For example, the editors of the
+   ActivityPub specification want to know which aspects of their specifications are
+   implemented correctly, and by which app.
+
+   Example question: "Which fraction of apps interpret `as2-partial-time` correctly"?
+
+2. **To automate interoperability and regression tests**. For example, an app
+   developer wants to know whether they broke interop with some other app in their
+   latest commit.
+
+   Example question: "Did me adding this extra value in my `@context` create
+   difficulties for users whose friends are on Firefish?"
+
+3. **To interactively enable new developers to quickly and correctly implement the relevant
+   protocols so they can create a full-fledged Fediverse app as quickly as possible.**. For
+   example, a new developer may not easily realize that their code encodes public
+   keys needed for HTTP signatures incorrectly.
+
+   Example question: "I am signing the message, but why doesn't it show up in Mastodon?"
+
+As the needed technical setup is very different for the interactive application area 3,
+this project focuses on supporting standards development and automated regression
+testing for developers in application areas 1 and 2.
 
 ## Prior work
 
-No comprehensive Fediverse test suite is known to us at this time. There are some
-partial implementations available under open-source licenses parts of which we may be
-able to reuse. (Know some? File an issue with a pointer.)
+No comprehensive Fediverse automated test suite is known to us at this time. However, there
+is related work available under open-source licenses that we plan to leverage.
+(Know some more? File an issue with a pointer.)
 
-The "ActivityPub Test Suite" originally created by Christine Lemmer-Webber in 2017
-([link](https://gitlab.com/dustyweb/pubstrate/-/blob/master/pubstrate/aptestsuite.scm))
-and recently ported to Python by Steve Bate
-([link](https://github.com/steve-bate/rocks-testsuite)), is somewhat misnamed: a better
-name for it might be a self-assessment questionnaire. While potentially useful, it
-does not address the requirements addressed here.
+* The original "ActivityPub Test Suite" created by Christine Lemmer-Webber in 2017
+  ([link](https://gitlab.com/dustyweb/pubstrate/-/blob/master/pubstrate/aptestsuite.scm))
+  and its recent port to Python by Steve Bate ([link](https://github.com/steve-bate/rocks-testsuite)).
+  Note it is somewhat misnamed: a better name for it might be a "self-assessment
+  questionnaire." While potentially useful, it does not address the requirements addressed
+  here.
 
-## Intended uses of the test suite
+* The "exploratory proof-of-concept" "ActivityPub Test Suite" using Pytest recently created
+  by Steve Bate ([link](https://github.com/steve-bate/activitypub-testsuite)). It uses
+  a very similar structure to the one proposed here, and will be our point of departure
+  for this project.
 
-Developers and testers run tests for many reasons. Depending on their goals, the
-nature and scope of tests tend to differ. We would like to address the following
-scenarios:
+* The "ActivityPub Protocol Behaviors" collected by the emerging Socialweb.Coop
+  here ([link](https://socialweb.coop/activitypub/behaviors/)). We are planning to "feed"
+  these behaviors (defined in English) into a process by which they are turned into
+  executable tests that we can run (also see below).
 
-* A developer newly implementing Fediverse support in their app should be able to
-  use the test suite to determine whether they correctly implemented the entirety of
-  the relevant protocol stack, and with which other Fediverse apps their app is now
-  interoperable in a manner that is consistent with what users are likely to expect.
+* There is a similar list of "Fediverse Features" by Helge
+  [here](https://codeberg.org/helge/fediverse-features). An integration is tbd.
 
-* The community associated with the maintenance and potential evolution of a relevant
-  standard (e.g. ActivityPub) should be able to use the test suite to determine
-  which apps implement their respective standard correctly, and which apps have which
-  deficiencies in their standard support.
-
-* A developer about to release a new version of their Fediverse-enabled app should
-  be able to integrate the test suite into their development and release process, such
-  as in an automated Continuous Integration workflow, to be able to detect potential
-  regressions prior to release.
+* The interactive test setup for developers created by Helge as part of the Fun Fediverse
+  Development project ([link](https://codeberg.org/helge/funfedidev)). This project
+  addresses application area 3 (interactive developer support), and this complementary.
 
 ## Scope for this project
 
@@ -169,11 +190,6 @@ The basic technical approach is to develop a Fediverse test suite:
   subset (such as testing one app against the top-10 others) a tester may be interested in.
 
 * That produces easy-to-understand test reports.
-
-It should be based on, or at least be informed by widely used test frameworks such as
-jUnit or the Python unittest framework. This would allow us to reuse test tooling as well.
-
-It should be implemented in an easy-to-use, widely known programming language (e.g. Python).
 
 ### Architecture overview
 
@@ -240,9 +256,6 @@ covered app. It defines methods for the above functionality, such as:
 
   * Etc.
 
-(The exact list of methods will only become clear once the test framework and the first
-actual tests are being implemented.)
-
 There will be a default implementation for the App Driver interface, which is “manual”. This
 default implementation merely tells the tester what operation to perform manually, and what
 result to observe and enter manually. This manual App Driver can be used with any app,
@@ -251,6 +264,8 @@ but obviously requires lots of human time.
 App Drivers for apps may choose to implement a combination of fully automated and manual.
 
 App Drivers are most naturally implemented by the developer of the respective app.
+Depending on the app, App Drivers may be implemented using virtual machines, Docker,
+local installation, or (dedicated or shared) cloud services.
 
 ## Organizational approach
 

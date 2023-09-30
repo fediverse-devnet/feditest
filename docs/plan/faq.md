@@ -1,5 +1,8 @@
 # FAQ about the test suite
 
+Note: We use the term "server-side app" to describe an instance of a project such as
+Mastodon. (Don't confuse it with mobile apps; we don't talk about those here.)
+
 ## How should we determine whether a test should pass or fail?
 
 We use two benchmarks:
@@ -7,9 +10,9 @@ We use two benchmarks:
 * Does the implementation conform to the relevant standards? This would check, for example,
   whether all required attributes in a message are present and have valid values.
 
-* Does the interaction between two particular apps meet user expectations? This would check,
-  for example, whether an app respects "block" requests, or preserves hyperlinks in
-  the payload.
+* Does the interaction between two particular server-side apps meet user expectations?
+  This would check, for example, whether a server-side app respects "block" requests,
+  or preserves hyperlinks in the payload.
 
 ## The document talks about "single-app" tests and "interop" tests. What are they?
 
@@ -20,7 +23,7 @@ message when a new post is published in WordPress. The test (through the App Dri
 gets WordPress to create a new test post, the test receives the message, and checks
 whether it is of the right format according to the relevant standards.
 
-Here's an example for an "interop tests" of a similar situation:
+Here's an example for an "interop test" of a similar situation:
 
 I want to test that a post made in WordPress shows up in the feed of an account
 already following the WordPress site from Mastodon. The test (through the WordPress App
@@ -30,23 +33,26 @@ not mangled.
 
 ## Do we need both "interop" and "single-app" tests?
 
-"Single-app tests" are a great way to determine whether an app correctly implements
+"Single-app tests" are a great way to determine whether a server-side app correctly implements
 a (or several) relevant protocol standards, such as ActivityPub.
 
-"Interop tests" test real-world interop between pairs of apps. They adress user-level
-expectations and encompass such things as "does my post show up in the other app without
-being distorted" in some undesirable fashion, such as dropping formatting or attachments,
-character set problems, or misrepresenting semantics.
+"Interop tests" test real-world interop between pairs of server-side apps. They adress
+user-level expectations and encompass such things as "does my post show up in the other
+server-side app without being distorted" in some undesirable fashion, such as dropping
+formatting or attachments, character set problems, or misrepresenting semantics.
 
-Experience in the Fediverse has shown that there are many situations
-in which two apps can both be perfectly standards compliant individually, but do
+Experience in the Fediverse has shown that there are many situations in which two
+server-side apps can both be perfectly standards compliant individually, but do
 not interoperate sufficiently to meet user expectations, so we need both.
 
 ## How are you going to test the "receiving" of messages?
 
 Single-app tests need a test framework that implements some aspects of the protocol
 stack itself, so it can open up a port, serve WebFinger requests, receive
-ActivityPub messages etc.
+ActivityPub messages etc.'
+
+We will use a webserver embedded in the test framework for this. This gives us maximum
+controllability and observability and makes tests easier to write.
 
 ## It seems really complicated to implement and run these "App Drivers"
 
@@ -63,15 +69,15 @@ Please provide the URL to a Mastodon instance we can use for testing:
 ```
 
 The tester then can enter any URL reachable through curl, such as one on a locally
-running VM or Docker container, or a shared one in the cloud. This is entirely up to
-the user.
+running Virtual Machine or Docker container, or a shared one in the cloud. This is entirely
+up to the user running the test suite.
 
-Alternatively, we could automate that more, by using an App Driver that instead of
+In the future, we could automate that more, by using an App Driver that instead of
 instructing the user to manually do something, it does it for them. For example,
 it could download and run a Docker container running Mastodon automatically,
 or provision Mastodon on a cloud server.
 
-Which App Driver to use should be configurable by the user.
+## Which App Driver to use should be configurable by the user.
 
 The important part here is that the test does not need to know how Mastodon was
 provisioned, and so it does not need to be changed as we increase automation, if and
@@ -83,29 +89,8 @@ will develop a default implementation "class" that merely prints out instruction
 to the user. Later, additional implementations can be defined that provide
 more automation.
 
-## This sounds like a gigantic project
+## Are you going to start this project from scratch, or are you building on something that exists already?
 
-We don't actually want to implement everything described in this document from the get-go. We
-create a framework that can grow (Note from Johannes: I have it in my head, it's actually
-not very complicated), and start very small with just a handful of tests.
-
-Learn, listen, and proceed in the direction that people say would be useful.
-
-Most importantly make it easy for developers who run into problems in the real world to
-create new tests and add them to the test suite, like we all do, as developers, for unit
-tests based on reported / fixed customer bugs.
-
-## Who would benefit from this?
-
-Developers who are afraid of the following scenario:
-
-A user of their app attempts to interact with somebody else on some other app that
-the developer has not tested against, at least not in the relevant version, or has
-never even heard of. Some interop problem occurs, the user is confused and disappointed,
-and gives up on both apps and the Fediverse because "it doesn't work", as users are
-prone to say.
-
-By being able to run both single-app tests and interop tests for their app, in as
-automated a fashion as we can, the risk of that is significantly diminished, both
-when new apps appear and new app releases are created.
-
+We will be building on Steve Bate's [ActivityPub Testsuite](https://github.com/steve-bate/activitypub-testsuite).
+It is already structured according to this approach, including App Drivers (he calls them
+"Server Abstract Layer").
