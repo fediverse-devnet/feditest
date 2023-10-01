@@ -75,11 +75,12 @@ A Fediverse test suite with good coverage could thus significantly contribute to
 
 ## Test suite application areas
 
-We found three "application areas" in which a Fediverse Test Suite is advantageous:
+In discussions with developers, we found three "application areas" in which testing
+Fediverse apps is advantageous:
 
 1. **To support standards development and evolution**. For example, the editors of the
    ActivityPub specification want to know which aspects of their specifications are
-   implemented correctly, and by which app.
+   implemented correctly or incorrectly, and by which app.
 
    Example question: "Which fraction of apps interpret `as2-partial-time` correctly"?
 
@@ -87,7 +88,7 @@ We found three "application areas" in which a Fediverse Test Suite is advantageo
    developer wants to know whether they broke interop with some other app in their
    latest commit.
 
-   Example question: "Did me adding this extra value in my `@context` create
+   Example question: "Did adding this extra value in my `@context` create
    difficulties for users whose friends are on Firefish?"
 
 3. **To interactively enable new developers to quickly and correctly implement the relevant
@@ -123,13 +124,13 @@ is related work available under open-source licenses that we plan to leverage.
   here ([link](https://socialweb.coop/activitypub/behaviors/)). We are planning to "feed"
   these behaviors (defined in English) into a process by which they are turned into
   executable tests that we can run (also see below).
-
-* There is a similar list of "Fediverse Features" by Helge
+  There is a similar list of "Fediverse Features" by Helge
   [here](https://codeberg.org/helge/fediverse-features). An integration is tbd.
 
 * The interactive test setup for developers created by Helge as part of the Fun Fediverse
   Development project ([link](https://codeberg.org/helge/funfedidev)). This project
-  addresses application area 3 (interactive developer support), and this complementary.
+  does not appear to address automated regression testing across many apps, and is
+  complementary.
 
 ## Scope for this project
 
@@ -147,7 +148,7 @@ We initially focus on:
 
 * Use of Webfinger to resolve identifiers into ActivityPub actor documents;
 
-* Use of HTTP signatures to authenticate senders;
+* Use of HTTP signatures to authenticate senders and signed fetches;
 
 * Behavior of receiving apps consistent with the intent of the sending app (e.g.
   does the app indeed delete a note, or block a user, if requested; list tbd).
@@ -169,9 +170,9 @@ The basic technical approach is to develop a Fediverse test suite:
 * That contains **“single-app tests”**, meaning tests that run against a single Fediverse app
   (e.g. to check whether the app publishes ActivityPub Actor files correctly);
 
-* That contains **“interop tests”**, meaning tests in which two apps are tested against each
-  other (e.g. to check whether a post made in app A will appear in the timeline of a
-  follower using app B without corruption in the payload);
+* That contains **“interop tests”**, meaning tests in which two (and potentially more) apps
+  are tested against each other (e.g. to check whether a post made in app A will appear
+  in the timeline of a follower using app B without corruption in the payload);
 
 * Where tests are typically defined independently of the tested app (e.g. does a post
   made in app A appear in the timeline of a follower using app B, where the test can
@@ -180,11 +181,11 @@ The basic technical approach is to develop a Fediverse test suite:
 * But where it is also possible to add tests that apply only to specific apps, or
   specific combinations of specific apps;
 
-* That has facilities to limit the tests being run on any run to what is currently of
+* That has facilities to limit the tests being executed on any run to what is currently of
   interest to the tester;
 
 * That can run “all tests against all known Fediverse apps and all combinations of them”
-  at the limit; while it is unlikely that anybody ever would want to do that in one run
+  at the limit. While it is unlikely that anybody ever would want to do that in one run
   (the effort to do so grows quadratically with the number of apps/app versions), this
   theoretical ability guarantees that the test suite architecture can accommodate any
   subset (such as testing one app against the top-10 others) a tester may be interested in.
@@ -193,7 +194,7 @@ The basic technical approach is to develop a Fediverse test suite:
 
 ### Architecture overview
 
-![Architecture](test-suite-arch.png)
+![Architecture](diagrams/test-suite-arch.png)
 
 ### Addressing the challenges of app provisioning, observability and controllability: App Drivers
 
@@ -244,7 +245,7 @@ covered app. It defines methods for the above functionality, such as:
 
   * Etc.
 
-* Controllability-related methods:
+* Controllability-related methods, e.g. cause the app to:
 
   * Create a post;
 
@@ -267,7 +268,65 @@ App Drivers are most naturally implemented by the developer of the respective ap
 Depending on the app, App Drivers may be implemented using virtual machines, Docker,
 local installation, or (dedicated or shared) cloud services.
 
+### Plugins
+
+Not every user may be interested in every test case, or App Driver. Some App Drivers
+(e.g. those using certain virtualization platforms)
+may not even run in a given user's development machine. So we will make use of a
+"plugin" architecture (loose analogy: WordPress plugins) for the test framework.
+
+The test framework is the main project, with "plugins packages" that contain:
+
+* Groups of tests. For example, one "tests plugin package" might be the set of tests that
+  officially tests ActivityPub standards compliance. This group of tests may be maintained by
+  a W3C-chartered group.
+
+* A specific App Driver, such as code that knows how to run Firefish locally in a Docker
+  container. That would be an App Driver plugin package.
+
+* Developers can choose to use this test frame for defining their own, project-specific
+  single-app or interop tests. They should be able to simply "plug in".
+
+Python already has some documented conventions how to manage
+[plugins](https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/),
+which we plan to use.
+
+### Capabilities
+
+Different Fediverse apps have different capabilities, such as microblogging vs. image
+sharing. As a result, not all tests will be applicable to all Fediverse apps.
+
+Steve Bate's testsuite project (see above) already has the notion of a capability for
+app, which we will continue to use for categorizing apps and tests, so only applicable
+tests will be run for specific apps.
+
 ## Organizational approach
+
+### Process
+
+The process by which tests are defined and broadly agreed on may likely turn out to be complex.
+This is because:
+
+* Real-world implementations of the Fediverse protocols, including by the leading projects,
+  are implementing only a narrow subset of what is permitted in the relevant standards,
+  while simultaneously relying on significant extensions.
+
+* In a decentralized network such as the Fediverse, a single authority that can define what
+  is and isn't correct behavior does not (and perhaps should not) exist.
+
+As a result, we foresee a significant process through which test cases are defined and
+ultimately implemented. This is shown in the next figure:
+
+![Process](diagrams/process.png)
+
+While the details are likely going to turn out somewhat different, we expect that there
+is a significant discussion period between when the need for an additional test is identified
+by somebody until the test is coded and made official part of the test suite. This is
+particularly true for tests that are candidates for the group of official conformance
+tests. (Though our plugin architecture, however, test can more easily be coded and added in a
+less "official" plugin first.)
+
+### Towards a collaborative project with broad support
 
 Organizationally, the test suite will be structured in a way that it is easy for
 developers from any existing or new Fediverse app A:
@@ -279,8 +338,8 @@ developers from any existing or new Fediverse app A:
   * By developers of other Fediverse apps B to test against app A.
 
 * To add new test cases that can be run not only against their own app B, but also by
-  other developers for configurations that do not involve app A at all. (Example: app A
-  developer may discover that posts they receive that contains content using the cyrillic
+  other developers for configurations that do not involve app A at all. (Example: the
+  developer of an app A may discover that posts they receive that contains content using the cyrillic
   alphabet get mangled in their app, so they define an extra test case for their own app;
   this test case should now also be usable by developers of other apps)
 
@@ -321,26 +380,26 @@ substantially; so this is a straw proposal for illustrative purposes only:
 ### Setup
 
 ```
-> git clone https://github.com/fediverse-devnet/testsuite.git
-> cd testsuite
+> git clone https://github.com/fediverse-devnet/feditest.git
+> cd feditest
 ```
 
 ### Test runs
 
 ```
-> fediverse-test run —single —app mastodon –all
+> feditest run —single —app mastodon –all
 ```
 
 This would run all tests that can be run against app Mastodon without involving another app.
 
 ```
-> fediverse-test run —interop —app mastodon –all
+> feditest run —interop —app mastodon –all
 ```
 
 This would run all interoperability tests involving app Mastodon against all other supported apps.
 
 ```
-> fediverse-test run —interop —app mastodon –app pixelfed –filter media\*
+> feditest run —interop —app mastodon –app pixelfed –filter media\*
 ```
 
 This would run all interoperability tests between apps Mastodon and Pixelfed that involve media.
@@ -348,7 +407,7 @@ This would run all interoperability tests between apps Mastodon and Pixelfed tha
 At the (practically probably infeasible) limit:
 
 ```
-> fediverse-test run –all
+> feditest run –all
 ```
 This would run all known tests against all apps in all combinations.
 
@@ -365,13 +424,13 @@ WARNING: Threads->Lemmy: post in cyrillic alphabet arrived with mangled characte
 ### Other
 
 ```
-> fediverse-test list-tests
+> feditest list-tests
 ```
 
 Shows all available tests.
 
 ```
-> fediverse-test list-tests –app lemmy
+> feditest list-tests –app lemmy
 ```
 
 Shows all available tests for app lemmy.

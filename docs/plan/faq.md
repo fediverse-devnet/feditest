@@ -16,20 +16,37 @@ We use two benchmarks:
 
 ## The document talks about "single-app" tests and "interop" tests. What are they?
 
-Here's an example for a "single-app" test:
+This can be best explained in examples:
 
-I want to test that the WordPress ActivityPub plugin correctly emits the right ActivityPub
-message when a new post is published in WordPress. The test (through the App Driver)
-gets WordPress to create a new test post, the test receives the message, and checks
-whether it is of the right format according to the relevant standards.
+### An example for a "single-app" test:
 
-Here's an example for an "interop test" of a similar situation:
+> I want to test that the WordPress ActivityPub plugin correctly emits the right ActivityPub
+  message when a new post is published in WordPress.
 
-I want to test that a post made in WordPress shows up in the feed of an account
-already following the WordPress site from Mastodon. The test (through the WordPress App
-Driver) gets WordPress to create a new test post, waits for a bit, and then checks
-(through the Mastodon App Driver) that the post has arrived, and the content is
-not mangled.
+It does this as follows:
+
+* The test adds itself as a follower to the WordPress Actor.
+
+* Through the WordPress App Driver, the test gets WordPress to create a new test post.
+
+* The test receives the ActivityPub message containing the new post.
+
+* The test checks whether it is in the right format according to the relevant standards.
+
+### An example for an "interop test":
+
+> I want to test that a post made in WordPress shows up in the feed of an account
+  already following the WordPress site from Mastodon.
+
+It does this as follows:
+
+* Through the WordPress App Driver, the test gets WordPress to create a new test post.
+
+* The test waits for a bit.
+
+* The test then checks, through the Mastodon App Driver, that the post has arrived.
+
+* The test checks that the content is not mangled.
 
 ## Do we need both "interop" and "single-app" tests?
 
@@ -56,7 +73,9 @@ controllability and observability and makes tests easier to write.
 
 ## It seems really complicated to implement and run these "App Drivers"
 
-We will only develop one -- well, at least initially -- and that one will be trivial
+### Short-term
+
+In the short term, we will only develop one App Driver and that one will be trivial
 to implement and to run. All it does is prints out instructions to the user, and
 requests certain information to be entered manually.
 
@@ -68,14 +87,20 @@ print:
 Please provide the URL to a Mastodon instance we can use for testing:
 ```
 
-The tester then can enter any URL reachable through curl, such as one on a locally
+The tester then can enter any URL reachable through `curl`, such as one on a locally
 running Virtual Machine or Docker container, or a shared one in the cloud. This is entirely
 up to the user running the test suite.
 
-In the future, we could automate that more, by using an App Driver that instead of
+### Longer-term
+
+In the future, we expect to automate that more, by using an App Driver that instead of
 instructing the user to manually do something, it does it for them. For example,
-it could download and run a Docker container running Mastodon automatically,
+it could automatically download and run a Docker container running Mastodon,
 or provision Mastodon on a cloud server.
+
+## Some code will be generic, some specific to server-side apps, etc: how will you organize this?
+
+See section on "plugin architecture" in the main document.
 
 ## Which App Driver to use should be configurable by the user.
 
@@ -89,8 +114,32 @@ will develop a default implementation "class" that merely prints out instruction
 to the user. Later, additional implementations can be defined that provide
 more automation.
 
+## Different Fediverse apps implement rather different features. How can one test suite test them all?
+
+Tests will be grouped and packaged in test packages that get injected into the test framework
+as plugins (see FAQ entry above). Which test packages / plugin to install and/or run is up
+to the tester.
+
+As Fediverse conformance profiles emerge (e.g. a microblogging profile, a photo sharing profile),
+conformance to any such profile could be tested with a specific test package, and
+server-side apps could be annotated with which profiles they claim to support, so
+even in case of a "test all", only those server-side apps that support a particular profile
+will be tested against conformance to that profile.
+
+## Some practices in the Fediverse today do not conform to official standards. What will you do about that?
+
+It's important to make this transparent. If a test report says that 10 out of 10
+tested fediverse apps do not pass test X, but otherwise interoperate just fine, it may be
+that the relevant standard needs to change towards implemented practice.
+
+## What language / frameworks are you going to use?
+
+Python and [Pytest](http://pytest.org/). Note that this does not mean we can't test
+server-side apps that are written in different languages.
+
 ## Are you going to start this project from scratch, or are you building on something that exists already?
 
 We will be building on Steve Bate's [ActivityPub Testsuite](https://github.com/steve-bate/activitypub-testsuite).
 It is already structured according to this approach, including App Drivers (he calls them
-"Server Abstract Layer").
+"Server Abstraction Layer").
+
