@@ -66,10 +66,10 @@ not interoperate sufficiently to meet user expectations, so we need both.
 
 Single-app tests need a test framework that implements some aspects of the protocol
 stack itself, so it can open up a port, serve WebFinger requests, receive
-ActivityPub messages etc.'
+ActivityPub messages etc.
 
 We will use a webserver embedded in the test framework for this. This gives us maximum
-controllability and observability and makes tests easier to write.
+controllability and observability and makes tests easier to write, understand and evolve.
 
 ## It seems really complicated to implement and run these "App Drivers"
 
@@ -98,7 +98,7 @@ instructing the user to manually do something, it does it for them. For example,
 it could automatically download and run a Docker container running Mastodon,
 or provision Mastodon on a cloud server.
 
-## Some code will be generic, some specific to server-side apps, etc: how will you organize this?
+## Some code will be generic, some specific to one app, etc: how will you organize this?
 
 See section on "plugin architecture" in the main document.
 
@@ -114,11 +114,15 @@ will develop a default implementation "class" that merely prints out instruction
 to the user. Later, additional implementations can be defined that provide
 more automation.
 
+It is conceivable that there will be several App Driver implementations for the same app
+at some point in the future, e.g. to support different run-time environments (say, to use
+Docker on macOS, and systemd containers on Linux).
+
 ## Different Fediverse apps implement rather different features. How can one test suite test them all?
 
 Tests will be grouped and packaged in test packages that get injected into the test framework
-as plugins (see FAQ entry above). Which test packages / plugin to install and/or run is up
-to the tester.
+as plugins (see section "plugin architecture" in the main document). Which test packages / plugin
+to install and/or run is up to the tester.
 
 As Fediverse conformance profiles emerge (e.g. a microblogging profile, a photo sharing profile),
 conformance to any such profile could be tested with a specific test package, and
@@ -139,7 +143,7 @@ server-side apps that are written in different languages.
 
 ## Are you going to start this project from scratch, or are you building on something that exists already?
 
-We will be building on Steve Bate's [ActivityPub Testsuite](https://github.com/steve-bate/activitypub-testsuite).
-It is already structured according to this approach, including App Drivers (he calls them
-"Server Abstraction Layer").
+We will be building on Steve Bate's [ActivityPub Testsuite](https://github.com/steve-bate/activitypub-testsuite),
+an "exploratory proof-of-concept" as he calls it. It is already structured according to this approach,
+including App Drivers (he calls them "Server Abstraction Layer").
 

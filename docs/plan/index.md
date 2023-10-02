@@ -75,7 +75,7 @@ A Fediverse test suite with good coverage could thus significantly contribute to
 
 ## Test suite application areas
 
-In discussions with developers, we found three "application areas" in which testing
+In discussions with developers, we found three main "application areas" in which testing
 Fediverse apps is advantageous:
 
 1. **To support standards development and evolution**. For example, the editors of the
@@ -92,11 +92,12 @@ Fediverse apps is advantageous:
    difficulties for users whose friends are on Firefish?"
 
 3. **To interactively enable new developers to quickly and correctly implement the relevant
-   protocols so they can create a full-fledged Fediverse app as quickly as possible.**. For
-   example, a new developer may not easily realize that their code encodes public
-   keys needed for HTTP signatures incorrectly.
+   protocols so they can create a full-fledged, interoperable Fediverse app as quickly as
+   possible**. For example, a new developer may not easily realize that their code encodes
+   public keys (needed for HTTP signatures) incorrectly.
 
-   Example question: "I am signing the message, but why doesn't it show up in Mastodon?"
+   Example question: "I am signing the message as the spec says, but why doesn't it show up
+   in Mastodon?"
 
 As the needed technical setup is very different for the interactive application area 3,
 this project focuses on supporting standards development and automated regression
@@ -125,7 +126,8 @@ is related work available under open-source licenses that we plan to leverage.
   these behaviors (defined in English) into a process by which they are turned into
   executable tests that we can run (also see below).
   There is a similar list of "Fediverse Features" by Helge
-  [here](https://codeberg.org/helge/fediverse-features). An integration is tbd.
+  [here](https://codeberg.org/helge/fediverse-features). An integration of those two
+  projects is tbd.
 
 * The interactive test setup for developers created by Helge as part of the Fun Fediverse
   Development project ([link](https://codeberg.org/helge/funfedidev)). This project
@@ -174,9 +176,11 @@ The basic technical approach is to develop a Fediverse test suite:
   are tested against each other (e.g. to check whether a post made in app A will appear
   in the timeline of a follower using app B without corruption in the payload);
 
-* Where tests are typically defined independently of the tested app (e.g. does a post
+* Where **tests are typically defined independently of the tested app** (e.g. does a post
   made in app A appear in the timeline of a follower using app B, where the test can
   be run with any Fediverse apps in the roles of A and B);
+
+* Where tests can be defined in a **modular** fashion, including by other projects.
 
 * But where it is also possible to add tests that apply only to specific apps, or
   specific combinations of specific apps;
@@ -200,8 +204,9 @@ The basic technical approach is to develop a Fediverse test suite:
 
 There are several practical challenges for the test framework in the interaction with specific apps:
 
-**App provisioning:** Ideally, to run a series of tests against app A, a new instance of app
-A should be provisioned for the duration of the test run, and taken down afterwards. This would:
+**App provisioning:** Ideally, to run a series of tests against app A, a clean new instance of app
+A without older data should be provisioned for the duration of the test run, and taken down
+afterwards. This would:
 
 * Keep test data and test-related load away from production servers;
 
@@ -222,22 +227,24 @@ such as make a particular post with a particular media attachment. What actions 
 possible and how they can be taken also depends highly on the app, creating controllability
 challenges for the test framework.
 
-We propose to address those challenges with the notion of an **“App Driver”**.
+We address those challenges with the notion of an **“App Driver”**.
 
-The App Driver is an abstract programming interface that is implemented once for each
-covered app. It defines methods for the above functionality, such as:
+The App Driver is an abstract programming interface that, in principle, is implemented once
+for each covered app. It defines methods for the above functionality, such as:
 
 * Provisioning-related methods:
 
-  * Provision an instance of the app, and return its root URL;
+  * Provision a clean new instance of the app, and return its root URL.
 
-  * Deprovision an app instance;
+  * Deprovision an app instance.
 
-  * Provision an account on the instance;
+  * Provision an account on the instance.
 
   * Deprovision an account.
 
-* Observability-related methods:
+  * Set the instance to use a known data set.
+
+* Observability-related methods, e.g. such as:
 
   * Is post X there?
 
@@ -247,9 +254,9 @@ covered app. It defines methods for the above functionality, such as:
 
 * Controllability-related methods, e.g. cause the app to:
 
-  * Create a post;
+  * Create a post.
 
-  * Delete a post;
+  * Delete a post.
 
   * Edit a post.
 
@@ -260,7 +267,7 @@ covered app. It defines methods for the above functionality, such as:
 There will be a default implementation for the App Driver interface, which is “manual”. This
 default implementation merely tells the tester what operation to perform manually, and what
 result to observe and enter manually. This manual App Driver can be used with any app,
-but obviously requires lots of human time.
+but obviously requires lots of human effort to operate.
 
 App Drivers for apps may choose to implement a combination of fully automated and manual.
 
@@ -270,9 +277,9 @@ local installation, or (dedicated or shared) cloud services.
 
 ### Plugins
 
-Not every user may be interested in every test case, or App Driver. Some App Drivers
+Not every tester may be interested in every test case, or App Driver. Some App Drivers
 (e.g. those using certain virtualization platforms)
-may not even run in a given user's development machine. So we will make use of a
+may not even run on a given tester's development machine. So we will make use of a
 "plugin" architecture (loose analogy: WordPress plugins) for the test framework.
 
 The test framework is the main project, with "plugins packages" that contain:
@@ -296,7 +303,7 @@ which we plan to use.
 Different Fediverse apps have different capabilities, such as microblogging vs. image
 sharing. As a result, not all tests will be applicable to all Fediverse apps.
 
-Steve Bate's testsuite project (see above) already has the notion of a capability for
+Steve Bate's testsuite project (see above) already has the notion of capabilities for an
 app, which we will continue to use for categorizing apps and tests, so only applicable
 tests will be run for specific apps.
 
@@ -319,8 +326,8 @@ ultimately implemented. This is shown in the next figure:
 
 ![Process](diagrams/process.png)
 
-While the details are likely going to turn out somewhat different, we expect that there
-is a significant discussion period between when the need for an additional test is identified
+While the details of the process will only become clear once we attempt to execute it, we expect that
+there will be a significant discussion period between when the need for an additional test is identified
 by somebody until the test is coded and made official part of the test suite. This is
 particularly true for tests that are candidates for the group of official conformance
 tests. (Though our plugin architecture, however, test can more easily be coded and added in a
@@ -359,10 +366,10 @@ fewer regressions, fewer frustrations for the user), we anticipate some potentia
 additional, indirect benefits:
 
 * The definition of test cases makes interoperability choices transparent where apps
-  with different capabilities interoperate (e.g. what is the “correct” behavior for an
+  with different capabilities interoperate. (Example: what is the “correct” behavior for an
   app receiving richly formatted text if the receiving app does not actually support
   richly formatted text, or how, say, event invitations should show up in a microblogging
-  app). Once transparent, an easier discussion can be had about how this impacts user
+  app?) Once transparent, an easier discussion can be had about how this impacts user
   expectations and experience, and what the “best” behavior actually is.
 
 * It opens up the possibility of a potential Fediverse conformance program, potentially
@@ -374,8 +381,7 @@ additional, indirect benefits:
 ## Tester experience (straw proposal)
 
 To illustrate how a tester might interact with the test suite, consider the following.
-Note that once we start implementing, the actual supported interactions may differ
-substantially; so this is a straw proposal for illustrative purposes only:
+Note this is a straw proposal for illustrative purposes only:
 
 ### Setup
 
