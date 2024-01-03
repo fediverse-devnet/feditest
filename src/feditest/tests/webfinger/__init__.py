@@ -1,0 +1,3 @@
+"""
+Tests the WebFinger standard
+"""
