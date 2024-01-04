@@ -4,11 +4,53 @@ Provide information on a variety of objects
 
 from argparse import ArgumentParser, Namespace
 
+import feditest
+from feditest.utils import format_name_value_string
+
 def run(args: Namespace) -> None:
     """
     Run this command.
     """
-    print( "Running info ..." )
+    if args.test:
+        run_info_test(args.test)
+
+    if args.testset:
+        run_info_testset(args.testset)
+
+    if args.iutdriver:
+        run_info_iut_driver(args.iotdriver)
+
+
+def run_info_test(name: str) -> None:
+    test = feditest.all_tests.get(name)
+    if test:
+        test_metadata = {
+            'Name:' : test.name(),
+            'Description:' : test.description(),
+            'IUTs:' : str(test.n_iuts())
+        }
+        if test.test_set():
+            test_metadata['Test set:'] = test.test_set().name()
+
+        print(format_name_value_string(test_metadata), end='')
+    else:
+        warning( 'Test not found:', name)
+
+def run_info_testset(name: str) -> None:
+    test_set = feditest.all_test_sets.get(name)
+    if test_set:
+        test_set_metadata = {
+            'Name:' : test_set.name(),
+            'Description:' : test_set.description()
+        }
+
+        print(format_name_value_string(test_set_metadata), end='')
+    else:
+        warning( 'Testset not found:', name)
+
+
+def run_info_iut_driver(name: str) -> None:
+    raise Exception("FIXME")
 
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:

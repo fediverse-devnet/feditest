@@ -2,15 +2,17 @@
 List the available test sets
 """
 
+import feditest
+
 from argparse import ArgumentParser, Namespace
 
 def run(args: Namespace) -> None:
     """
     Run this command.
     """
-    print( """activitypub
-fediverse
-webfinger""")
+    for test_set_name in feditest.all_test_sets:
+        print( test_set_name )
+
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     """

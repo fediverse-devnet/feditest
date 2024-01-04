@@ -2,58 +2,117 @@
 Core module.
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
+from ast import Module
 from collections.abc import Callable
-from inspect import signature
+from inspect import signature, getmodule
+from pkgutil import resolve_name
 from types import FunctionType
 from typing import Any
 
 from feditest.iut import IUT
 
-
 class Test(ABC):
-    def __init__(self, name: str, function: Callable[[Any], None]) -> None:
+    def __init__(self, name: str, description: str, test_set: 'TestSet', function: Callable[[Any], None]) -> None:
         self._name: str = name
+        self._description: str = description
         self._function: Callable[Any, None] = function
+        if test_set:
+            self._test_set = test_set
+            test_set.add_test(self)
+
+    def name(self) -> str:
+        return self._name
+
+    def description(self) -> str:
+        return self._description
+
+    def test_set(self) -> 'TestSet':
+        return self._test_set
+
+    @abstractmethod
+    def n_iuts(self) -> int:
+        ...
 
 
 class Constallation1Test(Test):
-    def __init__(self, name: str, function: Callable[[IUT], None]) -> None:
-        super.__init__(str, function)
+    def __init__(self, name: str, description: str, test_set: 'TestSet', function: Callable[[IUT], None]) -> None:
+        super().__init__(name, description, test_set, function)
+
+    def n_iuts(self) -> int:
+        return 1
 
 
 class Constallation2Test(Test):
-    def __init__(self, name: str, function: Callable[[IUT, IUT], None]) -> None:
-        super.__init__(str, function)
+    def __init__(self, name: str, description: str, test_set: 'TestSet', function: Callable[[IUT, IUT], None]) -> None:
+        super().__init__(name, description, test_set, function)
+
+    def n_iuts(self) -> int:
+        return 2
 
 
 class TestSet:
-    def __init__(self) -> None:
-        self._constellation1Tests: dict[str,Constallation1Test] = {}
-        self._constellation2Tests: dict[str,Constallation2Test] = {}
+    def __init__(self, name: str, description: str, package: Module) -> None:
+        self._name = name
+        self._description = description
+        self._package = package
+        self._tests: dict[str,Test] = {}
 
-    def register_test(self, to_register: Callable[[Any], None], name: str) -> None:
-        if not isinstance(to_register,FunctionType):
-            fatal('Cannot register a non-function test')
+    def name(self) -> str:
+        return self._name
 
-        if not name:
-            name = to_register.__qualname__
+    def description(self) -> str:
+        return self._description
 
-        sig = signature(to_register)
+    def add_test(self, to_add: Test) -> None:
+        self._tests[to_add.name()] = to_add
 
-        match len(sig.parameters):
-            case 1:
-                self._constellation1Tests[name] = to_register
-            case 2:
-                self._constellation2Tests[name] = to_register
+    def get(self, name: str) -> Test | None:
+        if name in self._tests:
+            return self._tests[name]
+        else:
+            return Non
 
     def allTests(self):
-        return { **self._constellation1Tests, **self._constellation2Tests }
+        return self._tests
 
+# Tests are contained in their respective TestSets, and in addition also in the all_tests TestSet
+all_tests = TestSet('all-tests', 'Collects all availalbe tests', None)
+all_test_sets: dict[str,TestSet] = {}
 
-allTests = TestSet()
+def register_test(to_register: Callable[[Any], None], name: str | None = None, description: str | None = None) -> None:
 
-def register_test(to_register: Callable[[Any], None], name: str = None) -> None:
-    allTests.register_test(to_register, name)
+    if not isinstance(to_register,FunctionType):
+        fatal('Cannot register a non-function test')
 
+    module = getmodule(to_register)
+    if module :
+        package_name = '.'.join( module.__name__.split('.')[0:-1])
+        if package_name in all_test_sets:
+            test_set = all_test_sets[package_name]
+        else:
+            package = resolve_name(package_name)
+            test_set = TestSet(package_name, package.__doc__, package)
+            all_test_sets[package_name] = test_set
+    else :
+        test_set = None
 
+    if not name:
+        name = f"{to_register.__module__}::{to_register.__qualname__}"
+        # This is the same convention as pytest's I believe
+    if not description:
+        description = to_register.__doc__
+
+    sig = signature(to_register)
+
+    match len(sig.parameters):
+        case 1:
+            test = Constallation1Test(name, description, test_set, to_register)
+        case 2:
+            test = Constallation2Test(name, description, test_set, to_register)
+        case _:
+            fatal("FIXME: not implemented")
+
+    all_tests.add_test(test)
+    if test_set:
+        test_set.add_test(test)

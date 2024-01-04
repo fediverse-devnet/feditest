@@ -34,6 +34,12 @@ logging.config.dictConfig({
 })
 LOG = logging.getLogger( 'feditest' )
 
+def set_reporting_level(n_verbose_flags: int) :
+    if n_verbose_flags == 1:
+        logging.basicConfig(level=logging.INFO)
+    if n_verbose_flags == 2:
+        logging.basicConfig(level=logging.DEBUG)
+
 def trace(*args):
     """
     Emit a trace message.

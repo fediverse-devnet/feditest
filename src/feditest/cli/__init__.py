@@ -2,22 +2,24 @@
 Main entry point for CLI invocation
 """
 
+from argparse import ArgumentParser
+from ast import Module
+import importlib
 import sys
 import traceback
-from argparse import ArgumentParser
-from feditest.reporting import fatal
-from feditest.utils import find_commands
+
+from feditest.reporting import fatal, set_reporting_level
+from feditest.utils import find_submodules
 
 # FIXME imports -- need dynamic discovery
 import feditest.iut
 import feditest.iut.activitypub
 import feditest.iut.fediverse
 import feditest.iut.webfinger
-import feditest.tests.activitypub.test_01_valid_actor_document
+import feditest.tests.activitypub.test_01_actor_document
 import feditest.tests.activitypub.test_02_follow
-import feditest.tests.webfinger.test_01_valid_webfinger_document
-import feditest.tests.webfinger.test_02_webfinger_account_does_not_exist
-
+import feditest.tests.webfinger.test_01_webfinger_document
+import feditest.cli.commands
 
 def main():
     """
@@ -39,6 +41,8 @@ def main():
     args,remaining = parser.parse_known_args(sys.argv[1:])
     cmd_name = args.command
 
+    set_reporting_level(args.verbose)
+
     if len(remaining)>0 :
         parser.print_help()
         sys.exit(0)
@@ -55,6 +59,21 @@ def main():
 
     else:
         fatal('Sub-command not found:', cmd_name, '. Add --help for help.' )
+
+
+def find_commands() -> dict[str,Module]:
+    """
+    Find available commands.
+    """
+    cmd_names = find_submodules( feditest.cli.commands )
+
+    cmds = {}
+    for cmd_name in cmd_names:
+        mod = importlib.import_module('feditest.cli.commands.' + cmd_name)
+        cmds[cmd_name.replace('_', '-')] = mod
+
+    return cmds
+
 
 
 if __name__ == '__main__':

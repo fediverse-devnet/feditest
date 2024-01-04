@@ -5,7 +5,12 @@ from feditest import register_test
 from feditest.iut.activitypub import ActivityPubIUT
 
 @register_test
-def test_02_follow(to_be_leader_iut: ActivityPubIUT, to_be_follower_iut: ActivityPubIUT) -> None:
+def follow(to_be_leader_iut: ActivityPubIUT, to_be_follower_iut: ActivityPubIUT) -> None:
+    """
+    Have an account on one IUT follow another account on another IUT.
+    Make sure the follower or following collections are correct on both
+    sides.
+    """
     leader_actor_doc = to_be_leader_iut.create_actor_document_URI()
     follower_actor_doc = to_be_follower_iut.create_actor_document_URI()
     leader_id = leader_actor_doc['id']

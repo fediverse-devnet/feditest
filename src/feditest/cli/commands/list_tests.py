@@ -10,8 +10,7 @@ def run(args: Namespace) -> None:
     """
     Run this command.
     """
-
-    for name in feditest.allTests.allTests():
+    for name in feditest.all_tests.allTests():
         print( name )
 
 
