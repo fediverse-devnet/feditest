@@ -7,18 +7,22 @@ from argparse import ArgumentParser, Namespace
 import feditest
 from feditest.utils import format_name_value_string
 
-def run(args: Namespace) -> None:
+def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     """
     Run this command.
     """
+    if len(remaining):
+        parser.print_help();
+        return 0
+
     if args.test:
-        run_info_test(args.test)
+        return run_info_test(args.test)
 
     if args.testset:
-        run_info_testset(args.testset)
+        return run_info_testset(args.testset)
 
     if args.iutdriver:
-        run_info_iut_driver(args.iotdriver)
+        return run_info_iut_driver(args.iotdriver)
 
 
 def run_info_test(name: str) -> None:
@@ -33,8 +37,11 @@ def run_info_test(name: str) -> None:
             test_metadata['Test set:'] = test.test_set().name()
 
         print(format_name_value_string(test_metadata), end='')
+        return 0
+
     else:
         warning( 'Test not found:', name)
+        return 1
 
 def run_info_testset(name: str) -> None:
     test_set = feditest.all_test_sets.get(name)
@@ -45,8 +52,11 @@ def run_info_testset(name: str) -> None:
         }
 
         print(format_name_value_string(test_set_metadata), end='')
+        return 0
+
     else:
         warning( 'Testset not found:', name)
+        return 1
 
 
 def run_info_iut_driver(name: str) -> None:

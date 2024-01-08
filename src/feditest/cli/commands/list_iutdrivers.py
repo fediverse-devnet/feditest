@@ -4,7 +4,7 @@ List the available drivers for instances under test
 
 from argparse import ArgumentParser, Namespace
 
-def run(args: Namespace) -> None:
+def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     """
     Run this command.
     """

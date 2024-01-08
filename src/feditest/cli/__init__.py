@@ -43,18 +43,15 @@ def main():
 
     set_reporting_level(args.verbose)
 
-    if len(remaining)>0 :
-        parser.print_help()
-        sys.exit(0)
-
     if cmd_name in cmds:
         try :
-            ret = cmds[cmd_name].run(args)
+            ret = cmds[cmd_name].run(parser, args, remaining)
             sys.exit( ret )
 
         except Exception as e: # pylint: disable=broad-exception-caught
+            print( f"XXX Exception is {type(e)}")
             if args.verbose > 1:
-                traceback.print_exc( e )
+                traceback.print_exception( e )
             fatal( str(type(e)), '--', e )
 
     else:

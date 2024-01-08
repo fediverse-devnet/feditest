@@ -13,6 +13,11 @@ from typing import Any
 from feditest.iut import IUT
 
 class Test(ABC):
+    """
+    Captures the notion of a Test, such as "see whether a follower is told about a new post".
+    Different Tests may require different numbers of IUTs, and those different constallations
+    are represented as subclasses.
+    """
     def __init__(self, name: str, description: str, test_set: 'TestSet', function: Callable[[Any], None]) -> None:
         self._name: str = name
         self._description: str = description
@@ -36,6 +41,9 @@ class Test(ABC):
 
 
 class Constallation1Test(Test):
+    """
+    Any test that is performed against a single IUT
+    """
     def __init__(self, name: str, description: str, test_set: 'TestSet', function: Callable[[IUT], None]) -> None:
         super().__init__(name, description, test_set, function)
 
@@ -44,6 +52,10 @@ class Constallation1Test(Test):
 
 
 class Constallation2Test(Test):
+    """
+    Any test that is performed two IUTs. They may be either of the same type
+    (e.g. Mastodon against Mastodon) or of different types.
+    """
     def __init__(self, name: str, description: str, test_set: 'TestSet', function: Callable[[IUT, IUT], None]) -> None:
         super().__init__(name, description, test_set, function)
 
@@ -52,6 +64,9 @@ class Constallation2Test(Test):
 
 
 class TestSet:
+    """
+    A set of tests that can be treated as a unit.
+    """
     def __init__(self, name: str, description: str, package: Module) -> None:
         self._name = name
         self._description = description
@@ -75,6 +90,14 @@ class TestSet:
 
     def allTests(self):
         return self._tests
+
+
+class TestPlan:
+    """
+    A series of steps that can be run to perform one or more tests
+    """
+    pass
+
 
 # Tests are contained in their respective TestSets, and in addition also in the all_tests TestSet
 all_tests = TestSet('all-tests', 'Collects all availalbe tests', None)

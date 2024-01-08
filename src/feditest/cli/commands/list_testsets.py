@@ -6,13 +6,14 @@ import feditest
 
 from argparse import ArgumentParser, Namespace
 
-def run(args: Namespace) -> None:
+def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     """
     Run this command.
     """
     for test_set_name in feditest.all_test_sets:
         print( test_set_name )
 
+    return 0
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     """

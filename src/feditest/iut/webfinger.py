@@ -1,10 +1,14 @@
 """
 """
 
+from feditest.iut import IUT, IUTDriver
 from feditest.iut.web import WebIUT, WebIUTDriver
 
-class WebfingerIUT(WebIUT):
-    def __init__(self, nickname: str, iut_driver: 'WebfingerIUTDriver') -> None:
+class WebfingerServerIUT(WebIUT):
+    """
+    An IUT that acts as a Webfinger server.
+    """
+    def __init__(self, nickname: str, iut_driver: 'WebfingerServerIUTDriver') -> None:
         super().__init__(nickname, iut_driver)
 
     def obtainAccountIdentifier(self) -> str:
@@ -30,10 +34,27 @@ class WebfingerIUT(WebIUT):
             account_id_validate )
 
 
-class WebfingerIUTDriver(WebIUTDriver):
+class WebfingerServerIUTDriver(WebIUTDriver):
     def __init__(self, name: str) -> None:
         super.__init__(name)
 
     # Python 3.12 @override
-    def _provision_IUT(self, nickname: str) -> WebfingerIUT:
-        return WebfingerIUT(nickname, self);
+    def _provision_IUT(self, nickname: str) -> WebfingerServerIUT:
+        return WebfingerServerIUT(nickname, self);
+
+
+class WebfingerClientIUT(IUT):
+    """
+    An IUT that acts as a Webfinger client.
+    """
+    def __init__(self, nickname: str, iut_driver: 'WebfingerClientIUTDriver') -> None:
+        super().__init__(nickname, iut_driver)
+
+
+class WebfingerClientIUTDriver(IUTDriver):
+    def __init__(self, name: str) -> None:
+        super.__init__(name)
+
+    # Python 3.12 @override
+    def _provision_IUT(self, nickname: str) -> WebfingerClientIUT:
+        return WebfingerClientIUT(nickname, self);
