@@ -4,7 +4,7 @@
 from feditest.iut.web import WebIUT, WebIUTDriver
 
 
-class ActivityPubIUT(WebIUT):
+class ActivityPubFederationIUT(WebIUT):
     def __init__(self, nickname: str, iut_driver: 'ActivityPubIUTDriver') -> None:
         super().__init__(nickname, iut_driver)
 
@@ -29,8 +29,10 @@ class ActivityPubIUT(WebIUT):
             + 'its ActivityPub Actor document is served:',
             http_https_uri_validate )
 
+    def make_a_follow_b(self, a: str, b: str) -> None:
+        ...
 
-class ActivityPubIUTDriver(WebIUTDriver):
+class ActivityPubFederationIUTDriver(WebIUTDriver):
     def __init__(self, name: str) -> None:
         super.__init__(name)
 

@@ -1,0 +1,101 @@
+In a new Arch VM with GUI / small (for Zoom):
+
+Run container with Mastodon, locally served domain name
+
+Main system console:
+
+> feditest
+Testing federated protocols
+Synopsis:
+    feditest help
+    feditest info [ —app  … ]
+    feditest list-tests
+…
+
+> feditest -v run
+# Running test plan feditest-default.json (run 1234)
+## Deploying constellation ubos-nspawn-python (instance 1234-1)
+Deploying Mastodon at https://mastodon.1234-1.local -> DONE
+Deploying Fedilib-server at https://fedilib-server.1234-1.local -> DONE
+### Running test webfinger/test_server_4.2_4_do_not_accept_malformed_resource_parameters.py
+#### Running step do_not_access_malformed_resource_parameters_not_percent_encoded -> PASS
+#### Running step do_not_access_malformed_resource_parameters_extra_equals -> PASS
+/// PASS
+### Running test webfinger/test_server_4.2_5_status_404_for_nonexisting_resources.py
+#### Running step status_404_for_nonexisting_resources -> PASS
+/// PASS
+### Running test test_server_4.4_1_valid_json.py
+#### Running step valid_json -> PASS
+/// PASS
+// Undeploying constallation ubos-nspawn-python (instance 1234-1)
+
+## Deploying constellation ubos-nspawn2 (instance 1234-2)
+Deploying Mastodon at https://mastodon.1234-2.local -> DONE
+Deploying WordPress + ActivityPub Plugin at https://wordpress.1234-2.local -> DONE
+### Running test activitypub/test_01_actor_document
+#### Running step ...
+Provisioning account mast8697@mastodon.1234-2.local -> Done
+#### Running step ...
+/// PASS
+// DONE
+
+> feditest info —test activitypub/01-follow-source
+Description: Tests that an instance under test (iut) emits the correct ActivityPub messages when its
+    user wishes to follow an account on a different instance
+Part of test set: activitypub
+Requires profile: base
+Instances under test: 1
+
+> vi tests/webfinger/01-valid-document.py
+(explain)
+
+> feditest list-tests
+activitypub/01-follow-source
+activitypub/01-follow-destination
+fediverse/01-webfinger-points-to-actor-document
+fediverse/02-iut1-follow-iut2
+webfinger/01-valid-document
+
+> feditest list-testsets
+activitypub
+fediverse
+webfinger
+
+> feditest info —testset activitypub
+A set of tests testing ActivityPub conformance
+
+> feditest info —testset fediverse
+A set of tests testing the combination of conventions and standards (not the standards itself) that make today’s fediverse work
+
+> feditest list-iutdrivers
+manual
+mastodon-4.2.2/vbox-provisiononly
+mastodon-4.2.2/docker-all
+wordpress+activitypub-6.4.2/nspawn-ubos-partial
+
+
+
+
+
+
+> feditest info —testset activitypub
+A set of tests testing ActivityPub conformance
+
+> feditest info —testset fediverse
+A set of tests testing the combination of conventions and standards (not the standards itself) that make today’s fediverse work
+
+> feditest run —verbose webfinger/01-valid-document
+Running webfinger/01-valid-document (Tests that an instance under test returns a valid WebFinger document)
+Using driver for instance-under-test 1: manual
+
+Enter acct URL to test: @foo@mastodon.local
+OK
+
+> feditest run webfinger/01-valid-document
+Enter acct URL to test: @bar@mastodon.local
+FAIL:
+* Does not exist: HTTP 404 on https://mastodon.local/.well-known/webfinger?resource=acct:bar@mastodon.local
+
+> vi tests/webfinger/01-valid-document.py
+(explain)
+

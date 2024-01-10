@@ -4,6 +4,7 @@ Define interfaces to interact with instances-under-test (IUTs)
 
 from abc import ABC
 from collections.abc import Callable
+from typing import Any
 
 class IUT:
     def __init__(self, nickname: str, iut_driver: 'IUTDriver') -> None:
@@ -65,5 +66,10 @@ class IUTDriver(ABC):
         return: the value entered by the user
         """
 
-
-
+class NotImplementedByIUTError(RuntimeError):
+    """
+    This exception is raised when an IUT cannot perform a certain operation because it
+    has not been implemented in this subtype of IUT.
+    """
+    def __init__(self, method: Callable[...,Any] ):
+        super.__init__("Not implemented: " + str(method))

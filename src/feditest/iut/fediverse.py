@@ -2,8 +2,11 @@
 """
 
 from feditest.iut.activitypub import ActivityPubIUT, ActivityPubIUTDriver
-from feditest.iut.webfinger import WebfingerIUT, WebfingerIUTDriver
+from feditest.iut.webfinger import WebFingerClientIUT, WebFingerServerIUT, WebFingerClientIUTDriver, WebFingerServerIUTDriver
 
-class FediverseIUT(WebfingerIUT,ActivityPubIUT):
+
+class FediverseNodeIUT(WebFingerClientIUT, WebFingerServerIUT, ActivityPubIUT):
     ...
 
+class FediverseNodeIUTDriver(WebFingerClientIUTDriver,WebFingerServerIUTDriver, ActivityPubIUTDriver):
+    ...

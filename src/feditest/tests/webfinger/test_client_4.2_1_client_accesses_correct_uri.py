@@ -1,22 +1,32 @@
 """
 """
 
-from feditest import register_test
-from feditest.iut.webfinger import WebfingerClientIUT
-from feditest.webfinger import construct_webfinger_uri
+from urllib.parse import parse_qs
+
+from feditest import fassert, register_test
+from feditest.iut.web import WebServerLog, HttpRequestResponsePair
+from feditest.iut.webfinger import WebFingerClientIUT, WebFingerServerIUT
 
 @register_test
-def client_accesses_correct_uri(client: WebfingerClientIUT, server: WebfingerServerIUT) -> None:
+def client_accesses_correct_uri(
+        server: WebFingerServerIUT,
+        iut:    WebFingerClientIUT
+) -> None:
     test_id = server.obtain_account_identifier();
 
-    result = server.transaction( lambda :
-        client.perform_webfinger_query_on_resource(test_id)
+    log : WebServerLog = server.transaction( lambda :
+        iut.perform_webfinger_query_on_resource(test_id)
+        # ignore the result, we are not testing that
     )
-    assert( result.server_requests.size() == 1, 'Expecting one incoming request')
-    request = result.server_requests.get(0);
-    assert( request.uri.scheme() == 'https' )
-    assert( request.uri.netloc() == server.domain_name() )
-    assert( request.uri.path == '/.well-known/webfinger' )
-    assert( request.uri.args.size() == 1 )
-    assert( request.uri.args.get_name( 0 ) == 'resource' )
-    assert( request.uri.args.get_value( 0 ) == 'test_id' )
+
+    fassert(log.web_log_entries.size() == 1, 'Expecting one incoming request')
+
+    entry : HttpRequestResponsePair = log.web_log_entries.get(0);
+    fassert(entry.uri.scheme == 'https')
+    fassert(entry.uri.netloc == server.domain_name())
+    fassert(entry.uri.path == '/.well-known/webfinger')
+
+    query : dict[str,list[str]] = parse_qs(entry.uri)
+    fassert(len(query) == 1 )
+    fassert('resource' in query )
+    fassert(query['resource'] == test_id)
