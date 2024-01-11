@@ -1,7 +1,3 @@
 """
-Tests the WebFinger standard
+Tests the WebFinger standard.
 """
-
-def foo() :
-    ...
-    

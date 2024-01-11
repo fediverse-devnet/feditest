@@ -49,7 +49,7 @@ def run_info_testset(name: str) -> None:
     test_set = feditest.all_test_sets.get(name)
     if test_set:
         test_set_metadata = {
-            'Name:' : test_set.name(),
+            'Test set name:' : test_set.name(),
             'Description:' : test_set.description()
         }
 

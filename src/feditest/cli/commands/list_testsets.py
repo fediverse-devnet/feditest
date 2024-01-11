@@ -11,7 +11,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     Run this command.
     """
     feditest.load_tests_from(args.testsdir)
-    for test_set_name in feditest.all_test_sets:
+    for test_set_name in sorted(feditest.all_test_sets.keys()):
         print( test_set_name )
 
     return 0

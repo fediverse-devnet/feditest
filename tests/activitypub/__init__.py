@@ -1,3 +1,3 @@
 """
-A set of tests testing ActivityPub conformance
+A set of tests testing ActivityPub conformance.
 """
