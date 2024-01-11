@@ -2,7 +2,7 @@
 """
 
 from feditest import register_test, report_failure
-from feditest.protocols import NotImplementedByNodeError
+from feditest.protocols import NotImplementedByDriverError
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @register_test
@@ -15,7 +15,7 @@ def valid_json(
     try :
         test_result = driver.perform_webfinger_query_of_resource(test_id)
 
-    except NotImplementedByNodeError:
+    except NotImplementedByDriverError:
         raise # not a failure
 
     except Exception as e:

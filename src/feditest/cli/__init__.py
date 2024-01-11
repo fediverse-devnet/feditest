@@ -10,13 +10,10 @@ import traceback
 
 from feditest.reporting import fatal, set_reporting_level
 from feditest.utils import find_submodules
-
-# FIXME imports -- need dynamic discovery
 import feditest.protocols
 import feditest.protocols.activitypub
 import feditest.protocols.fediverse
 import feditest.protocols.webfinger
-import feditest.tests.fediverse.test_follow
 import feditest.cli.commands
 
 def main():

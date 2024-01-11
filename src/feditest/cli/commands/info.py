@@ -16,6 +16,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
         parser.print_help();
         return 0
 
+    feditest.load_tests_from(args.testsdir)
     if args.test:
         return run_info_test(args.test)
 
@@ -71,7 +72,7 @@ def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser( cmd_name, help='Provide information on a variety of objects')
-    parser.add_argument('--testdir', nargs='*', default='tests', help='Directory or directories where to find testsets and tests')
+    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
     parser.add_argument('--appdriverdir', nargs='*', default='appdrivers', help='Directory or directories where to find drivers for applications to be tested')
     type_group = parser.add_mutually_exclusive_group(required=True)
     type_group.add_argument('--test',  help='Provide information about a test.')

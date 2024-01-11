@@ -5,8 +5,11 @@ Core module.
 from abc import ABC, abstractmethod
 from ast import Module
 from collections.abc import Callable
+import glob
+import importlib.util
 from inspect import signature, getmodule
 from pkgutil import resolve_name
+import sys
 from types import FunctionType
 from typing import Any
 
@@ -96,6 +99,25 @@ class TestSet:
 all_tests = TestSet('all-tests', 'Collects all available tests', None)
 all_test_sets: dict[str,TestSet] = {}
 
+def load_tests_from(dirs: list[str]) -> None:
+    sys_path_before = sys.path
+    for dir in dirs:
+        while dir.endswith('/') :
+            dir = dir[:-1]
+            
+        sys.path.append(dir) # needed to automatially pull in dependencies
+        for f in glob.glob(dir + '/**/*.py', recursive=True):
+            module_name = f[ len(dir)+1 : -3 ].replace('/', '.' ) # remove dir from the front, and the extension from the back
+            if module_name.endswith('__init__'):
+                continue
+            if not module_name:
+                module_name = 'default'
+            spec = importlib.util.spec_from_file_location(module_name, f)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+        sys.path = sys_path_before
+
 def register_test(to_register: Callable[[Any], None], name: str | None = None, description: str | None = None) -> None:
 
     if not isinstance(to_register,FunctionType):
@@ -103,13 +125,16 @@ def register_test(to_register: Callable[[Any], None], name: str | None = None, d
 
     module = getmodule(to_register)
     if module :
-        package_name = '.'.join( module.__name__.split('.')[0:-1])
-        if package_name in all_test_sets:
-            test_set = all_test_sets[package_name]
+        parent_module_name = '.'.join( module.__name__.split('.')[0:-1])
+        if parent_module_name :
+            if parent_module_name in all_test_sets:
+                test_set = all_test_sets[parent_module_name]
+            else:
+                parent_module = resolve_name(parent_module_name)
+                test_set = TestSet(parent_module_name, parent_module.__doc__, parent_module)
+                all_test_sets[parent_module_name] = test_set
         else:
-            package = resolve_name(package_name)
-            test_set = TestSet(package_name, package.__doc__, package)
-            all_test_sets[package_name] = test_set
+            test_set = None
     else :
         test_set = None
 
@@ -158,3 +183,4 @@ def fassert(condition: bool, msg: str = "Assertion failure" ):
     """
     if not condition:
         raise FeditestFailure(msg)
+
