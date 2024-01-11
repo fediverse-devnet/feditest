@@ -2,13 +2,13 @@
 """
 
 from feditest import register_test
-from feditest.iut.activitypub import ActivityPubFederationIUT, compare_objects
-from feditest.iut.web import WebServerLog
+from feditest.protocols.activitypub import ActivityPubNode, compare_objects
+from feditest.protocols.web import WebServerLog
 
 @register_test
 def objects_must_be_the_same(
-        iut:    ActivityPubFederationIUT,
-        driver: ActivityPubFederationIUT
+        iut:    ActivityPubNode,
+        driver: ActivityPubNode
 ) -> None:
     sender_actor_uri : str  = iut.obtain_actor_uri();
     receiver_actor_uri : str = driver.obtain_actor_uri();

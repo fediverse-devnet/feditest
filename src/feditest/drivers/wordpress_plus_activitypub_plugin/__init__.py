@@ -1,7 +1,7 @@
 """
 """
 
-from feditest.iut.fediverse import FediverseNodeIUT
+from feditest.protocols.fediverse import FediverseNodeIUT
 
 class WordPressPlusActivityPubPlugin(FediverseNodeIUT) :
     ...

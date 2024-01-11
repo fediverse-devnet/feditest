@@ -2,12 +2,12 @@
 """
 
 from feditest import fassert, register_test, report_failure
-from feditest.iut.webfinger import WebFingerClientIUT, WebFingerServerIUT, WebFingerUnknownResourceException
+from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @register_test
 def status_404_for_nonexisting_resources(
-        iut:    WebFingerServerIUT,
-        driver: WebFingerClientIUT
+        iut:    WebFingerServer,
+        driver: WebFingerClient
 ) -> None:
     test_id = iut.obtain_non_existing_account_identifier();
 
@@ -16,5 +16,5 @@ def status_404_for_nonexisting_resources(
 
         report_failure('No exception when performing WebFinger query on non-existing resource')
 
-    except WebFingerUnknownResourceException as e:
+    except WebFingerClient.UnknownResourceException as e:
         fassert(e.http_response.http_status, 404)

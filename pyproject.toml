@@ -9,7 +9,8 @@ authors = [
   { name="Johannes Ernst", email="Johannes.Ernst@gmail.com" },
 ]
 dependencies = [
-  "httpx"
+  "httpx",
+  "msgspec"
 ]
 description = "Testing federated protocols"
 readme = "README.md"

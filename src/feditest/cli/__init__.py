@@ -12,13 +12,11 @@ from feditest.reporting import fatal, set_reporting_level
 from feditest.utils import find_submodules
 
 # FIXME imports -- need dynamic discovery
-import feditest.iut
-import feditest.iut.activitypub
-import feditest.iut.fediverse
-import feditest.iut.webfinger
-import feditest.tests.activitypub.test_01_actor_document
-import feditest.tests.activitypub.test_02_follow
-import feditest.tests.webfinger.test_01_webfinger_document
+import feditest.protocols
+import feditest.protocols.activitypub
+import feditest.protocols.fediverse
+import feditest.protocols.webfinger
+import feditest.tests.fediverse.test_follow
 import feditest.cli.commands
 
 def main():

@@ -2,12 +2,12 @@
 """
 
 from feditest import register_test, report_failure
-from feditest.iut.webfinger import WebFingerClientIUT, WebFingerServerIUT
+from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @register_test
 def correct_content_type(
-        iut:    WebFingerServerIUT,
-        driver: WebFingerClientIUT
+        iut:    WebFingerServer,
+        driver: WebFingerClient
 ) -> None:
     test_id = iut.obtain_account_identifier();
 
@@ -16,3 +16,4 @@ def correct_content_type(
 
     except Exception as e:
         report_failure(e)
+

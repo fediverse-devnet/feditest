@@ -4,6 +4,7 @@ Utility functions
 
 from ast import Module
 import pkgutil
+import re
 from urllib.parse import urlparse
 
 
@@ -20,14 +21,35 @@ def find_submodules(package: Module) -> list[str]:
     return ret
 
 
-def http_https_uri_validate(uri: str) -> bool:
+def account_id_validate(candidate: str) -> bool:
+    """
+    Validate that the provided string is of the form 'acct:foo@bar.com'.
+    return True if valid
+    """
+    match = re.match("acct:[^\s]+@[^\s]+", candidate)
+    if match:
+        return True
+    else:
+        return False
+    
+
+def uri_validate(candidate: str) -> bool:
+    """
+    Validate that the provided string is a valid URI.
+    return: True if valid
+    """
+    parsed = urlparse(candidate)
+    return len(parsed.scheme) > 0 and len(parsed.netloc) > 0
+
+
+def http_https_uri_validate(candidate: str) -> bool:
     """
     Validate that the provided string is a valid HTTP or HTTPS URI.
     return: True if valid
     """
-    parsed = urlparse(uri)
+    parsed = urlparse(candidate)
     return (parsed.scheme in ['http', 'https']
-            and len( parsed.netloc) > 0 )
+            and len(parsed.netloc) > 0)
 
 
 def http_https_root_uri_validate(uri: str) -> bool:
@@ -38,11 +60,11 @@ def http_https_root_uri_validate(uri: str) -> bool:
     """
     parsed = urlparse(uri)
     return (parsed.scheme in ['http', 'https']
-            and len( parsed.netloc) > 0
-            and ( len(parsed.path) == 0 or parsed.path == '/' )
-            and len( parsed.params ) == 0
-            and len( parsed.query ) == 0
-            and len( parsed.fragment ) == 0 )
+            and len(parsed.netloc) > 0
+            and (len(parsed.path) == 0 or parsed.path == '/')
+            and len(parsed.params) == 0
+            and len(parsed.query) == 0
+            and len(parsed.fragment) == 0 )
 
 
 def format_name_value_string(data: dict[str,str]) -> str:

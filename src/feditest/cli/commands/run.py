@@ -4,12 +4,14 @@ Run one or more tests
 
 from argparse import ArgumentParser, Namespace
 
-import feditest
+from feditest.testplan import load
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     """
     Run this command.
     """
+    plan = load(args.testplan)
+    print( 'Running ' + repr(plan))
 
     return 1
 
@@ -21,8 +23,5 @@ def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     """
     parser = parent_parser.add_parser( cmd_name, help='Run one or more tests' )
     parser.add_argument('--testdir', nargs='*', default='tests', help='Directory or directories where to find testsets and tests')
-    parser.add_argument('--iutdriverdir', nargs='*', default='iutdrivers', help='Directory or directories where to find drivers for Instances-under-test')
-
-    mode_group = parser.add_mutually_exclusive_group(required=False)
-    mode_group.add_argument('--save-test-plan-only', help='Do not run any tests. Only construct a test plan and save it to the specified file' )
-    mode_group.add_argument('--run-test-plan', help='Read the test plan from the specified file')
+    parser.add_argument('--appdriverdir', nargs='*', default='appdrivers', help='Directory or directories where to find drivers for applications that can be tested')
+    parser.add_argument('--testplan', default='feditest-default.json', help='Name of the file that contains the test plan to run')

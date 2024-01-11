@@ -1,0 +1,58 @@
+{
+    "name" : "Test all with gusto",
+    "sessions" : [
+        {
+            "constellation" : {
+                "roles" : {
+                    "a" : {
+                        "type" : "ubos-nspawn",
+                        "parameters" : {
+                            "ubos-site-json-template" : "wordpress-activitypub.json"
+                        }
+                    },
+                    "b" : {
+                        "type" : "ubos-nspawn",
+                        "parameters" : {
+                            "ubos-site-json-template" : "mastodon.json"
+                        }
+                    }
+                }
+            },
+            "tests" : [
+                {
+                    "name" : "webfinger/test_server_4.2_4_do_not_accept_malformed_resource_parameter"
+                },
+                {
+                    "name" : "webfinger/test_server_4.2_5_Status_404_for_nonexisting_resources",
+                    "disabled" : "mastodon does not have feature xyz"
+                }
+            ]
+        },
+        {
+            "constellation" : {
+                "roles" : {
+                    "a" : {
+                        "type" : "ubos-nspawn",
+                        "parameters" : {
+                            "ubos-site-json-template" : "mastodon.json"
+                        }
+                    },
+                    "b" : {
+                        "type" : "ubos-nspawn",
+                        "parameters" : {
+                            "ubos-site-json-template" : "mastodon.json"
+                        }
+                    },
+                    "c" : {
+                        "type" : "python-library",
+                        "parameters" : {
+                            "name" : "fedilib"
+                        }
+                    }
+                }
+            },
+            "tests" : [
+            ]
+        }
+    ]
+}

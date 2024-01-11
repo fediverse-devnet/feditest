@@ -4,13 +4,13 @@
 from urllib.parse import parse_qs
 
 from feditest import fassert, register_test
-from feditest.iut.web import WebServerLog, HttpRequestResponsePair
-from feditest.iut.webfinger import WebFingerClientIUT, WebFingerServerIUT
+from feditest.protocols.web import WebServerLog, HttpRequestResponsePair
+from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @register_test
 def client_accesses_correct_uri(
-        server: WebFingerServerIUT,
-        iut:    WebFingerClientIUT
+        server: WebFingerServer,
+        iut:    WebFingerClient
 ) -> None:
     test_id = server.obtain_account_identifier();
 

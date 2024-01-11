@@ -3,10 +3,10 @@
 
 from datetime import date, datetime, timezone
 import httpx
-from typing import Callable, List
-from urllib import ParseResult as ParsedUri
+from typing import Callable, List, final
+from urllib.parse import ParseResult as ParsedUri
 
-from feditest.iut import IUT, IUTDriver, NotImplementedByIUTError
+from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
 from feditest.utils import http_https_root_uri_validate
 
 class HttpRequestResponsePair:
@@ -29,7 +29,6 @@ class HttpRequestResponsePair:
         self.status = status
 
 
-
 class WebServerLog:
     """
     A list of logged HTTP requests to a web server.
@@ -43,34 +42,28 @@ class WebServerLog:
         self.web_log_entries.append(to_add)
 
 
-class WebServerIUT(IUT):
-    def __init__(self, nickname: str, iut_driver: 'WebServerIUTDriver') -> None:
-        super().__init__(nickname, iut_driver)
+class WebServer(Node):
+    """
+    Abstract class used for Nodes that speak HTTP as server.
+    """
+    def __init__(self, nickname: str, hostname: str, node_driver: 'NodeDriver') -> None:
+        super().__init__(nickname, node_driver)
+        
+        self._hostname = hostname
 
-    def get_root_uri(self) -> str:
+    def get_hostname(self) -> str:
         """
-        Return the fully-qualified top-level URI at which this WebIUT serves HTTP or HTTPS.
-        The identifier is of the form ``http[s]://example.com/``. It does contain scheme
-        and resolvable hostname, but does not contain path, fragment, or query elements.
-        return: the URI
+        Return a resolvable DNS hostname that resolves to this WebServerNode.
         """
-        return self._iut_driver.prompt_user(
-            'Please enter the WebIUT\' root URI (e.g. "https://example.local/" )',
-            http_https_root_uri_validate )
-        
-        
-    def get_domain_name(self) -> str:
-        """
-        Return a resolvable DNS hostname that resolves to this WebServerIUT.
-        """
-        raise NotImplementedByIUTError(WebServerIUT.get_domain_name)
+        return self._hostname
     
-    
+    @final
     def transaction(self, code: Callable[[],None]) -> WebServerLog:
         """
         While this method runs, the server records incoming HTTP requests, and
-        returns them when this method returns. During the method call, execute
-        the provided code.
+        returns them as the return value of this method. In the method call,
+        execute the provided code (usually to make the client do something
+        that results in the hits to the WebServer
         code: the code to run
         return: the collected HTTP requests
         """
@@ -84,11 +77,11 @@ class WebServerIUT(IUT):
 
     def _start_logging_http_requests(self) -> str:
         """
-        Override this to instruct the IUT to start logging HTTP requests.
+        Override this to instruct the WebServer to start logging HTTP requests.
         return: an identifier for the log
         see: _stop_logging_http_requests
         """
-        raise NotImplementedByIUTError(WebServerIUT._start_logging_http_requests)
+        raise NotImplementedByDriverError(WebServer._start_logging_http_requests)
     
     
     def _stop_logging_http_requests(self, collection_id: str) -> WebServerLog:
@@ -98,33 +91,38 @@ class WebServerIUT(IUT):
         return: the collected HTTP requests
         see: _start_logging_http_requests
         """
-        raise NotImplementedByIUTError(WebServerIUT._stop_logging_http_requests)
+        raise NotImplementedByDriverError(WebServer._stop_logging_http_requests)
 
 
-class WebServerIUTDriver(IUTDriver):
-    def __init__(self, name: str) -> None:
-        super.__init__(name)
-
-    # Python 3.12 @override
-    def _provision_IUT(self, nickname: str) -> WebServerIUT:
-        return WebServerIUT(nickname, self);
-
-
-class WebClientIUT(IUT):
-    def __init__(self, nickname: str, iut_driver: 'WebClientIUTDriver') -> None:
+class WebClient(Node):
+    def __init__(self, nickname: str, iut_driver: 'NodeDriver') -> None:
         super().__init__(nickname, iut_driver)
 
     def http_get(self, uri: str) -> httpx.Response:
         """
         Make this WebClientIUT perform an HTTP get on the provided uri.
         """
-        raise NotImplementedByIUTError(WebClientIUT._http_get)
+        raise NotImplementedByDriverError(WebClient._http_get)
 
-
-class WebClientIUTDriver(IUTDriver):
-    def __init__(self, name: str) -> None:
-        super.__init__(name)
-
-    # Python 3.12 @override
-    def _provision_IUT(self, nickname: str) -> WebClientIUT:
-        return WebClientIUT(nickname, self);
+    class TooManyRedirectsError(RuntimeError):
+        """
+        Can be thrown to indicate that the WebClient has lost patience with the redirects of the server
+        it is talking to.
+        """
+        def __init__(self, uri: str):
+            """
+            uri: the original URI before the first redirect
+            """
+            self.uri = uri
+            
+    class HttpUnsuccessfulError(RuntimeError):
+        """
+        Thrown to indicate an unsuccessful HTTP request.
+        """
+        def __init__(self, uri: str, response: httpx.Response):
+            """
+            uri: the original URI
+            response: the failed response
+            """
+            self.uri = uri
+            self.response = response
