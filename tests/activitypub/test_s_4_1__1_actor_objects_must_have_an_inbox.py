@@ -1,11 +1,11 @@
 """
 """
 
-from feditest import register_test
+from feditest import step
 from feditest.protocols.activitypub import ActivityPubNode
 from feditest.utils import http_https_uri_validate
 
-@register_test
+@step
 def actor_objects_must_have_an_inbox(
         iut:    ActivityPubNode,
         driver: ActivityPubNode

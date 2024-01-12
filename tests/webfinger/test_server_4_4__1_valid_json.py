@@ -1,11 +1,11 @@
 """
 """
 
-from feditest import register_test, report_failure
+from feditest import step, report_failure
 from feditest.protocols import NotImplementedByDriverError
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
-@register_test
+@step
 def valid_json(
         iut:    WebFingerServer,
         driver: WebFingerClient

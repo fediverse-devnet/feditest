@@ -1,11 +1,11 @@
 """
 """
 
-from feditest import register_test
+from feditest import step
 from feditest.protocols.activitypub import ActivityPubNode
 from feditest.protocols.web import WebServerLog
 
-@register_test
+@step
 def objects_must_be_the_same(
         iut:    ActivityPubNode,
         driver: ActivityPubNode

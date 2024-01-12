@@ -3,11 +3,11 @@
 
 from urllib.parse import parse_qs
 
-from feditest import fassert, register_test
+from feditest import fassert, step
 from feditest.protocols.web import WebServerLog, HttpRequestResponsePair
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
-@register_test
+@step
 def client_accesses_correct_uri(
         server: WebFingerServer,
         iut:    WebFingerClient

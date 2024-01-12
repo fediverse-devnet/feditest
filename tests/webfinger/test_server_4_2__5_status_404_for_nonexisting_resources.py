@@ -1,10 +1,10 @@
 """
 """
 
-from feditest import fassert, register_test, report_failure
+from feditest import fassert, step, report_failure
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
-@register_test
+@step
 def status_404_for_nonexisting_resources(
         iut:    WebFingerServer,
         driver: WebFingerClient

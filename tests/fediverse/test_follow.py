@@ -1,10 +1,10 @@
 """
 """
 
-from feditest import register_test
+from feditest import step
 from feditest.protocols.fediverse import FediverseNode
 
-@register_test
+@step
 def follow(
         to_be_leader_node:   FediverseNode,
         to_be_follower_node: FediverseNode

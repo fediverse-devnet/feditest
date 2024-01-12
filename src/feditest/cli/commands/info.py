@@ -31,12 +31,12 @@ def run_info_test(name: str) -> None:
     test = feditest.all_tests.get(name)
     if test:
         test_metadata = {
-            'Name:' : test.name(),
-            'Description:' : test.description(),
-            'IUTs:' : str(test.n_iuts())
+            'Test name:' : test.name,
+            'Description:' : test.description,
+            'Constellation size:' : str(test.constellation_size)
         }
-        if test.test_set():
-            test_metadata['Test set:'] = test.test_set().name()
+        if test.test_set:
+            test_metadata['Test set:'] = test.test_set.name
 
         print(format_name_value_string(test_metadata), end='')
         return 0
@@ -49,15 +49,15 @@ def run_info_testset(name: str) -> None:
     test_set = feditest.all_test_sets.get(name)
     if test_set:
         test_set_metadata = {
-            'Test set name:' : test_set.name(),
-            'Description:' : test_set.description()
+            'Test set name:' : test_set.name,
+            'Description:' : test_set.description
         }
 
         print(format_name_value_string(test_set_metadata), end='')
         return 0
 
     else:
-        warning( 'Testset not found:', name)
+        warning( 'Test set not found:', name)
         return 1
 
 

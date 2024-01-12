@@ -1,11 +1,11 @@
 """
 """
 
-from feditest import register_test, report_failure
+from feditest import step, report_failure
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 # We currently have no way of inserting an invalid certificate
-# @register_test
+# @step
 # def client_must_accept_failure_invalid_certificate(
 #         server: WebFingerServer,
 #         iut:    WebFingerClient)
@@ -13,7 +13,7 @@ from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 #
 
 
-@register_test
+@step
 def client_must_accept_failure_4xx(
         server: WebFingerServer,
         iut:    WebFingerClient
@@ -29,7 +29,7 @@ def client_must_accept_failure_4xx(
 
 
 # We currently have no way of inserting a server fault
-# @register_test
+# @step
 # def client_must_accept_failure_5xx(
 #         server: WebFingerServer,
 #         iut:    WebFingerClient)

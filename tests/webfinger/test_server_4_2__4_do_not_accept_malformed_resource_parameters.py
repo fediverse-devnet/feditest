@@ -4,10 +4,10 @@
 import urllib
 import httpx
 
-from feditest import fassert, register_test
+from feditest import fassert, step
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
-@register_test
+@step
 def do_not_access_malformed_resource_parameters_not_percent_encoded(
         iut:    WebFingerServer,
         driver: WebFingerClient
@@ -23,7 +23,7 @@ def do_not_access_malformed_resource_parameters_not_percent_encoded(
     fassert(result.status_code == 400, 'Not HTTP status 400')
 
 
-@register_test
+@step
 def do_not_access_malformed_resource_parameters_double_equals(
         iut:    WebFingerServer,
         driver: WebFingerClient
