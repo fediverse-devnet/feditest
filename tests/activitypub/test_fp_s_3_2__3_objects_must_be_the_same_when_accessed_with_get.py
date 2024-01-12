@@ -1,4 +1,5 @@
 """
+Objects received through the inbox and via HTTP GET must be the same.
 """
 
 from feditest import step

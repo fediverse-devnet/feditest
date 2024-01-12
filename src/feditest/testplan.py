@@ -2,23 +2,27 @@
 """
 
 from typing import Any
-
 import msgspec
 
 class TestPlanConstellationRole(msgspec.Struct):
-    type: str
+    appdriver: str
     parameters: dict[str,Any] | None = None
 
 class TestPlanConstellation(msgspec.Struct):
     roles : dict[str,TestPlanConstellationRole]
+    name: str = None
+
 
 class TestPlanTestSpec(msgspec.Struct):
     name: str
     disabled: str | None = None
 
+
 class TestPlanSession(msgspec.Struct):
     constellation : TestPlanConstellation
     tests : list[TestPlanTestSpec]
+    name: str = None
+
 
 class TestPlan(msgspec.Struct):
     """
@@ -31,14 +35,12 @@ class TestPlan(msgspec.Struct):
     name: str = None
     sessions : list[TestPlanSession] = []
 
-    def run(self):
-        print( "RUNNING!!")
-
-def load(filename: str) -> TestPlan:
-    """
-    Read a file, and instantiate a TestPlan from what we find.
-    """
-    with open(filename) as f:
-        data = f.read()
-    
-    return msgspec.json.decode(data, type=TestPlan)
+    @staticmethod
+    def load(filename: str) -> 'TestPlan':
+        """
+        Read a file, and instantiate a TestPlan from what we find.
+        """
+        with open(filename) as f:
+            data = f.read()
+        
+        return msgspec.json.decode(data, type=TestPlan)

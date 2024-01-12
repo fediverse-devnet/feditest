@@ -10,6 +10,10 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     """
     Run this command.
     """
+    if len(remaining):
+        parser.print_help();
+        return 0
+
     feditest.load_tests_from(args.testsdir)
     for test_set_name in sorted(feditest.all_test_sets.keys()):
         print( test_set_name )

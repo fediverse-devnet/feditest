@@ -1,20 +1,15 @@
 {
-    "name" : "Test all with gusto",
+    "name" : "Test-default",
     "sessions" : [
         {
             "constellation" : {
+                "name" : "WordPress and Mastodon",
                 "roles" : {
                     "a" : {
-                        "type" : "ubos-nspawn",
-                        "parameters" : {
-                            "ubos-site-json-template" : "wordpress-activitypub.json"
-                        }
+                        "appdriver" : "wordpress.WordpressPlusActivitypubPluginDriver"
                     },
                     "b" : {
-                        "type" : "ubos-nspawn",
-                        "parameters" : {
-                            "ubos-site-json-template" : "mastodon.json"
-                        }
+                        "appdriver" : "mastodon.MastodonUbosNspawnDriver"
                     }
                 }
             },
@@ -30,24 +25,16 @@
         },
         {
             "constellation" : {
+                "name" : "Mastodon against Mastodon",
                 "roles" : {
                     "a" : {
-                        "type" : "ubos-nspawn",
-                        "parameters" : {
-                            "ubos-site-json-template" : "mastodon.json"
-                        }
+                        "appdriver" : "mastodon.MastodonUbosNspawnDriver"
                     },
                     "b" : {
-                        "type" : "ubos-nspawn",
-                        "parameters" : {
-                            "ubos-site-json-template" : "mastodon.json"
-                        }
+                        "appdriver" : "mastodon.MastodonUbosNspawnDriver"
                     },
                     "c" : {
-                        "type" : "python-library",
-                        "parameters" : {
-                            "name" : "fedilib"
-                        }
+                        "appdriver" : "imp.ImpInprocessDriver"
                     }
                 }
             },

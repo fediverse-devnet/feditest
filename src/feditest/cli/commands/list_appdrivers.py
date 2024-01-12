@@ -4,15 +4,22 @@ List the available drivers for applications that can be tested
 
 from argparse import ArgumentParser, Namespace
 
+import feditest
+import feditest.cli
+
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     """
     Run this command.
     """
-    print( "Running list-appdrivers ... (FIXME)" )
-    print("""manual
-mastodon-4.2.2/vbox-provisiononly
-mastodon-4.2.2/docker-all
-wordpress+activitypub-6.4.2/nspawn-ubos-partial""")
+    if len(remaining):
+        parser.print_help();
+        return 0
+
+    feditest.load_app_drivers_from(args.appdriversdir)
+    for name in sorted(feditest.all_app_drivers.keys()):
+        print( name )
+
+    return 0
 
 def add_sub_parser( parent_parser: ArgumentParser, cmd_name: str ) -> None:
     """
@@ -21,4 +28,4 @@ def add_sub_parser( parent_parser: ArgumentParser, cmd_name: str ) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser( cmd_name, help='List the available drivers for applications that can be tested' )
-    parser.add_argument('--appdriverdir', nargs='*', default='appdrivers', help='Directory or directories where to find drivers for applications that can be tested')
+    parser.add_argument('--appdriversdir', nargs='*', default=[feditest.cli.default_app_drivers_dir], help='Directory or directories where to find drivers for applications that can be tested')

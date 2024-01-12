@@ -10,10 +10,12 @@ from inspect import signature, getmodule
 from pkgutil import resolve_name
 import sys
 from types import FunctionType
-from typing import Any
+from typing import Any, Type
 
 from feditest.protocols import Node
 from feditest.reporting import fatal, warning
+from feditest.utils import load_python_from
+
 
 class TestStep:
     """
@@ -63,36 +65,33 @@ class TestSet:
 all_tests = TestSet('all-tests', 'Collects all available tests', None)
 all_test_sets: dict[str,TestSet] = {}
 
+_loading_tests = False
+
+
 def load_tests_from(dirs: list[str]) -> None:
-    sys_path_before = sys.path
-    for dir in dirs:
-        while dir.endswith('/') :
-            dir = dir[:-1]
-            
-        sys.path.append(dir) # needed to automatially pull in dependencies
-        for f in glob.glob(dir + '/**/*.py', recursive=True):
-            module_name = f[ len(dir)+1 : -3 ].replace('/', '.' ) # remove dir from the front, and the extension from the back
-            if module_name.endswith('__init__'):
-                continue
-            if not module_name:
-                module_name = 'default'
-            spec = importlib.util.spec_from_file_location(module_name, f)
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
-            spec.loader.exec_module(module)
-        sys.path = sys_path_before
+    global _loading_tests
+    
+    _loading_tests = True
+    load_python_from(dirs, True)
+    _loading_tests = False
 
 
 def step(to_register: Callable[..., None]) -> None:
     """
-    Used as decorator, like this:
+    Used as decorator of test functions, like this:
     
     @test
     def test_something() : ...
     """
+    global _loading_tests
+    global all_tests
+    global all_test_sets
+
+    if not _loading_tests:
+        fatal('Do not define tests outside of testsdir')
 
     if not isinstance(to_register,FunctionType):
-        fatal('Cannot register a non-function test')
+        fatal('Cannot register a non-function test:', to_register.__name__)
 
     module = getmodule(to_register)
     parent_module_name = '.'.join( module.__name__.split('.')[0:-1])
@@ -112,8 +111,6 @@ def step(to_register: Callable[..., None]) -> None:
     step_description = to_register.__doc__
     step_signature = signature(to_register)
 
-    print( f"XXX registering test_name {test_name}, step_name {step_name} with test_set {test_set.name}")
-
     if test_name in all_tests.tests:
         test = all_tests.tests[test_name]
         if test.constellation_size != len(step_signature.parameters):
@@ -124,8 +121,43 @@ def step(to_register: Callable[..., None]) -> None:
         if test_set:
             test_set.tests[test.name] = test
 
-    step = TestStep(test_name, test_description, test, to_register)
+    step = TestStep(step_name, step_description, test, to_register)
     test.steps.append(step)
+
+
+_loading_app_drivers = False
+
+
+def load_app_drivers_from(dirs: list[str]) -> None:
+    global _loading_app_drivers
+    
+    _loading_app_drivers = True
+    load_python_from(dirs, False)
+    _loading_app_drivers = False
+    
+
+all_app_drivers = {}
+
+def appdriver(to_register: Type[Any]):
+    """
+    Used as decorator of app driver classes, like this:
+    
+    @appdriver
+    class XYZDriver : ...
+    """
+    global _loading_app_drivers
+    global all_app_drivers
+    
+    if not _loading_app_drivers:
+        fatal('Do not define app drivers outside of appdriversdir')
+
+    if not isinstance(to_register,type):
+        fatal('Cannot register a non-Class app driver:', to_register.__name__)
+
+    module = getmodule(to_register)
+    full_name = f'{module.__name__}.{to_register.__qualname__}'
+
+    all_app_drivers[full_name] = to_register
 
 
 class FeditestFailure(RuntimeError):

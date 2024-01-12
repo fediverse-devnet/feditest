@@ -3,8 +3,11 @@ Utility functions
 """
 
 from ast import Module
+import glob
+import importlib
 import pkgutil
 import re
+import sys
 from urllib.parse import urlparse
 
 
@@ -19,6 +22,32 @@ def find_submodules(package: Module) -> list[str]:
     for _, modname, _ in pkgutil.iter_modules(package.__path__):
         ret.append(modname)
     return ret
+
+
+def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
+    """
+    Helper to load the Python files recursively from a directory.
+    """
+    sys_path_before = sys.path
+    for dir in dirs:
+        while dir.endswith('/') :
+            dir = dir[:-1]
+   
+        sys.path.append(dir) # needed to automatially pull in dependencies
+        for f in glob.glob(dir + '/**/*.py', recursive=True):
+            module_name = f[ len(dir)+1 : -3 ].replace('/', '.' ) # remove dir from the front, and the extension from the back
+            if module_name.endswith('__init__'):
+                if skip_init_files:
+                    continue
+                else:
+                    module_name = module_name[ : -9] # remote .__init__
+            if not module_name:
+                module_name = 'default'
+            spec = importlib.util.spec_from_file_location(module_name, f)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+        sys.path = sys_path_before
 
 
 def account_id_validate(candidate: str) -> bool:

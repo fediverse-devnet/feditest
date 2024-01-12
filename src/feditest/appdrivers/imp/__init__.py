@@ -5,9 +5,10 @@ from datetime import datetime
 import httpx
 import random
 import string
-from typing import override, Any
+from typing import Any
 from urllib.parse import urlparse, quote
 
+from feditest import appdriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebClient, WebServerLog
 from feditest.protocols.webfinger import WebFingerClient, Jrd
@@ -19,20 +20,20 @@ class Imp(FediverseNode, WebFingerClient):
         
         self._hosted_accounts : dict[str,str]= ()
 
-    @override # from WebClient
+    # @override # from WebClient
     def http_get(self, uri: str) -> httpx.Response:
         # Do not follow redirects automatically, we need to know whether there are any
         return httpx.get(uri, follow_redirects=False)
 
-    @override # from WebServer
+    # @override # from WebServer
     def _start_logging_http_requests(self) -> str:
         return datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
     
-    @override # from WebServer
+    # @override # from WebServer
     def _stop_logging_http_requests(self, collection_id: str) -> WebServerLog:
         ...
 
-    @override # from WebFingerClient
+    # @override # from WebFingerClient
     def perform_webfinger_query_on_resource(self, resource_uri: str) -> Jrd:
         uri = self.construct_webfinger_uri(resource_uri)
 
@@ -75,14 +76,14 @@ class Imp(FediverseNode, WebFingerClient):
 
         uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
 
-    @override # from WebFingerServer
+    # @override # from WebFingerServer
     def obtain_account_identifier(self) -> str:
         # Simply create a new one
         ret = self.obtain_non_existing_account_identifier();
         self._hosted_accounts[ret] = ret
         return ret
 
-    @override # from WebFingerServer
+    # @override # from WebFingerServer
     def obtain_non_existing_account_identifier(self) ->str:
         while True :
             ret = ''.join(random.choice(string.ascii_lowercase) for i in range(8)) + '@' + self._hostname
@@ -90,17 +91,17 @@ class Imp(FediverseNode, WebFingerClient):
                 return ret
             # Very unlikely
 
-    @override # from ActivityPubNode
+    # @override # from ActivityPubNode
     def obtain_actor_document_uri(self) -> str:
         ...
 
-    @override # from ActivityPubNode
+    # @override # from ActivityPubNode
     def create_actor_document_uri(self) -> str:
         ...
 
 
-
-class ImpDriver(NodeDriver):
+@appdriver
+class ImpInProcessDriver(NodeDriver):
     def __init__(self, name: str) -> None:
         super.__init__(name)
 

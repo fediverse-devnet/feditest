@@ -44,7 +44,6 @@ def main():
             sys.exit( ret )
 
         except Exception as e: # pylint: disable=broad-exception-caught
-            print( f"XXX Exception is {type(e)}")
             if args.verbose > 1:
                 traceback.print_exception( e )
             fatal( str(type(e)), '--', e )
@@ -67,6 +66,10 @@ def find_commands() -> dict[str,Module]:
     return cmds
 
 
+default_app_drivers_dir = feditest.__file__[ : -11] + 'appdrivers'
+"""
+Default directory for where to look for app drivers
+"""
 
 if __name__ == '__main__':
     main()
