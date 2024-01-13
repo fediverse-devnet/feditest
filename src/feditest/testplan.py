@@ -69,3 +69,5 @@ class TestPlan(msgspec.Struct):
                 test : Test | None = all_tests.get(test_spec.name)
                 if test is None:
                     fatal('Cannot find test:', test_spec.name)
+                if test.constellation_size != len(session.constellation.roles):
+                    fatal('Cannot run test with constellation of size', len(session.constellation.roles), ':', test_spec.name)

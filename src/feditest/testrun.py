@@ -4,11 +4,10 @@
 from datetime import datetime, timezone
 from typing import Any, Type
 
-from feditest import all_app_drivers
+from feditest import all_app_drivers, all_tests, Test
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import info, fatal
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession
-
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
 
 
 class TestRunConstellation:
@@ -55,13 +54,18 @@ class TestRunSession:
         if len(self.plan_session.tests ):
             info('Running session:', self.name)
             
-            self.constellation = TestRunConstellation(self.plan_session.constellation)
-            self.constellation.setup()
+            try :
+                self.constellation = TestRunConstellation(self.plan_session.constellation)
+                self.constellation.setup()
 
-            for testSpec in self.plan_session.tests:
-                info('Running TestSpec', testSpec.name, '(disabled)' if testSpec.disabled else '' )
-                
-            self.constellation.teardown()
+                for test_spec in self.plan_session.tests:
+                    if test_spec.disabled:
+                        info('Skipping TestSpec', test_spec.disabled, "reason:", test_spec.disabled)
+                    else:
+                        self.run_test_spec(test_spec)
+
+            finally:        
+                self.constellation.teardown()
 
             if self.constellation.run_constellation:
                 fatal( 'Still have nodes in the constellation', self.constellation.run_constellation )
@@ -70,6 +74,15 @@ class TestRunSession:
 
         else:
             info('Skipping session:', self.name, ': no tests defined')
+
+    def run_test_spec(self, test_spec: TestPlanTestSpec):
+        global all_tests
+
+        info('Running test', test_spec.name)
+        test : Test = all_tests.get(test_spec.name)
+
+        for test_step in test.steps:
+            info('Running step', test_step.name )
 
 
 class TestRun:
