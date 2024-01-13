@@ -1,44 +1,22 @@
 {
-    "name" : "Test-default",
+    "name" : "Imp against Imp",
     "sessions" : [
         {
             "constellation" : {
-                "name" : "WordPress and Mastodon",
+                "name" : "Imp against Imp",
                 "roles" : {
                     "a" : {
-                        "appdriver" : "wordpress.WordPressPlusActivityPubPluginUbosNspawnDriver"
+                        "appdriver" : "imp.ImpInProcessDriver"
                     },
                     "b" : {
-                        "appdriver" : "mastodon.MastodonUbosNspawnDriver"
-                    }
-                }
-            },
-            "tests" : [
-                {
-                    "name" : "webfinger/test_server_4.2_4_do_not_accept_malformed_resource_parameter"
-                },
-                {
-                    "name" : "webfinger/test_server_4.2_5_Status_404_for_nonexisting_resources",
-                    "disabled" : "mastodon does not have feature xyz"
-                }
-            ]
-        },
-        {
-            "constellation" : {
-                "name" : "Mastodon against Mastodon",
-                "roles" : {
-                    "a" : {
-                        "appdriver" : "mastodon.MastodonUbosNspawnDriver"
-                    },
-                    "b" : {
-                        "appdriver" : "mastodon.MastodonUbosNspawnDriver"
-                    },
-                    "c" : {
                         "appdriver" : "imp.ImpInProcessDriver"
                     }
                 }
             },
             "tests" : [
+                {
+                    "name" : "webfinger.test_server_4_2__8_server_serves_correct_content_type"
+                }
             ]
         }
     ]

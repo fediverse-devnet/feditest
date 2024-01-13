@@ -14,16 +14,19 @@ from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession
 class TestRunConstellation:
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self.plan_constellation = plan_constellation
-        self.run_constellation : dict[str, Node] | None = None
+        self.run_constellation : dict[str, Node] = {}
 
     def setup(self):
+        global all_app_drivers
+        
         info('Setting up constellation:', self.plan_constellation.name)
         
         for plan_role_name in self.plan_constellation.roles:
             app_driver_name : str = self.plan_constellation.roles[plan_role_name].appdriver
             app_driver_class : Type[Any] = all_app_drivers[app_driver_name]
             info('Setting up role', plan_role_name, f'(app driver: {app_driver_class})')
-            app_driver : NodeDriver = app_driver_class()
+
+            app_driver : NodeDriver = app_driver_class(plan_role_name)
             node : Node = app_driver.provision_node(plan_role_name)
             info('Node is', node)
             self.run_constellation[plan_role_name] = node
@@ -31,13 +34,15 @@ class TestRunConstellation:
     def teardown(self):
         info('Tearing down constellation:', self.plan_constellation.name)
 
-        for plan_role_name in self.plan_constellation.roles:
+        for plan_role_name in reversed(self.plan_constellation.roles):
             app_driver = self.plan_constellation.roles[plan_role_name].appdriver
             info('Tearing down role', plan_role_name, f'(app driver: {app_driver})')
             
-            node = self.run_constallation[plan_role_name]
+            node = self.run_constellation[plan_role_name]
             driver = node.node_driver
             driver.unprovision_node(node)
+            
+            del self.run_constellation[plan_role_name]
 
 
 class TestRunSession:

@@ -4,7 +4,7 @@
 from typing import Any
 import msgspec
 
-from feditest import all_app_drivers
+from feditest import all_app_drivers, all_tests, Test
 from feditest.reporting import fatal
 
 
@@ -55,13 +55,17 @@ class TestPlan(msgspec.Struct):
         return. If not well, throw an Exception that explains the problem
         """
         global all_app_drivers
+        global all_tests
 
         for session in self.sessions:
             for role_name in session.constellation.roles:
-                role = session.constellation.roles[role_name]
+                role : TestPlanConstellationRole = session.constellation.roles[role_name]
                 app_driver_name : str = role.appdriver
                 
                 if not app_driver_name in all_app_drivers:
                     fatal('Cannot find app driver:', app_driver_name, 'for role:', role_name)
-        print( "FIXME: check_can_be_executed")
-        return
+
+            for test_spec in session.tests:
+                test : Test | None = all_tests.get(test_spec.name)
+                if test is None:
+                    fatal('Cannot find test:', test_spec.name)

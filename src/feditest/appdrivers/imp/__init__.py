@@ -15,8 +15,8 @@ from feditest.protocols.webfinger import WebFingerClient, Jrd
 from feditest.protocols.fediverse import FediverseNode
 
 class Imp(FediverseNode, WebFingerClient):
-    def __init__(self, nickname: str, hostname: str, node_driver: 'ImpDriver') -> None:
-        super().__init__(nickname, hostname, node_driver)
+    def __init__(self, nickname: str, node_driver: 'ImpInProcessDriver') -> None:
+        super().__init__(self, nickname, node_driver)
         
         self._hosted_accounts : dict[str,str]= ()
 
@@ -103,12 +103,15 @@ class Imp(FediverseNode, WebFingerClient):
 @appdriver
 class ImpInProcessDriver(NodeDriver):
     def __init__(self, name: str) -> None:
-        super.__init__(name)
+        super().__init__(name)
 
     # Python 3.12 @override
-    def _provision_node(self, hostname: str, nickname: str) -> Imp:
-        return Imp(hostname, nickname, self);
+    def _provision_node(self, nickname: str) -> Imp:
+        return Imp(nickname, self);
 
+    # Python 3.12 @override
+    def _unprovision_node(self, instance: Imp) -> None:
+        pass # no op so far
 
 
 

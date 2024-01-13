@@ -89,4 +89,4 @@ class NotImplementedByDriverError(RuntimeError):
     has not been implemented in this subtype of Node.
     """
     def __init__(self, method: Callable[...,Any] ):
-        super.__init__("Not implemented: " + str(method))
+        super().__init__(self, "Not implemented: " + str(method))
