@@ -18,7 +18,7 @@ class Imp(FediverseNode, WebFingerClient):
     def __init__(self, nickname: str, node_driver: 'ImpInProcessDriver') -> None:
         super().__init__(self, nickname, node_driver)
         
-        self._hosted_accounts : dict[str,str]= ()
+        self._hosted_accounts : dict[str,str]= {}
 
     # @override # from WebClient
     def http_get(self, uri: str) -> httpx.Response:

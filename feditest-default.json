@@ -4,14 +4,16 @@
         {
             "constellation" : {
                 "name" : "Imp against Imp",
-                "roles" : {
-                    "a" : {
+                "roles" : [
+                    {
+                        "name" : "a",
                         "appdriver" : "imp.ImpInProcessDriver"
                     },
-                    "b" : {
+                    {
+                        "name" : "b",
                         "appdriver" : "imp.ImpInProcessDriver"
                     }
-                }
+                ]
             },
             "tests" : [
                 {

@@ -6,7 +6,7 @@ from typing import Any, Type
 
 from feditest import all_app_drivers, all_tests, Test
 from feditest.protocols import Node, NodeDriver
-from feditest.reporting import info, fatal
+from feditest.reporting import info, error, fatal
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
 
 
@@ -20,10 +20,10 @@ class TestRunConstellation:
         
         info('Setting up constellation:', self.plan_constellation.name)
         
-        for plan_role_name in self.plan_constellation.roles:
-            app_driver_name : str = self.plan_constellation.roles[plan_role_name].appdriver
-            app_driver_class : Type[Any] = all_app_drivers[app_driver_name]
-            info('Setting up role', plan_role_name, f'(app driver: {app_driver_class})')
+        for plan_role in self.plan_constellation.roles:
+            plan_role_name = plan_role.name
+            app_driver_class : Type[Any] = all_app_drivers[plan_role.appdriver]
+            info('Setting up role', plan_role_name, f'(app driver: {plan_role.appdriver})')
 
             app_driver : NodeDriver = app_driver_class(plan_role_name)
             node : Node = app_driver.provision_node(plan_role_name)
@@ -33,9 +33,9 @@ class TestRunConstellation:
     def teardown(self):
         info('Tearing down constellation:', self.plan_constellation.name)
 
-        for plan_role_name in reversed(self.plan_constellation.roles):
-            app_driver = self.plan_constellation.roles[plan_role_name].appdriver
-            info('Tearing down role', plan_role_name, f'(app driver: {app_driver})')
+        for plan_role in reversed(self.plan_constellation.roles):
+            plan_role_name = plan_role.name
+            info('Tearing down role', plan_role_name)
             
             node = self.run_constellation[plan_role_name]
             driver = node.node_driver
@@ -83,6 +83,18 @@ class TestRunSession:
 
         for test_step in test.steps:
             info('Running step', test_step.name )
+
+            plan_roles = self.constellation.plan_constellation.roles
+            run_constellation = self.constellation.run_constellation
+
+            match test_step.test.constellation_size:
+                case 1:
+                    test_step.function(run_constellation[plan_roles[0].name])
+                case 2:
+                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name])
+                case _:
+                    error( 'Not supported yet')
+                
 
 
 class TestRun:

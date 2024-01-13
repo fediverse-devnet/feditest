@@ -172,7 +172,7 @@ def _construct_msg(with_loc, with_tb, *args):
         if a is None:
             return '<undef>'
         if callable(a):
-            return a()
+            return str(a)
         if isinstance(a, OSError):
             return type(a).__name__ + ' ' + str(a)
         return a

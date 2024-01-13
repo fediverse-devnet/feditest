@@ -9,11 +9,13 @@ from feditest.reporting import fatal
 
 
 class TestPlanConstellationRole(msgspec.Struct):
+    name: str
     appdriver: str
     parameters: dict[str,Any] | None = None
 
+
 class TestPlanConstellation(msgspec.Struct):
-    roles : dict[str,TestPlanConstellationRole]
+    roles : list[TestPlanConstellationRole]
     name: str = None
 
 
@@ -58,12 +60,16 @@ class TestPlan(msgspec.Struct):
         global all_tests
 
         for session in self.sessions:
-            for role_name in session.constellation.roles:
-                role : TestPlanConstellationRole = session.constellation.roles[role_name]
+            all_roles = {}
+            for role in session.constellation.roles:
+                role_name = role.name
+                if role_name in all_roles:
+                    fatal('Role names must be unique within a constellation:', role_name)
+                all_roles[role_name] = True
                 app_driver_name : str = role.appdriver
                 
                 if not app_driver_name in all_app_drivers:
-                    fatal('Cannot find app driver:', app_driver_name, 'for role:', role_name)
+                    fatal('Cannot find app driver:', app_driver_name, 'for role:', role.name)
 
             for test_spec in session.tests:
                 test : Test | None = all_tests.get(test_spec.name)
