@@ -32,23 +32,16 @@ class NodeDriver(ABC):
     """
     def __init__(self, name: str) -> None:
         self._name : str = name
-        self.known_nodes : dict[str, Node] = ()
 
     @final
-    def provision_node(self, hostname: str, nickname: str) -> Node:
+    def provision_node(self, rolename: str) -> Node:
         """
         Instantiate a Node
-        hostname: DNS name
-        nickname: the nickname of this instance
+        nickname: the name of this instance in the constellation
         """
-        if hostname is None:
-            raise Exception("hostname must be given")
-        if nickname is None:
-            nickname = hostname
-        if nickname in self.known_nodes:
-            raise Exception(f"Nickname { nickname } provisioned already")
-        ret = self._provision_node(hostname, nickname)
-        self.known_nodes[nickname] = ret
+        if rolename is None:
+            raise Exception("rolename must be given")
+        ret = self._provision_node(rolename)
         return ret;
 
     @final
@@ -57,16 +50,13 @@ class NodeDriver(ABC):
         Deactivate a Node
         node: the Node
         """
-        if not instance.nickname in self.known_nodes :
-            raise Exception(f"Nickname { instance.nickname } not known")
-        if self.known_nodes[instance.nickname] != instance :
+        if instance.node_driver != self :
             raise Exception(f"Instance does not belong to this driver")
         self._unprovision_node(instance)
-        del self.known_nodes[instance.nickname]
 
-    def _provision_node(self, hostname: str, nickname: str) -> Node:
+    def _provision_node(self, nickname: str) -> Node:
         """
-        The factory method for Node. Any subclass of IUTDriver should also
+        The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.
         """
         raise NotImplementedByDriverError(NodeDriver._provision_node)

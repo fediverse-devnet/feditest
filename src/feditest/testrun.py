@@ -2,8 +2,11 @@
 """
 
 from datetime import datetime, timezone
+from typing import Any, Type
 
-from feditest.reporting import info
+from feditest import all_app_drivers
+from feditest.protocols import Node, NodeDriver
+from feditest.reporting import info, fatal
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession
 
 
@@ -11,20 +14,30 @@ from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession
 class TestRunConstellation:
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self.plan_constellation = plan_constellation
+        self.run_constellation : dict[str, Node] | None = None
 
     def setup(self):
-        info('Setting up XXX constellation:', self.plan_constellation.name)
+        info('Setting up constellation:', self.plan_constellation.name)
         
         for plan_role_name in self.plan_constellation.roles:
-            app_driver = self.plan_constellation.roles[plan_role_name].appdriver
-            info('Setting up role', plan_role_name, f'(app driver: {app_driver})')
+            app_driver_name : str = self.plan_constellation.roles[plan_role_name].appdriver
+            app_driver_class : Type[Any] = all_app_drivers[app_driver_name]
+            info('Setting up role', plan_role_name, f'(app driver: {app_driver_class})')
+            app_driver : NodeDriver = app_driver_class()
+            node : Node = app_driver.provision_node(plan_role_name)
+            info('Node is', node)
+            self.run_constellation[plan_role_name] = node
 
     def teardown(self):
-        info('Tearing down XXX constellation:', self.plan_constellation.name)
+        info('Tearing down constellation:', self.plan_constellation.name)
 
         for plan_role_name in self.plan_constellation.roles:
             app_driver = self.plan_constellation.roles[plan_role_name].appdriver
             info('Tearing down role', plan_role_name, f'(app driver: {app_driver})')
+            
+            node = self.run_constallation[plan_role_name]
+            driver = node.node_driver
+            driver.unprovision_node(node)
 
 
 class TestRunSession:
@@ -44,6 +57,9 @@ class TestRunSession:
                 info('Running TestSpec', testSpec.name, '(disabled)' if testSpec.disabled else '' )
                 
             self.constellation.teardown()
+
+            if self.constellation.run_constellation:
+                fatal( 'Still have nodes in the constellation', self.constellation.run_constellation )
 
             info('End running session:', self.name)
 

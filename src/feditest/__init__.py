@@ -4,11 +4,8 @@ Core module.
 
 from ast import Module
 from collections.abc import Callable
-import glob
-import importlib.util
 from inspect import signature, getmodule
 from pkgutil import resolve_name
-import sys
 from types import FunctionType
 from typing import Any, Type
 
@@ -136,7 +133,7 @@ def load_app_drivers_from(dirs: list[str]) -> None:
     _loading_app_drivers = False
     
 
-all_app_drivers = {}
+all_app_drivers : dict[str,Type[Any]]= {}
 
 def appdriver(to_register: Type[Any]):
     """

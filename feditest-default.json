@@ -6,7 +6,7 @@
                 "name" : "WordPress and Mastodon",
                 "roles" : {
                     "a" : {
-                        "appdriver" : "wordpress.WordpressPlusActivitypubPluginDriver"
+                        "appdriver" : "wordpress.WordPressPlusActivityPubPluginUbosNspawnDriver"
                     },
                     "b" : {
                         "appdriver" : "mastodon.MastodonUbosNspawnDriver"
@@ -34,7 +34,7 @@
                         "appdriver" : "mastodon.MastodonUbosNspawnDriver"
                     },
                     "c" : {
-                        "appdriver" : "imp.ImpInprocessDriver"
+                        "appdriver" : "imp.ImpInProcessDriver"
                     }
                 }
             },

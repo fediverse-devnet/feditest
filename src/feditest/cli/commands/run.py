@@ -23,8 +23,11 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
         feditest.load_app_drivers_from(feditest.cli.default_app_drivers_dir) 
 
     plan = TestPlan.load(args.testplan)
+    plan.check_can_be_executed();
+
     run = TestRun(plan)
     run.run()
+    
 
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:

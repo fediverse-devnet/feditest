@@ -7,7 +7,6 @@ from typing import Callable, List, final
 from urllib.parse import ParseResult as ParsedUri
 
 from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
-from feditest.utils import http_https_root_uri_validate
 
 class HttpRequestResponsePair:
     """

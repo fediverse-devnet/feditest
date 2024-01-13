@@ -4,6 +4,10 @@
 from typing import Any
 import msgspec
 
+from feditest import all_app_drivers
+from feditest.reporting import fatal
+
+
 class TestPlanConstellationRole(msgspec.Struct):
     appdriver: str
     parameters: dict[str,Any] | None = None
@@ -44,3 +48,20 @@ class TestPlan(msgspec.Struct):
             data = f.read()
         
         return msgspec.json.decode(data, type=TestPlan)
+
+    def check_can_be_executed(self) -> None:
+        """
+        Check that we have all the test and app drivers needed for this plan. If all is well,
+        return. If not well, throw an Exception that explains the problem
+        """
+        global all_app_drivers
+
+        for session in self.sessions:
+            for role_name in session.constellation.roles:
+                role = session.constellation.roles[role_name]
+                app_driver_name : str = role.appdriver
+                
+                if not app_driver_name in all_app_drivers:
+                    fatal('Cannot find app driver:', app_driver_name, 'for role:', role_name)
+        print( "FIXME: check_can_be_executed")
+        return
