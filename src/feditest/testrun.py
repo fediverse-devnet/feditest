@@ -19,15 +19,15 @@ class TestRunConstellation:
         global all_app_drivers
         
         info('Setting up constellation:', self.plan_constellation.name)
-        
+
         for plan_role in self.plan_constellation.roles:
             plan_role_name = plan_role.name
             app_driver_class : Type[Any] = all_app_drivers[plan_role.appdriver]
+
             info('Setting up role', plan_role_name, f'(app driver: {plan_role.appdriver})')
 
             app_driver : NodeDriver = app_driver_class(plan_role_name)
-            node : Node = app_driver.provision_node(plan_role_name)
-            info('Node is', node)
+            node : Node = app_driver.provision_node(plan_role_name, plan_role.hostname)
             self.run_constellation[plan_role_name] = node
 
     def teardown(self):
@@ -35,13 +35,13 @@ class TestRunConstellation:
 
         for plan_role in reversed(self.plan_constellation.roles):
             plan_role_name = plan_role.name
-            info('Tearing down role', plan_role_name)
             
-            node = self.run_constellation[plan_role_name]
-            driver = node.node_driver
-            driver.unprovision_node(node)
-            
-            del self.run_constellation[plan_role_name]
+            if plan_role_name in self.run_constellation: # setup may never have succeeded
+                info('Tearing down role', plan_role_name)
+                node = self.run_constellation[plan_role_name]
+                driver = node.node_driver
+                driver.unprovision_node(node)        
+                del self.run_constellation[plan_role_name]
 
 
 class TestRunSession:
@@ -87,13 +87,17 @@ class TestRunSession:
             plan_roles = self.constellation.plan_constellation.roles
             run_constellation = self.constellation.run_constellation
 
-            match test_step.test.constellation_size:
+            match len(plan_roles):
                 case 1:
                     test_step.function(run_constellation[plan_roles[0].name])
                 case 2:
                     test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name])
+                case 3:
+                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name], run_constellation[plan_roles[2].name])
+                case 4:
+                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name], run_constellation[plan_roles[2].name], run_constellation[plan_roles[3].name])
                 case _:
-                    error( 'Not supported yet')
+                    error( 'Constellation size not supported yet:', len(plan_roles))
                 
 
 
@@ -103,7 +107,7 @@ class TestRun:
     """
     def __init__(self, plan: TestPlan):
         self.plan = plan
-        self.runid = datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
+        self.runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
 
     def run(self):
         info( f'RUNNING test plan: {self.plan.name} (id: {self.runid})' )

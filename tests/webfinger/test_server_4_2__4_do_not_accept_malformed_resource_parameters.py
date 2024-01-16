@@ -28,7 +28,7 @@ def do_not_access_malformed_resource_parameters_double_equals(
         iut:    WebFingerServer,
         driver: WebFingerClient
 ) -> None:
-    # We use the lower-level API from WebClient because we can't make the WebFingerClientI do something invalid
+    # We use the lower-level API from WebClient because we can't make the WebFingerClient do something invalid
 
     test_id = iut.obtain_account_identifier();
     domain_name = iut.obtain_domain_name();

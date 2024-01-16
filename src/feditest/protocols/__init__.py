@@ -34,14 +34,15 @@ class NodeDriver(ABC):
         self._name : str = name
 
     @final
-    def provision_node(self, rolename: str) -> Node:
+    def provision_node(self, rolename: str, hostname: str) -> Node:
         """
         Instantiate a Node
         nickname: the name of this instance in the constellation
+        hostname: the DNS hostname
         """
         if rolename is None:
             raise Exception("rolename must be given")
-        ret = self._provision_node(rolename)
+        ret = self._provision_node(rolename, hostname)
         return ret;
 
     @final
@@ -54,7 +55,7 @@ class NodeDriver(ABC):
             raise Exception(f"Instance does not belong to this driver")
         self._unprovision_node(instance)
 
-    def _provision_node(self, nickname: str) -> Node:
+    def _provision_node(self, nickname: str, hostname: str) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.
@@ -66,7 +67,7 @@ class NodeDriver(ABC):
         Invoked when a Node gets unprovisioned, in case cleanup needs to be performed.
         This is here so subclasses of NodeDriver can override it.
         """
-        raise NotImplementedByDriverError(NodeDriver._unprovision_node)
+        pass # by default, do nothing
 
     def prompt_user(self, question: str, validation: Callable[[str],bool]=None) -> str:
         """

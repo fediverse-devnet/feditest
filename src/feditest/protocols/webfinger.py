@@ -20,7 +20,7 @@ class WebFingerServer(WebServer):
         """
         Return the identifier of an existing or newly created account on this
         Node that a client is supposed to be able to perform WebFinger resolution on.
-        The identifier is of the form ``foo@bar.com``.
+        The identifier is of the form ``acct:foo@bar.com``.
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """

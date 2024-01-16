@@ -77,7 +77,7 @@ def step(to_register: Callable[..., None]) -> None:
     """
     Used as decorator of test functions, like this:
     
-    @test
+    @step
     def test_something() : ...
     """
     global _loading_tests

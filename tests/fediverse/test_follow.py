@@ -1,7 +1,7 @@
 """
 """
 
-from feditest import step
+from feditest import fassert, step
 from feditest.protocols.fediverse import FediverseNode
 
 @step
@@ -18,16 +18,16 @@ def follow(
     follower_actor_uri = to_be_follower_node.obtain_actor_document_uri();
 
     leader_existing_followers = to_be_leader_node.get_followers(leader_actor_uri)
-    assert(follower_actor_uri not in leader_existing_followers)
+    fassert(follower_actor_uri not in leader_existing_followers)
 
     follower_existing_following = to_be_follower_node.get_following(follower_actor_uri)
-    assert(leader_actor_uri not in follower_existing_following)
+    fassert(leader_actor_uri not in follower_existing_following)
 
     to_be_follower_node.make_a_follow_b(follower_actor_uri, leader_actor_uri)
 
     leader_new_followers = to_be_leader_node.get_followers(leader_actor_uri)
-    assert(follower_actor_uri in leader_new_followers)
+    fassert(follower_actor_uri in leader_new_followers)
 
     follower_new_following = to_be_follower_node.get_following(follower_actor_uri)
-    assert(leader_actor_uri in follower_new_following)
+    fassert(leader_actor_uri in follower_new_following)
 

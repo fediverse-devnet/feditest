@@ -4,6 +4,8 @@
 from feditest import step, report_failure
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
+import time
+
 @step
 def correct_content_type(
         iut:    WebFingerServer,

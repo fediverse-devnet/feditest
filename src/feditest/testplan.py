@@ -11,6 +11,7 @@ from feditest.reporting import fatal
 class TestPlanConstellationRole(msgspec.Struct):
     name: str
     appdriver: str
+    hostname: str | None = None # If none is given, one is provisioned
     parameters: dict[str,Any] | None = None
 
 
@@ -21,7 +22,7 @@ class TestPlanConstellation(msgspec.Struct):
 
 class TestPlanTestSpec(msgspec.Struct):
     name: str
-    disabled: str | None = None
+    disabled: str | None = None # if a string is given, it's a reason message why disabled
 
 
 class TestPlanSession(msgspec.Struct):

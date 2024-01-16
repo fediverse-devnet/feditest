@@ -1,0 +1,45 @@
+{
+    "name" : "SandboxExampleTestPlan",
+    "sessions" : [
+        {
+            "constellation" : {
+                "name" : "A_vs_1",
+                "roles" : [
+                    {
+                        "name" : "client",
+                        "appdriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
+                    },
+                    {
+                        "name" : "server",
+                        "appdriver" : "sandbox.SandboxMultServerDriver_Implementation1"
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "sandbox.test_1"
+                }
+            ]
+        },
+        {
+            "constellation" : {
+                "name" : "A_vs_2",
+                "roles" : [
+                    {
+                        "name" : "client",
+                        "appdriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
+                    },
+                    {
+                        "name" : "server",
+                        "appdriver" : "sandbox.SandboxMultServerDriver_Implementation2"
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "sandbox.test_1"
+                }
+            ]
+        }
+    ]
+}

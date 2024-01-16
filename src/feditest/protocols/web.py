@@ -4,9 +4,38 @@
 from datetime import date, datetime, timezone
 import httpx
 from typing import Callable, List, final
-from urllib.parse import ParseResult as ParsedUri
+from urllib.parse import ParseResult, parse_qs
 
 from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
+
+class ParsedUri(ParseResult):
+    params: dict[str,list[str]|None] | None = None
+
+    def has_param(self, name: str) -> bool:
+        self._parse_params()
+        return name in self.params
+
+    def param_single(self, name: str) -> str | None:
+        self._parse_params()
+        found = self.params[name]
+        match len(found):
+            case 1:
+                return found[0]
+            case _:
+                raise Exception(f'Query has {len(found)} values for parameter {name}')
+
+    def param_mult(self, name: str) -> List[str] | None:
+        self._parse_params()
+        return self.params[name]
+
+    def _parse_params(self):
+        if self.params:
+            return
+        if self.query:
+            self.params = parse_qs(self.query)
+        else:
+            self.params = {}
+            
 
 class HttpRequestResponsePair:
     """
@@ -14,32 +43,44 @@ class HttpRequestResponsePair:
     """
     def __init__(
             self,
-            when: date,
+            when_started: date,
+            when_completed: date,
             uri: ParsedUri,
-            status: int ):
+            response_status: str,
+            response_header: dict[str,str] | None ):
         """
         Create a single log event.
         when: time when request was made
         uri: the ParseResult from parsing the request URI
         status: the returned HTTP status, such as 404
         """
-        self.when = when
+        self.when_started = when_started
+        self.when_completed = when_completed
         self.uri = uri
-        self.status = status
+        self.response_status = response_status
+        self.response_header = response_header
 
 
 class WebServerLog:
     """
     A list of logged HTTP requests to a web server.
     """
-    def __init__(self):
-        self.time_started : date = datetime.now(timezone.utc)
-        self.web_log_entries : List[HttpRequestResponsePair] = ()
+    def __init__(self, time_started: date = datetime.utcnow(), entries: List[HttpRequestResponsePair] = [] ):
+        self.time_started : date = time_started
+        self.web_log_entries : List[HttpRequestResponsePair] = entries
 
-    
+
     def append(self, to_add: HttpRequestResponsePair) -> None:
         self.web_log_entries.append(to_add)
 
+
+    def entries_since(self, cutoff: date) ->  'WebServerLog':
+        ret : List[HttpRequestResponsePair] = ()
+        for entry in self.web_log_entries:
+            if entry.when_started >= cutoff :
+                ret.append(entry)
+        return WebServerLog(cutoff, ret)
+        
 
 class WebServer(Node):
     """
