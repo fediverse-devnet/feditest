@@ -1,4 +1,5 @@
 """
+A simple example test against a client and a server of the Sandbox protocol.
 """
 
 from typing import List

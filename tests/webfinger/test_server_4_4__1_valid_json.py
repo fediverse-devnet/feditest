@@ -1,4 +1,5 @@
 """
+See annotated WebFinger specification, test 4.4/1
 """
 
 from hamcrest import assert_that, raises

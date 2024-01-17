@@ -1,4 +1,5 @@
 """
+See annotated ActivityPub specification, test 3.2/3.
 Objects received through the inbox and via HTTP GET must be the same.
 """
 

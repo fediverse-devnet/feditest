@@ -1,4 +1,5 @@
 """
+See annotated WebFinger specification, test 4.2/4
 """
 
 import urllib

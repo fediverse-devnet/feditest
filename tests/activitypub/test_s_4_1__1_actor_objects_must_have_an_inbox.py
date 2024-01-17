@@ -1,4 +1,5 @@
 """
+See annotated ActivityPub specification, test 4.1/1
 """
 
 from feditest import step
