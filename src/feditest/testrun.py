@@ -2,7 +2,7 @@
 """
 
 from datetime import datetime, timezone
-from typing import Any, Type
+from typing import Any, List, Type
 
 from feditest import all_app_drivers, all_tests, Test
 from feditest.protocols import Node, NodeDriver
@@ -49,6 +49,7 @@ class TestRunSession:
         self.name = name
         self.plan_session = plan_session
         self.constellation = None
+        self.problems : List[Exception] = []
 
     def run(self):
         if len(self.plan_session.tests ):
@@ -63,7 +64,9 @@ class TestRunSession:
                         info('Skipping TestSpec', test_spec.disabled, "reason:", test_spec.disabled)
                     else:
                         self.run_test_spec(test_spec)
-
+            except Exception as e:
+                info('FAILED session:', e)
+                self.problems.append(e)
             finally:        
                 self.constellation.teardown()
 
@@ -112,8 +115,14 @@ class TestRun:
     def run(self):
         info( f'RUNNING test plan: {self.plan.name} (id: {self.runid})' )
 
+        all_passed : bool = True
         for i in range(0, len(self.plan.sessions)):
             plan_session = self.plan.sessions[i]
             run_session = TestRunSession(plan_session.name if plan_session.name else f'{self.plan.name}/{str(i)}', plan_session)
 
             run_session.run()
+            if len(run_session.problems):
+                all_passed = False
+
+        if not all_passed:
+            info('FAILED')

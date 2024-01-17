@@ -40,6 +40,26 @@
                     "name" : "sandbox.test_1"
                 }
             ]
+        },
+        {
+            "constellation" : {
+                "name" : "A_vs_3",
+                "roles" : [
+                    {
+                        "name" : "client",
+                        "appdriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
+                    },
+                    {
+                        "name" : "server",
+                        "appdriver" : "sandbox.SandboxMultServerDriver_Implementation3_Faulty"
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "sandbox.test_1"
+                }
+            ]
         }
     ]
 }

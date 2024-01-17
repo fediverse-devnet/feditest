@@ -42,7 +42,7 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
 
     def start_logging(self):
         self.log = []
-    
+
     def get_and_clear_log(self):
         ret = self.log
         self.log = None
@@ -77,7 +77,7 @@ class SandboxMultServer_Implementation2(SandboxMultServer):
 
     def start_logging(self):
         self.log = []
-    
+
     def get_and_clear_log(self):
         ret = self.log
         self.log = None
@@ -93,4 +93,34 @@ class SandboxMultServerDriver_Implementation2(NodeDriver):
         return SandboxMultServer_Implementation2(nickname, self)
 
 
+class SandboxMultServer_Implementation3_Faulty(SandboxMultServer):
+    """
+    Third (faulty) server implementation in the Sandbox protocol with some test instrumentation.
+    This server always returns 17.
+    """
+    def __init__(self, nickname: str, node_driver: 'SandboxMultServer_Implementation1'):
+        super().__init__(nickname, node_driver)
+        self.log : List[SandboxLogEvent] | None = None
 
+    def mult(self, a: int, b: int) -> int:
+        c = 17 # << always returns 17
+        if self.log is not None:
+            self.log.append(SandboxLogEvent(a, b, c))
+        return c
+
+    def start_logging(self):
+        self.log = []
+
+    def get_and_clear_log(self):
+        ret = self.log
+        self.log = None
+        return ret
+
+@appdriver
+class SandboxMultServerDriver_Implementation3_Faulty(NodeDriver):
+    """
+    Driver for the third (faulty) server implementation, so this server implementation can be provisioned and unprovisioned for
+    test sessions.
+    """
+    def _provision_node(self, nickname: str, hostname: str) -> Node:
+        return SandboxMultServer_Implementation3_Faulty(nickname, self)

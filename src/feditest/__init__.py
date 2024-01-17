@@ -154,6 +154,8 @@ def appdriver(to_register: Type[Any]):
     module = getmodule(to_register)
     full_name = f'{module.__name__}.{to_register.__qualname__}'
 
+    if full_name in all_app_drivers:
+        fatal('Cannot re-register app driver', full_name )
     all_app_drivers[full_name] = to_register
 
 
