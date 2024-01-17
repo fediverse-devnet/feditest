@@ -10,7 +10,8 @@ authors = [
 ]
 dependencies = [
   "httpx",
-  "msgspec"
+  "msgspec",
+  "pyhamcrest"
 ]
 description = "Testing federated protocols"
 readme = "README.md"

@@ -3,7 +3,9 @@
 
 from urllib.parse import parse_qs
 
-from feditest import fassert, step
+from hamcrest import assert_that, equal_to
+
+from feditest import step
 from feditest.protocols.web import WebServerLog, HttpRequestResponsePair
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
@@ -19,14 +21,14 @@ def client_accesses_correct_uri(
         # ignore the result, we are not testing that
     )
 
-    fassert(log.web_log_entries.size() == 1, 'Expecting one incoming request')
+    assert_that(log.web_log_entries.size(), equal_to(1), 'Expecting one incoming request')
 
     entry : HttpRequestResponsePair = log.web_log_entries.get(0);
-    fassert(entry.uri.scheme == 'https')
-    fassert(entry.uri.netloc == server.domain_name())
-    fassert(entry.uri.path == '/.well-known/webfinger')
+    assert_that(entry.uri.scheme, equal_to('https'))
+    assert_that(entry.uri.netloc, equal_to(server.domain_name()))
+    assert_that(entry.uri.path, equal_to('/.well-known/webfinger'))
 
     query : dict[str,list[str]] = parse_qs(entry.uri)
-    fassert(len(query) == 1 )
-    fassert('resource' in query )
-    fassert(query['resource'] == test_id)
+    assert_that(len(query), equal_to(1))
+    assert_that(query, has_key('resource'))
+    assert_that(query['resource'], equal_to(test_id))

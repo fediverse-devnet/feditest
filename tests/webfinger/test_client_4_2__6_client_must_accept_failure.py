@@ -1,7 +1,8 @@
 """
 """
 
-from feditest import step, report_failure
+from hamcrest import assert_that
+from feditest import step
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 # We currently have no way of inserting an invalid certificate
@@ -22,7 +23,8 @@ def client_must_accept_failure_4xx(
 
     try:
         result = iut.perform_webfinger_query_on_resource(test_id)
-        report_failure('Client obtained a response from webfinger query of non-existing account')
+        
+        assert_that(False, 'Client obtained a response from webfinger query of non-existing account')
 
     except WebFingerClient.UnknownResourceException as e:
          pass

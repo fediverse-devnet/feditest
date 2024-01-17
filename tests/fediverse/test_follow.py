@@ -1,7 +1,8 @@
 """
 """
 
-from feditest import fassert, step
+from hamcrest import assert_that, is_not, has_key
+from feditest import step
 from feditest.protocols.fediverse import FediverseNode
 
 @step
@@ -18,16 +19,16 @@ def follow(
     follower_actor_uri = to_be_follower_node.obtain_actor_document_uri();
 
     leader_existing_followers = to_be_leader_node.get_followers(leader_actor_uri)
-    fassert(follower_actor_uri not in leader_existing_followers)
+    assert_that(leader_existing_followers, is_not(has_key(follower_actor_uri)))
 
     follower_existing_following = to_be_follower_node.get_following(follower_actor_uri)
-    fassert(leader_actor_uri not in follower_existing_following)
+    assert_that(follower_existing_following, is_not(has_key(leader_actor_uri)))
 
     to_be_follower_node.make_a_follow_b(follower_actor_uri, leader_actor_uri)
 
     leader_new_followers = to_be_leader_node.get_followers(leader_actor_uri)
-    fassert(follower_actor_uri in leader_new_followers)
+    assert_thatleader_new_followers, has_key((follower_actor_uri))
 
     follower_new_following = to_be_follower_node.get_following(follower_actor_uri)
-    fassert(leader_actor_uri in follower_new_following)
+    assert_that(follower_new_following, has_key(leader_actor_uri))
 

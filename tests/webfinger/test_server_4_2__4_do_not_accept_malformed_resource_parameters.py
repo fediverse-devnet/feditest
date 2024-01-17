@@ -4,7 +4,9 @@
 import urllib
 import httpx
 
-from feditest import fassert, step
+from hamcrest import assert_that, equal_to
+
+from feditest import step
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @step
@@ -20,7 +22,7 @@ def do_not_access_malformed_resource_parameters_not_percent_encoded(
     malformed_webfinger_uri : str = f"https://{domain_name}/.well-known/webfinger?resource={test_id}"
 
     result : httpx.Response = driver.http_get(malformed_webfinger_uri)
-    fassert(result.status_code == 400, 'Not HTTP status 400')
+    assert_that(result.status_code, equal_to(400), 'Not HTTP status 400')
 
 
 @step
@@ -36,5 +38,5 @@ def do_not_access_malformed_resource_parameters_double_equals(
     malformed_webfinger_uri = f"https://{domain_name}/.well-known/webfinger?resource=={urllib.quote(test_id)}"
 
     result : httpx.Response = driver.http_get(malformed_webfinger_uri)
-    fassert(result.status_code == 400, 'Not HTTP status 400')
+    assert_that(result.status_code, equal_to(400), 'Not HTTP status 400')
 

@@ -1,7 +1,9 @@
 """
 """
 
-from feditest import step, report_failure
+from hamcrest import assert_that, raises
+
+from feditest import step
 from feditest.protocols import NotImplementedByDriverError
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
@@ -19,4 +21,4 @@ def valid_json(
         raise # not a failure
 
     except Exception as e:
-        report_failure(e)
+        assert_that( 'valid_json', raises(e))

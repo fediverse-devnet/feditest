@@ -1,7 +1,9 @@
 """
 """
 
-from feditest import step, report_failure
+from hamcrest import assert_that, raises
+
+from feditest import step
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 import time
@@ -17,5 +19,5 @@ def correct_content_type(
         test_result = driver.perform_webfinger_query_on_resource(test_id)
 
     except Exception as e:
-        report_failure(e)
+        assert_that('correct_content_type', raises(e))
 

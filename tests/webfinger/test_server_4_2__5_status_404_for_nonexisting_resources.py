@@ -1,7 +1,9 @@
 """
 """
 
-from feditest import fassert, step, report_failure
+from hamcrest import assert_that, equal_to
+
+from feditest import step
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @step
@@ -14,7 +16,7 @@ def status_404_for_nonexisting_resources(
     try:
         test_result = driver.perform_webfinger_query_on_resource(test_id)
 
-        report_failure('No exception when performing WebFinger query on non-existing resource')
+        assert_that(False, 'No exception when performing WebFinger query on non-existing resource')
 
     except WebFingerClient.UnknownResourceException as e:
-        fassert(e.http_response.http_status, 404)
+        assert_that(e.http_response.http_status, equal_to(404))

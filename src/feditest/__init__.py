@@ -157,28 +157,3 @@ def appdriver(to_register: Type[Any]):
     if full_name in all_app_drivers:
         fatal('Cannot re-register app driver', full_name )
     all_app_drivers[full_name] = to_register
-
-
-class FeditestFailure(RuntimeError):
-    """
-    Raised when a test failed.
-    """
-    def FeditestFailure(self, msg: str | Exception):
-        super.__init__(msg)
-
-
-def report_failure(msg: str | Exception) -> None:
-    """
-    Report a test failure
-    msg: the error message
-    """
-    raise FeditestFailure(msg)
-
-
-def fassert(condition: bool, msg: str = "Assertion failure" ):
-    """
-    Our version of assert.
-    """
-    if not condition:
-        raise FeditestFailure(msg)
-

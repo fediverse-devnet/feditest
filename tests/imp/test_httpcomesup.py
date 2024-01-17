@@ -2,7 +2,7 @@
 """
 
 import httpx
-from feditest import step, report_failure
+from feditest import step
 from feditest.protocols.web import WebServer
 
 @step
