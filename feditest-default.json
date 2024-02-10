@@ -1,23 +1,23 @@
 {
-    "name" : "Imp against Imp",
+    "name" : "DemoTestPlanMock",
     "sessions" : [
         {
             "constellation" : {
-                "name" : "Imp against Imp",
+                "name" : "WordPressActivityPub-plus-Mastodon",
                 "roles" : [
                     {
-                        "name" : "a",
-                        "appdriver" : "imp.ImpInProcessDriver"
+                        "name" : "publisher",
+                        "appdriver" : "wordpress.WordPressPlusActivityPubPluginMockDriver"
                     },
                     {
-                        "name" : "b",
-                        "appdriver" : "imp.ImpInProcessDriver"
+                        "name" : "receiver",
+                        "appdriver" : "mastodon.MastodonMockDriver"
                     }
                 ]
             },
             "tests" : [
                 {
-                    "name" : "webfinger.test_server_4_2__8_server_serves_correct_content_type"
+                    "name" : "fediverse.test_follow"
                 }
             ]
         }
