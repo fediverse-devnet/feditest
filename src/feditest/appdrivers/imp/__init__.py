@@ -8,8 +8,6 @@ import string
 from typing import Any, Callable, Iterable
 from urllib.parse import urlparse, quote
 
-from hypercorn.config import Config
-
 from feditest import appdriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebClient, WebServerLog, HttpRequestResponsePair, ParsedUri
