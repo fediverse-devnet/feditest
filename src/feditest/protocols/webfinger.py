@@ -2,12 +2,12 @@
 """
 
 from httpx import Response
-import re
+import json
 from typing import Any
 
 from feditest.protocols import NodeDriver, NotImplementedByDriverError
 from feditest.protocols.web import WebClient,  WebServer
-from feditest.utils import account_id_validate, uri_validate
+from feditest.utils import account_id_validate, http_https_uri_validate, http_https_acct_uri_validate
 
 class WebFingerServer(WebServer):
     """
@@ -58,14 +58,14 @@ class WebFingerClient(WebClient):
     def __init__(self, rolename: str, node_driver: 'NodeDriver') -> None:
         super().__init__(rolename, node_driver)
 
-    def perform_webfinger_query_on_resource(self, resource_uri: str) -> dict[str,Any]:
+    def perform_webfinger_query_for(self, resource_uri: str) -> dict[str,Any]:
         """
         Make this Node perform a WebFinger query for the provided resource_uri.
         The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
         'https://example.com/aabc' (not escaped).
         Return a dict that is the parsed form of the JRD or throws an exception
         """
-        raise NotImplementedByDriverError(WebFingerClient.perform_webfinger_query_on_resource)
+        raise NotImplementedByDriverError(WebFingerClient.perform_webfinger_query_for)
 
     class UnknownResourceException(RuntimeError):
         """
@@ -82,6 +82,10 @@ class WebFingerClient(WebClient):
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
 
+    class InvalidUriError(RuntimeError):
+        def __init__(self, resource_uri: str):
+            self.resource_uri = resource_uri
+
     class CannotDetermineWebfingerHost(RuntimeError):
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
@@ -91,8 +95,8 @@ class Jrd:
     """
     Captures the content of a WebFinger result. This is basically just a wrapper around a JSON structure.
     """
-    def __init__(self, json:dict[str,Any]):
-        self.json = json
+    def __init__(self, json_string: str):
+        self.json = json.loads(json_string)
     
     class JrdError(RuntimeError):
         pass
@@ -100,7 +104,7 @@ class Jrd:
     class InvalidTypeError(JrdError):
         pass
     
-    def is_registerd_relation_type(value: str) -> bool:
+    def is_registered_relation_type(value: str) -> bool:
         """
         Return True if the provided value is a registered relation type in
         https://www.iana.org/assignments/link-relations/link-relations.xhtml
@@ -251,7 +255,7 @@ working-copy-of"""
             if not type(self.json['subject']) is str:
                 raise Jrd.InvalidTypeError(self, 'Member subject must be a string')
         
-            if not uri_validate(self.json['subject]']):
+            if not http_https_acct_uri_validate(self.json['subject']):
                 raise Jrd.InvalidUriError(self, 'Member subject must be an absolute URI')
     
         
@@ -265,7 +269,7 @@ working-copy-of"""
                 if not type(alias) is str:
                     raise Jrd.InvalidTypeError(self, 'Members of the aliases array must be strings')
 
-                if not uri_validate(alias):
+                if not http_https_acct_uri_validate(alias):
                     raise Jrd.InvalidUriError(self, 'Members of aliases array must be absolute URIs')
 
         if 'properties' in self.json:
@@ -297,7 +301,7 @@ working-copy-of"""
                 if not type(link['rel']) is str:
                     raise Jrd.InvalidTypeError(self, 'Values for the rel member in the links array must be strings')
 
-                if not uri_validate(link['rel']) and not Jrd.is_registered_relation_type(link['rel']):
+                if not http_https_acct_uri_validate(link['rel']) and not Jrd.is_registered_relation_type(link['rel']):
                     raise Jrd.InvalidRelError(self, 'All rel entries in the links array must be a URI or a registered relation type')
                 
                 if 'type' in link:
@@ -315,7 +319,7 @@ working-copy-of"""
                     if not type(link['href']) is str:
                         raise Jrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
-                    if uri_validate(link['href']):
+                    if not http_https_uri_validate(link['href']):
                         raise Jrd.InvalidUriError(self, 'Values for the href member in the links array must be URIs')
 
                 # FIXME: also need to check titles

@@ -23,7 +23,7 @@ def client_must_accept_failure_4xx(
     test_id = server.obtain_non_existing_account_identifier();
 
     try:
-        result = client.perform_webfinger_query_on_resource(test_id)
+        result = client.perform_webfinger_query_for(test_id)
         
         assert_that(False, 'Client obtained a response from webfinger query of non-existing account')
 

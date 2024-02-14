@@ -17,7 +17,7 @@ def correct_content_type(
     test_id = server.obtain_account_identifier();
 
     try:
-        test_result = client.perform_webfinger_query_on_resource(test_id)
+        test_result = client.perform_webfinger_query_for(test_id)
 
     except Exception as e:
         assert_that('correct_content_type', raises(e))

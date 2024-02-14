@@ -64,15 +64,6 @@ def account_id_validate(candidate: str) -> bool:
         return False
     
 
-def uri_validate(candidate: str) -> bool:
-    """
-    Validate that the provided string is a valid URI.
-    return: True if valid
-    """
-    parsed = urlparse(candidate)
-    return len(parsed.scheme) > 0 and len(parsed.netloc) > 0
-
-
 def http_https_uri_validate(candidate: str) -> bool:
     """
     Validate that the provided string is a valid HTTP or HTTPS URI.
@@ -96,6 +87,21 @@ def http_https_root_uri_validate(uri: str) -> bool:
             and len(parsed.params) == 0
             and len(parsed.query) == 0
             and len(parsed.fragment) == 0 )
+
+
+def http_https_acct_uri_validate(candidate: str) -> bool:
+    """
+    Validate that the provided string is a valid HTTP, HTTPS or ACCT URI.
+    return: True if valid
+    """
+    parsed = urlparse(candidate)
+    if parsed.scheme in ['http', 'https']:
+        return len(parsed.netloc) > 0
+    elif parsed.scheme == 'acct':
+        # Don't like this parser
+        return len(parsed.netloc) == 0 and re.match("[-a-z0-9\.]+@[-a-z0-9\.]+", parsed.path) and len(parsed.params) == 0 and len(parsed.query) == 0
+    else:
+        return False
 
 
 def format_name_value_string(data: dict[str,str]) -> str:

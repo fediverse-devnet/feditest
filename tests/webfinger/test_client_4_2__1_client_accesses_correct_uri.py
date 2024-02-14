@@ -18,7 +18,7 @@ def client_accesses_correct_uri(
     test_id = server.obtain_account_identifier();
 
     log : WebServerLog = server.transaction( lambda :
-        client.perform_webfinger_query_on_resource(test_id)
+        client.perform_webfinger_query_for(test_id)
         # ignore the result, we are not testing that
     )
 

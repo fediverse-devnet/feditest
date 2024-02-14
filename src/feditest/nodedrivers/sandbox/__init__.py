@@ -63,7 +63,7 @@ class SandboxMultServer_Implementation2(SandboxMultServer):
     Second server implementation in the Sandbox protocol with some test instrumentation.
     This server calculates a*b through a for loop
     """
-    def __init__(self, nicrolenamekname: str, node_driver: 'SandboxMultServer_Implementation1'):
+    def __init__(self, rolename: str, node_driver: 'SandboxMultServer_Implementation1'):
         super().__init__(rolename, node_driver)
         self.log : List[SandboxLogEvent] | None = None
 

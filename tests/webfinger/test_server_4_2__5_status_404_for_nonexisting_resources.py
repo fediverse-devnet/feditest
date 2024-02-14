@@ -15,7 +15,7 @@ def status_404_for_nonexisting_resources(
     test_id = server.obtain_non_existing_account_identifier();
 
     try:
-        test_result = client.perform_webfinger_query_on_resource(test_id)
+        test_result = client.perform_webfinger_query_for(test_id)
 
         assert_that(False, 'No exception when performing WebFinger query on non-existing resource')
 

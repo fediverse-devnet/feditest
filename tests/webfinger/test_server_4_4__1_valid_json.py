@@ -16,11 +16,4 @@ def valid_json(
 
     test_id = server.obtain_account_identifier();
 
-    try :
-        test_result = client.perform_webfinger_query_of_resource(test_id)
-
-    except NotImplementedByDriverError:
-        raise # not a failure
-
-    except Exception as e:
-        assert_that( 'valid_json', raises(e))
+    test_result = client.perform_webfinger_query_for(test_id)

@@ -6,16 +6,18 @@
                 "name" : "WordPressActivityPub",
                 "roles" : [
                     {
-                        "name" : "webfingerserver",
-                        "nodedriver" : "wordpress.WordPressPlusActivityPubPluginUbosDriver",
-                        "parameters" : {
-                            "sitejsonfile" : "site-wordpress-plus-activitypub-plugin.json",
-                            "siteid" : "se2e53e9fdbbad1431e6618540568874b5714b15b"
-                        }
-                    },
-                    {
                         "name" : "webfingerclient",
                         "nodedriver" : "imp.ImpInProcessDriver"
+                    },
+                    {
+                        "name" : "webfingerserver",
+                        "nodedriver" : "wordpress.WordPressPlusActivityPubPluginUbosDriver",
+                        "hostname" : "wordpress.123.lan",
+                        "parameters" : {
+                            "backupfile" : "wordpress.123.lan.ubos-backup",
+                            "siteid" : "se2e53e9fdbbad1431e6618540568874b5714b15b",
+                            "adminid" : "j12t"
+                        }
                     }
                 ]
             },
