@@ -122,38 +122,37 @@ def step(to_register: Callable[..., None]) -> None:
     test.steps.append(step)
 
 
-_loading_app_drivers = False
+_loading_node_drivers = False
 
-
-def load_app_drivers_from(dirs: list[str]) -> None:
-    global _loading_app_drivers
+def load_node_drivers_from(dirs: list[str]) -> None:
+    global _loading_node_drivers
     
-    _loading_app_drivers = True
+    _loading_node_drivers = True
     load_python_from(dirs, False)
-    _loading_app_drivers = False
+    _loading_node_drivers = False
     
 
-all_app_drivers : dict[str,Type[Any]]= {}
+all_node_drivers : dict[str,Type[Any]]= {}
 
-def appdriver(to_register: Type[Any]):
+def nodedriver(to_register: Type[Any]):
     """
-    Used as decorator of app driver classes, like this:
+    Used as decorator of NodeDriver classes, like this:
     
-    @appdriver
+    @nodedriver
     class XYZDriver : ...
     """
-    global _loading_app_drivers
-    global all_app_drivers
+    global _loading_node_drivers
+    global all_node_drivers
     
-    if not _loading_app_drivers:
-        fatal('Do not define app drivers outside of appdriversdir')
+    if not _loading_node_drivers:
+        fatal('Do not define NodeDrivers outside of nodedriversdir')
 
     if not isinstance(to_register,type):
-        fatal('Cannot register a non-Class app driver:', to_register.__name__)
+        fatal('Cannot register a non-Class NodeDriver:', to_register.__name__)
 
     module = getmodule(to_register)
     full_name = f'{module.__name__}.{to_register.__qualname__}'
 
-    if full_name in all_app_drivers:
-        fatal('Cannot re-register app driver', full_name )
-    all_app_drivers[full_name] = to_register
+    if full_name in all_node_drivers:
+        fatal('Cannot re-register NodeDriver', full_name )
+    all_node_drivers[full_name] = to_register

@@ -19,10 +19,10 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
         return 0
 
     feditest.load_tests_from(args.testsdir)
-    if args.appdriversdir:
-        feditest.load_app_drivers_from(args.appdriversdir)
+    if args.nodedriversdir:
+        feditest.load_node_drivers_from(args.nodedriversdir)
     else:
-        feditest.load_app_drivers_from(feditest.cli.default_app_drivers_dir) 
+        feditest.load_node_drivers_from(feditest.cli.default_node_drivers_dir) 
     
     if args.test:
         return run_info_test(args.test)
@@ -30,8 +30,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
     if args.testset:
         return run_info_testset(args.testset)
 
-    if args.appdriver:
-        return run_info_app_driver(args.appdriver)
+    if args.nodedriver:
+        return run_info_node_driver(args.nodedriver)
 
 
 def run_info_test(name: str) -> None:
@@ -69,8 +69,8 @@ def run_info_testset(name: str) -> None:
         return 1
 
 
-def run_info_app_driver(name: str) -> None:
-    test = feditest.all_app_drivers.get(name)
+def run_info_node_driver(name: str) -> None:
+    test = feditest.all_node_drivers.get(name)
     if test:
         test_metadata = {
             'App driver name:' : test.name,
@@ -93,9 +93,9 @@ def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     """
     parser = parent_parser.add_parser( cmd_name, help='Provide information on a variety of objects')
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
-    parser.add_argument('--appdriversdir', action='append', help='Directory or directories where to find drivers for applications that can be tested')
+    parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find drivers for nodes that can be tested')
         # Can't set a default value, because action='append' adds to the default value, instead of replacing it
     type_group = parser.add_mutually_exclusive_group(required=True)
     type_group.add_argument('--test',  help='Provide information about a test.')
     type_group.add_argument('--testset',  help='Provide information about a test set.')
-    type_group.add_argument('--appdriver',  help='Provide information about a driver for an application to be tested.')
+    type_group.add_argument('--nodedriver',  help='Provide information about a driver for a node to be tested.')

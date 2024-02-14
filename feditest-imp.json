@@ -1,0 +1,22 @@
+{
+    "name" : "Imp against Imp",
+    "sessions" : [
+        {
+            "constellation" : {
+                "name" : "Imp",
+                "roles" : [
+                    {
+                        "name" : "a",
+                        "nodedriver" : "imp.ImpInProcessDriver",
+                        "hostname" : "a.local"
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "imp.test_httpcomesup"
+                }
+            ]
+        }
+    ]
+}

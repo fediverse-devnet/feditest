@@ -27,8 +27,7 @@ def follow(
     to_be_follower_node.make_a_follow_b(follower_actor_uri, leader_actor_uri)
 
     leader_new_followers = to_be_leader_node.get_followers(leader_actor_uri)
-    assert_thatleader_new_followers, has_key((follower_actor_uri))
+    assert_that(leader_new_followers, has_key((follower_actor_uri)))
 
     follower_new_following = to_be_follower_node.get_following(follower_actor_uri)
     assert_that(follower_new_following, has_key(leader_actor_uri))
-

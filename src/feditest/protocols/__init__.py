@@ -21,8 +21,12 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, nickname: str, node_driver: 'NodeDriver') -> None:
-        self.nickname   = nickname
+    def __init__(self, rolename: str, node_driver: 'NodeDriver') -> None:
+        """
+        rolename: name of the role in the constellation
+        node_driver: the NodeDriver that provisioned this Node
+        """
+        self.rolename = rolename
         self.node_driver = node_driver
 
 
@@ -34,15 +38,15 @@ class NodeDriver(ABC):
         self._name : str = name
 
     @final
-    def provision_node(self, rolename: str, hostname: str) -> Node:
+    def provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None ) -> Node:
         """
         Instantiate a Node
-        nickname: the name of this instance in the constellation
+        rolename: the name of this instance in the constellation
         hostname: the DNS hostname
         """
         if rolename is None:
             raise Exception("rolename must be given")
-        ret = self._provision_node(rolename, hostname)
+        ret = self._provision_node(rolename, hostname, parameters)
         return ret;
 
     @final
@@ -55,7 +59,7 @@ class NodeDriver(ABC):
             raise Exception(f"Instance does not belong to this driver")
         self._unprovision_node(instance)
 
-    def _provision_node(self, nickname: str, hostname: str) -> Node:
+    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None ) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.

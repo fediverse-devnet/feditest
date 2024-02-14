@@ -1,9 +1,9 @@
 """
 """
 
-from typing import List
+from typing import Any, List
 
-from feditest import appdriver
+from feditest import nodedriver
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
     
@@ -15,14 +15,14 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
         c = server.mult(a, b)
         return c
 
-@appdriver
+@nodedriver
 class SandboxMultClientDriver_ImplementationA(NodeDriver):
     """
     Driver for the client implementation, so the client can be provisioned and unprovisioned for
     test sessions.
     """
-    def _provision_node(self, nickname: str, hostname: str) -> Node:
-        return SandboxMultClient_ImplementationA(nickname, self)
+    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None ) -> Node:
+        return SandboxMultClient_ImplementationA(rolename, self)
 
 
 class SandboxMultServer_Implementation1(SandboxMultServer):
@@ -30,8 +30,8 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
     First server implementation in the Sandbox protocol with some test instrumentation.
     This server implementation simply calculates a*b.
     """
-    def __init__(self, nickname: str, node_driver: 'SandboxMultServer_Implementation1'):
-        super().__init__(nickname, node_driver)
+    def __init__(self, rolename: str, node_driver: 'SandboxMultServer_Implementation1'):
+        super().__init__(rolename, node_driver)
         self.log : List[SandboxLogEvent] | None = None
 
     def mult(self, a: int, b: int) -> int:
@@ -48,14 +48,14 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
         self.log = None
         return ret
 
-@appdriver
+@nodedriver
 class SandboxMultServerDriver_Implementation1(NodeDriver):
     """
     Driver for the first server implementation, so this server implementation can be provisioned and unprovisioned for
     test sessions.
     """
-    def _provision_node(self, nickname: str, hostname: str) -> Node:
-        return SandboxMultServer_Implementation1(nickname, self)
+    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
+        return SandboxMultServer_Implementation1(rolename, self)
 
 
 class SandboxMultServer_Implementation2(SandboxMultServer):
@@ -63,8 +63,8 @@ class SandboxMultServer_Implementation2(SandboxMultServer):
     Second server implementation in the Sandbox protocol with some test instrumentation.
     This server calculates a*b through a for loop
     """
-    def __init__(self, nickname: str, node_driver: 'SandboxMultServer_Implementation1'):
-        super().__init__(nickname, node_driver)
+    def __init__(self, nicrolenamekname: str, node_driver: 'SandboxMultServer_Implementation1'):
+        super().__init__(rolename, node_driver)
         self.log : List[SandboxLogEvent] | None = None
 
     def mult(self, a: int, b: int) -> int:
@@ -83,14 +83,14 @@ class SandboxMultServer_Implementation2(SandboxMultServer):
         self.log = None
         return ret
 
-@appdriver
+@nodedriver
 class SandboxMultServerDriver_Implementation2(NodeDriver):
     """
     Driver for the second server implementation, so this server implementation can be provisioned and unprovisioned for
     test sessions.
     """
-    def _provision_node(self, nickname: str, hostname: str) -> Node:
-        return SandboxMultServer_Implementation2(nickname, self)
+    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
+        return SandboxMultServer_Implementation2(rolename, self)
 
 
 class SandboxMultServer_Implementation3_Faulty(SandboxMultServer):
@@ -98,8 +98,8 @@ class SandboxMultServer_Implementation3_Faulty(SandboxMultServer):
     Third (faulty) server implementation in the Sandbox protocol with some test instrumentation.
     This server always returns 17.
     """
-    def __init__(self, nickname: str, node_driver: 'SandboxMultServer_Implementation1'):
-        super().__init__(nickname, node_driver)
+    def __init__(self, rolename: str, node_driver: 'SandboxMultServer_Implementation1'):
+        super().__init__(rolename, node_driver)
         self.log : List[SandboxLogEvent] | None = None
 
     def mult(self, a: int, b: int) -> int:
@@ -116,11 +116,11 @@ class SandboxMultServer_Implementation3_Faulty(SandboxMultServer):
         self.log = None
         return ret
 
-@appdriver
+@nodedriver
 class SandboxMultServerDriver_Implementation3_Faulty(NodeDriver):
     """
     Driver for the third (faulty) server implementation, so this server implementation can be provisioned and unprovisioned for
     test sessions.
     """
-    def _provision_node(self, nickname: str, hostname: str) -> Node:
-        return SandboxMultServer_Implementation3_Faulty(nickname, self)
+    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
+        return SandboxMultServer_Implementation3_Faulty(rolename, self)

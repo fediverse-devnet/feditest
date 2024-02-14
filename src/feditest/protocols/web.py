@@ -86,8 +86,8 @@ class WebServer(Node):
     """
     Abstract class used for Nodes that speak HTTP as server.
     """
-    def __init__(self, nickname: str, hostname: str, node_driver: 'NodeDriver') -> None:
-        super().__init__(nickname, node_driver)
+    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
+        super().__init__(rolename, node_driver)
         
         self._hostname = hostname
 
@@ -135,8 +135,8 @@ class WebServer(Node):
 
 
 class WebClient(Node):
-    def __init__(self, nickname: str, iut_driver: 'NodeDriver') -> None:
-        super().__init__(nickname, iut_driver)
+    def __init__(self, rolename: str, node_driver: 'NodeDriver') -> None:
+        super().__init__(rolename, node_driver)
 
     def http_get(self, uri: str) -> httpx.Response:
         """

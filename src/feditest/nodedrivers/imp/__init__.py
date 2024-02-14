@@ -8,7 +8,7 @@ import string
 from typing import Any, Callable, Iterable
 from urllib.parse import urlparse, quote
 
-from feditest import appdriver
+from feditest import nodedriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebClient, WebServerLog, HttpRequestResponsePair, ParsedUri
 from feditest.protocols.webfinger import WebFingerClient, Jrd
@@ -19,8 +19,8 @@ from .httpserver import ImpHttpServer, ImpHttpsServer, Website
 
 
 class Imp(FediverseNode, WebFingerClient,Website):
-    def __init__(self, nickname: str, hostname: str, node_driver: 'ImpInProcessDriver') -> None:
-        super(FediverseNode, self).__init__(nickname, hostname, node_driver)
+    def __init__(self, rolename: str, hostname: str, node_driver: 'ImpInProcessDriver') -> None:
+        super(FediverseNode, self).__init__(rolename, hostname, node_driver)
         
         self._hosted_accounts : dict[str,str]= {}
         self._serverlog = WebServerLog()
@@ -213,21 +213,23 @@ class Imp(FediverseNode, WebFingerClient,Website):
      }
      """
 
-
 imp_httpd : ImpHttpServer = None
 imp_httpsd : ImpHttpsServer = None
 
-@appdriver
+@nodedriver
 class ImpInProcessDriver(NodeDriver):
     def __init__(self, name: str) -> None:
         super().__init__(name)
 
     # Python 3.12 @override
-    def _provision_node(self, nickname: str, hostname: str) -> Imp:
+    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None ) -> Imp:
         global imp_httpd
         global imp_httpsd
+        
+        if parameters:
+            raise Exception('ImpInProcessDriver nodes do not take parameters')
 
-        node =  Imp(nickname, hostname, self);
+        node = Imp(rolename, hostname, self);
         if imp_httpd is None:
             imp_httpd = ImpHttpServer()
             imp_httpd.start()

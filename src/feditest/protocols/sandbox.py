@@ -30,5 +30,8 @@ class SandboxMultServer(Node):
 
 
 class SandboxMultClient(Node):
+    """
+    This is a "Client" Node in a to-be-tested toy protocol. It is only useful to illustrate how Feditest works.
+    """
     def cause_mult(self, server: SandboxMultServer, a: int, b: int) -> int:
         ...

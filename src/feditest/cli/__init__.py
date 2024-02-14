@@ -66,9 +66,9 @@ def find_commands() -> dict[str,Module]:
     return cmds
 
 
-default_app_drivers_dir = [ feditest.__file__[ : -11] + 'appdrivers' ]
+default_node_drivers_dir = [ feditest.__file__[ : -11] + 'nodedrivers' ]
 """
-Default directory for where to look for app drivers
+Default directory for where to look for node drivers
 """
 
 if __name__ == '__main__':

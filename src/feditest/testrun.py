@@ -4,7 +4,7 @@
 from datetime import datetime, timezone
 from typing import Any, List, Type
 
-from feditest import all_app_drivers, all_tests, Test
+from feditest import all_node_drivers, all_tests, Test
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import info, error, fatal
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
@@ -16,18 +16,18 @@ class TestRunConstellation:
         self.run_constellation : dict[str, Node] = {}
 
     def setup(self):
-        global all_app_drivers
+        global all_node_drivers
         
         info('Setting up constellation:', self.plan_constellation.name)
 
         for plan_role in self.plan_constellation.roles:
             plan_role_name = plan_role.name
-            app_driver_class : Type[Any] = all_app_drivers[plan_role.appdriver]
+            node_driver_class : Type[Any] = all_node_drivers[plan_role.nodedriver]
 
-            info('Setting up role', plan_role_name, f'(app driver: {plan_role.appdriver})')
+            info('Setting up role', plan_role_name, f'(node driver: {plan_role.nodedriver})')
 
-            app_driver : NodeDriver = app_driver_class(plan_role_name)
-            node : Node = app_driver.provision_node(plan_role_name, plan_role.hostname)
+            node_driver : NodeDriver = node_driver_class(plan_role_name)
+            node : Node = node_driver.provision_node(plan_role_name, plan_role.hostname, plan_role.parameters)
             self.run_constellation[plan_role_name] = node
 
     def teardown(self):
@@ -65,7 +65,7 @@ class TestRunSession:
                     else:
                         self.run_test_spec(test_spec)
             except Exception as e:
-                info('FAILED session:', e)
+                error('FAILED test run session:', e)
                 self.problems.append(e)
             finally:        
                 self.constellation.teardown()

@@ -4,12 +4,13 @@
 import httpx
 from feditest import step
 from feditest.protocols.web import WebServer
+from hamcrest import assert_that, equal_to
 
 @step
 def frontpage(
-        iut: WebServer
+        server: WebServer
 ) -> None:
-    hostname = iut.get_hostname()
+    hostname = server.get_hostname()
     response = httpx.get(f'http://{hostname}/', follow_redirects=False)
 
-    print( f"XXX got {response}")
+    assert_that(response.status_code, equal_to(200))

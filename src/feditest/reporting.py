@@ -25,9 +25,9 @@ logging.config.dictConfig({
         }
     },
     'loggers' : {
-        '' : { # root logger
+        '' : { # root logger -- set level to most output that can happen
             'handlers'  : [ 'default' ],
-            'level'     : 'INFO',
+            'level'     : 'WARNING', 
             'propagate' : True
         }
     }
@@ -36,9 +36,13 @@ LOG = logging.getLogger( 'feditest' )
 
 def set_reporting_level(n_verbose_flags: int) :
     if n_verbose_flags == 1:
-        logging.basicConfig(level=logging.INFO)
-    if n_verbose_flags == 2:
-        logging.basicConfig(level=logging.DEBUG)
+        print( "XXX Logging level INFO")
+        LOG.setLevel(logging.INFO)
+    elif n_verbose_flags >= 2:
+        print( "XXX Logging level DEBUG")
+        LOG.setLevel(logging.DEBUG)
+    else:
+        print( "XXX Logging level DEFAULT")
 
 def trace(*args):
     """

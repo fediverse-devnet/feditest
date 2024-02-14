@@ -4,13 +4,13 @@
 from typing import Any
 import msgspec
 
-from feditest import all_app_drivers, all_tests, Test
+from feditest import all_node_drivers, all_tests, Test
 from feditest.reporting import fatal
 
 
 class TestPlanConstellationRole(msgspec.Struct):
     name: str
-    appdriver: str
+    nodedriver: str
     hostname: str | None = None # If none is given, one is provisioned
     parameters: dict[str,Any] | None = None
 
@@ -54,10 +54,10 @@ class TestPlan(msgspec.Struct):
 
     def check_can_be_executed(self) -> None:
         """
-        Check that we have all the test and app drivers needed for this plan. If all is well,
+        Check that we have all the tests and node drivers needed for this plan. If all is well,
         return. If not well, throw an Exception that explains the problem
         """
-        global all_app_drivers
+        global all_node_drivers
         global all_tests
 
         for session in self.sessions:
@@ -67,10 +67,10 @@ class TestPlan(msgspec.Struct):
                 if role_name in all_roles:
                     fatal('Role names must be unique within a constellation:', role_name)
                 all_roles[role_name] = True
-                app_driver_name : str = role.appdriver
+                node_driver_name : str = role.nodedriver
                 
-                if not app_driver_name in all_app_drivers:
-                    fatal('Cannot find app driver:', app_driver_name, 'for role:', role.name)
+                if not node_driver_name in all_node_drivers:
+                    fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
 
             for test_spec in session.tests:
                 test : Test | None = all_tests.get(test_spec.name)

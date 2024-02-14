@@ -10,7 +10,7 @@ from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 # @step
 # def client_must_accept_failure_invalid_certificate(
 #         server: WebFingerServer,
-#         iut:    WebFingerClient)
+#         client: WebFingerClient)
 # -> None:
 #
 
@@ -18,12 +18,12 @@ from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 @step
 def client_must_accept_failure_4xx(
         server: WebFingerServer,
-        iut:    WebFingerClient
+        client: WebFingerClient
 ) -> None:
     test_id = server.obtain_non_existing_account_identifier();
 
     try:
-        result = iut.perform_webfinger_query_on_resource(test_id)
+        result = client.perform_webfinger_query_on_resource(test_id)
         
         assert_that(False, 'Client obtained a response from webfinger query of non-existing account')
 
@@ -35,6 +35,6 @@ def client_must_accept_failure_4xx(
 # @step
 # def client_must_accept_failure_5xx(
 #         server: WebFingerServer,
-#         iut:    WebFingerClient)
+#         client: WebFingerClient)
 # -> None:
 #

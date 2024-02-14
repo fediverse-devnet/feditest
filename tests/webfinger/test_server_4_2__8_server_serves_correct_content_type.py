@@ -11,13 +11,13 @@ import time
 
 @step
 def correct_content_type(
-        iut:    WebFingerServer,
-        driver: WebFingerClient
+        server: WebFingerServer,
+        client: WebFingerClient
 ) -> None:
-    test_id = iut.obtain_account_identifier();
+    test_id = server.obtain_account_identifier();
 
     try:
-        test_result = driver.perform_webfinger_query_on_resource(test_id)
+        test_result = client.perform_webfinger_query_on_resource(test_id)
 
     except Exception as e:
         assert_that('correct_content_type', raises(e))

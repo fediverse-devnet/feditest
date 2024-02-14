@@ -10,13 +10,14 @@ from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 @step
 def valid_json(
-        iut:    WebFingerServer,
-        driver: WebFingerClient
+        client: WebFingerClient,
+        server: WebFingerServer
 ) -> None:
-    test_id = iut.obtain_account_identifier();
+
+    test_id = server.obtain_account_identifier();
 
     try :
-        test_result = driver.perform_webfinger_query_of_resource(test_id)
+        test_result = client.perform_webfinger_query_of_resource(test_id)
 
     except NotImplementedByDriverError:
         raise # not a failure

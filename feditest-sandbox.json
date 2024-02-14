@@ -7,11 +7,11 @@
                 "roles" : [
                     {
                         "name" : "client",
-                        "appdriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
+                        "nodedriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
                     },
                     {
                         "name" : "server",
-                        "appdriver" : "sandbox.SandboxMultServerDriver_Implementation1"
+                        "nodedriver" : "sandbox.SandboxMultServerDriver_Implementation1"
                     }
                 ]
             },
@@ -27,11 +27,11 @@
                 "roles" : [
                     {
                         "name" : "client",
-                        "appdriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
+                        "nodedriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
                     },
                     {
                         "name" : "server",
-                        "appdriver" : "sandbox.SandboxMultServerDriver_Implementation2"
+                        "nodedriver" : "sandbox.SandboxMultServerDriver_Implementation2"
                     }
                 ]
             },
@@ -47,11 +47,11 @@
                 "roles" : [
                     {
                         "name" : "client",
-                        "appdriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
+                        "nodedriver" : "sandbox.SandboxMultClientDriver_ImplementationA"
                     },
                     {
                         "name" : "server",
-                        "appdriver" : "sandbox.SandboxMultServerDriver_Implementation3_Faulty"
+                        "nodedriver" : "sandbox.SandboxMultServerDriver_Implementation3_Faulty"
                     }
                 ]
             },

@@ -13,8 +13,8 @@ class WebFingerServer(WebServer):
     """
     A Node that acts as a WebFinger server.
     """
-    def __init__(self, nickname: str, hostname: str, node_driver: 'NodeDriver') -> None:
-        super().__init__(nickname, hostname, node_driver)
+    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
+        super().__init__(rolename, hostname, node_driver)
 
     def obtain_account_identifier(self, nickname: str = None) -> str:
         """
@@ -55,8 +55,8 @@ class WebFingerClient(WebClient):
     """
     A Node that acts as a WebFinger client.
     """
-    def __init__(self, nickname: str, node_driver: 'NodeDriver') -> None:
-        super().__init__(nickname, node_driver)
+    def __init__(self, rolename: str, node_driver: 'NodeDriver') -> None:
+        super().__init__(rolename, node_driver)
 
     def perform_webfinger_query_on_resource(self, resource_uri: str) -> dict[str,Any]:
         """

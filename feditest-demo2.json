@@ -1,0 +1,25 @@
+{
+    "name" : "FollowTest",
+    "sessions" : [
+        {
+            "constellation" : {
+                "name" : "WordPressActivityPub-plus-Mastodon",
+                "roles" : [
+                    {
+                        "name" : "leader",
+                        "nodedriver" : "wordpress.WordPressPlusActivityPubPluginUbosDriver"
+                    },
+                    {
+                        "name" : "follower",
+                        "nodedriver" : "mastodon.MastodonUbosDriver"
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "fediverse.test_follow"
+                }
+            ]
+        }
+    ]
+}
