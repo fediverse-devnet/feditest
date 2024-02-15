@@ -1,9 +1,9 @@
 {
-    "name" : "Default",
+    "name" : "feditest-default",
     "sessions" : [
         {
             "constellation" : {
-                "name" : "WordPressActivityPub",
+                "name" : "Imp <-> Wordpress+ActivityPub",
                 "roles" : [
                     {
                         "name" : "webfingerclient",
@@ -22,6 +22,38 @@
                 ]
             },
             "tests" : [
+                {
+                    "name" : "webfinger.test_server_4_2__8_server_serves_correct_content_type"
+                },
+                {
+                    "name" : "webfinger.test_server_4_4__1_valid_json"
+                }
+            ]
+        },
+        {
+            "constellation" : {
+                "name" : "Imp <-> Mastodon",
+                "roles" : [
+                    {
+                        "name" : "webfingerclient",
+                        "nodedriver" : "imp.ImpInProcessDriver"
+                    },
+                    {
+                        "name" : "webfingerserver",
+                        "nodedriver" : "mastodon.MastodonUbosDriver",
+                        "hostname" : "mastodon.123.lan",
+                        "parameters" : {
+                            "sitejsonfile" : "site-mastodon.json",
+                            "siteid" : "s8fc9473a43ee638c4351137742764bc53d4c8d6c",
+                            "adminid" : "j12t"
+                        }
+                    }
+                ]
+            },
+            "tests" : [
+                {
+                    "name" : "webfinger.test_server_4_2__8_server_serves_correct_content_type"
+                },
                 {
                     "name" : "webfinger.test_server_4_4__1_valid_json"
                 }
