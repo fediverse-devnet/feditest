@@ -2,6 +2,7 @@
 """
 
 from datetime import datetime, timezone
+import time
 from typing import Any, List, Type
 
 from feditest import all_node_drivers, all_tests, Test
@@ -58,6 +59,8 @@ class TestRunSession:
             try :
                 self.constellation = TestRunConstellation(self.plan_session.constellation)
                 self.constellation.setup()
+
+                time.sleep(10) # FIXME?
 
                 for test_spec in self.plan_session.tests:
                     if test_spec.disabled:

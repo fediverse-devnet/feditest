@@ -1,0 +1,29 @@
+{
+    "hostname" : "mastodon.123.lan",
+    "siteid" : "s8fc9473a43ee638c4351137742764bc53d4c8d6c",
+    "admin" : {
+        "email" : "johannes.ernst@gmail.com",
+        "username" : "Johannes Ernst",
+        "userid" : "j12t",
+        "credential" : "qwerqwer"
+    },
+    "tls" : {
+        "crt" : "-----BEGIN CERTIFICATE-----\nMIIE5zCCAs+gAwIBAgIUIm/tGJtkt9oImp4O38Mq6/43HGEwDQYJKoZIhvcNAQEL\nBQAwHDEaMBgGA1UEAwwRd29yZHByZXNzLjEyMy5sYW4wHhcNMjQwMjE0MTgxNjU0\nWhcNMzQwMjExMTgxNjU0WjAcMRowGAYDVQQDDBF3b3JkcHJlc3MuMTIzLmxhbjCC\nAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMzzHm9je0Auoa3SlvtLSFVd\nsG/oRqy832/zRdECJzb3V8by37mvrCBzcxT1L9JkCPPxEVz0MsfyOA+5zV6q638n\n51XKYO0+qc/1pqIqZ2IBG2QCZRMWaY5FSA33FNR4RNXLokFZWLPWmxrmiexzI/hJ\notgIerrOgpYDD9v5Z4Btj+f+djgKTgzHpTmZyEV5CtEtlxT5qp7sVM9k07Uvw2iF\noT5WzDkCgR+FRAQAm4R3PJdmkptGzSAtaYDs0IrGgnsiuVE2B+y9u1wq9AOkmTd0\nOHH4ioFNsZtx+FIo/6rX/IHMA+fv5E26HmTcWaEIFRh65Hsy7vIlQTMmWPsvn3NT\ntjCgQdU6qzkzKR9Ec7x8RzTlJS6kGzriCb/43ADuJjCYQwurCaFjaohBk8OGrrRL\nMR82XDt/qZgOpoI7mzkn7div5J5U3QujlXDICdmEd8OPgiS5gk6PiRC8fMnSjwul\n9OhDa4GOXYdMek8SMWN8kK1Qgbabtd2w/MdVy/aB8lnat99QhC6SIdpbdjLdhleo\n9PClZvp79QdM2e/eFJQ1D+t45K3D1pW8qrlM/iVXHbOz8rW5rsynOY7uygE40WrA\noduCTOIZpj10smVICRYjRQOmGvtmZVt82of6ySAQn10Hq+nhIsR/n94chzU2EXTw\nfTA596GuOVNMDxGSn/LjAgMBAAGjITAfMB0GA1UdDgQWBBTilKo8SkQyq7bxDXVX\nGjInBEpB9TANBgkqhkiG9w0BAQsFAAOCAgEAOyc6GN21L4VEVauBPj6ipFtJQpw3\nd0toOeAEQ8mFefh0DS0+3oVyBqI/hUvO6+hyNOm4W3WwIPGdiZ+b+Q77QN1gqLIg\nr9LayTNTwxe5SaAc2awdIhNV+LmjB1mGHcUBGAZGHBD15kuvkMofMXjETYgPRYr0\nir7sEkzoD9V9UzFAaT6YxFjDePpT1mbadpd/kkA8pGrIKNCGSGKO+nZVqoXlOmv7\nvvyySXTKTMCO5gkPR3ppWWHu5TxUG/v7mLNb7GNMNYXkTkth335oP6mPzcz9uN/j\n3bP4Kf6MuhC0MdVu9BNjgCaPdP1g8VpJHu7xXY7tEZqOCyuVDckLrIViW++Dgy8i\nBlztsJ79KPeh2f3vmeeeIgRAfNTNXceJGS6bze2eLC5b8P77kZIy8b2Sr39kDjwS\nz75fuDXOOl5PANb3P9b8knfIcOHk+8RGpmYIRZf+Rcg5lDe0vtNkD/jVIdiwA7aC\nRXGOgOySFyMI1vjhS++77KMXsHS6V5+3UXiwlKPZgpt7+4Olt8O0GBHvtHcashx2\n7ZRc2/UwBZAeEnrRYPljpvwdlrtstgaic4YpQmsA3Yy7B6LOHjWjkdkMk953nwRR\ntf5qw2XW0km4ioaGXY7AG/+Dkhjd82QuW221tL1jahkiyHws8zJ2+TpRAHK9ecUV\nJ3GeByrpNXM+h2Y=\n-----END CERTIFICATE-----\n",
+        "key" : "-----BEGIN PRIVATE KEY-----\n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\nDBBcdMxNz1wIXTHyub7FcLV8VZF56g==\n-----END PRIVATE KEY-----\n"
+    },
+    "appconfigs" : [
+        {
+            "appid" : "mastodon",
+            "appconfigid" : "a47a665d3af5ff648b0729f19e0a2d7f315077fdd",
+            "context" : "",
+            "customizationpoints" : {
+                "mastodon" : {
+                    "singleusermode" : {
+                        "value" : false
+                    }
+                }
+            }
+        }
+    ]
+}
+ 

@@ -41,7 +41,7 @@ class Imp(WebFingerClient):
                     request = response.next_request
 
         if response and response.is_success :
-            jrd = Jrd(response.content)
+            jrd = Jrd(response.content) # may raise
             jrd.validate() # may raise
             return jrd
         else:

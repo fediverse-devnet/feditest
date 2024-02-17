@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "feditest"
 version = "0.0.1"
 authors = [
-  { name="Johannes Ernst", email="Johannes.Ernst@gmail.com" },
+  { name="Johannes Ernst", email="git@j12t.org" },
 ]
 dependencies = [
   "httpx",
