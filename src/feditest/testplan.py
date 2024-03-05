@@ -1,4 +1,5 @@
 """
+Classes that represent a TestPlan and its parts.
 """
 
 from typing import Any
@@ -36,8 +37,8 @@ class TestPlan(msgspec.Struct):
     A TestPlan defines one or more TestPlanSessions. TestPlanSessions can be run sequentially, or
     (in theory; no code yet) in parallel.
     Each TestPlanSession spins up and tears down a constellation of Nodes that participate in the
-    test. The constellation has 1 or more roles, which are bound to systems-under-test that
-    communicate with each other during the test.
+    test. The constellation has 1 or more roles, which are bound to nodes that communicate with
+    each other according to the to-be-tested protocol(s) during the test.
     """
     name: str = None
     sessions : list[TestPlanSession] = []
@@ -49,8 +50,9 @@ class TestPlan(msgspec.Struct):
         """
         with open(filename) as f:
             data = f.read()
-        
+
         return msgspec.json.decode(data, type=TestPlan)
+
 
     def check_can_be_executed(self) -> None:
         """
@@ -68,7 +70,7 @@ class TestPlan(msgspec.Struct):
                     fatal('Role names must be unique within a constellation:', role_name)
                 all_roles[role_name] = True
                 node_driver_name : str = role.nodedriver
-                
+
                 if not node_driver_name in all_node_drivers:
                     fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
 

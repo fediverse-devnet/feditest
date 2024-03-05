@@ -6,7 +6,7 @@ import feditest
 
 from argparse import ArgumentParser, Namespace
 
-def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
+def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
     Run this command.
     """
@@ -16,13 +16,13 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> None:
 
     feditest.load_tests_from(args.testsdir)
     for test_set_name in sorted(feditest.all_test_sets.keys()):
-        print( test_set_name )
+        print(test_set_name)
 
     return 0
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     """
-    Enable this command to add its own command-line options
+    Add command-line options for this sub-command
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """

@@ -1,4 +1,5 @@
 """
+Abstractions for nodes that speak today's Fediverse protocol stack.
 """
 
 from feditest.protocols import NodeDriver
@@ -7,5 +8,4 @@ from feditest.protocols.webfinger import WebFingerServer
 
 
 class FediverseNode(WebFingerServer, ActivityPubNode):
-    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
-        super().__init__(rolename, hostname, node_driver)
+    pass

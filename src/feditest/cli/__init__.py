@@ -10,10 +10,6 @@ import traceback
 
 from feditest.reporting import fatal, set_reporting_level
 from feditest.utils import find_submodules
-import feditest.protocols
-import feditest.protocols.activitypub
-import feditest.protocols.fediverse
-import feditest.protocols.webfinger
 import feditest.cli.commands
 
 def main():
@@ -22,7 +18,6 @@ def main():
     """
 
     # Discover and install sub-commands
-
     cmds = find_commands()
 
     parser = ArgumentParser(description='FediTest: test federated protocols')

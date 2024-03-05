@@ -8,34 +8,40 @@ from urllib.parse import ParseResult, parse_qs
 
 from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
 
+
 class ParsedUri(ParseResult):
-    params: dict[str,list[str]|None] | None = None
+    def __init__(self):
+        self._params: dict[str,list[str]|None] | None = None
+
 
     def has_param(self, name: str) -> bool:
         self._parse_params()
-        return name in self.params
+        return name in self._params
+
 
     def param_single(self, name: str) -> str | None:
         self._parse_params()
-        found = self.params[name]
+        found = self._params[name]
         match len(found):
             case 1:
                 return found[0]
             case _:
                 raise Exception(f'Query has {len(found)} values for parameter {name}')
 
+
     def param_mult(self, name: str) -> List[str] | None:
         self._parse_params()
-        return self.params[name]
+        return self._params[name]
+
 
     def _parse_params(self):
-        if self.params:
+        if self._params:
             return
-        if self.query:
-            self.params = parse_qs(self.query)
+        if self._query:
+            self._params = parse_qs(self._query)
         else:
-            self.params = {}
-            
+            self._params = {}
+
 
 class HttpRequestResponsePair:
     """
@@ -54,11 +60,11 @@ class HttpRequestResponsePair:
         uri: the ParseResult from parsing the request URI
         status: the returned HTTP status, such as 404
         """
-        self.when_started = when_started
-        self.when_completed = when_completed
-        self.uri = uri
-        self.response_status = response_status
-        self.response_header = response_header
+        self._when_started = when_started
+        self._when_completed = when_completed
+        self._uri = uri
+        self._response_status = response_status
+        self._response_header = response_header
 
 
 class WebServerLog:
@@ -66,21 +72,21 @@ class WebServerLog:
     A list of logged HTTP requests to a web server.
     """
     def __init__(self, time_started: date = datetime.utcnow(), entries: List[HttpRequestResponsePair] = [] ):
-        self.time_started : date = time_started
-        self.web_log_entries : List[HttpRequestResponsePair] = entries
+        self._time_started : date = time_started
+        self._web_log_entries : List[HttpRequestResponsePair] = entries
 
 
     def append(self, to_add: HttpRequestResponsePair) -> None:
-        self.web_log_entries.append(to_add)
+        self._web_log_entries.append(to_add)
 
 
     def entries_since(self, cutoff: date) ->  'WebServerLog':
         ret : List[HttpRequestResponsePair] = ()
-        for entry in self.web_log_entries:
+        for entry in self._web_log_entries:
             if entry.when_started >= cutoff :
                 ret.append(entry)
         return WebServerLog(cutoff, ret)
-        
+
 
 class WebServer(Node):
     """
@@ -88,15 +94,17 @@ class WebServer(Node):
     """
     def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
         super().__init__(rolename, node_driver)
-        
+
         self._hostname = hostname
+
 
     def get_hostname(self) -> str:
         """
         Return a resolvable DNS hostname that resolves to this WebServerNode.
         """
         return self._hostname
-    
+
+
     @final
     def transaction(self, code: Callable[[],None]) -> WebServerLog:
         """
@@ -121,9 +129,10 @@ class WebServer(Node):
         return: an identifier for the log
         see: _stop_logging_http_requests
         """
-        raise NotImplementedByDriverError(WebServer._start_logging_http_requests)
-    
-    
+        raise NotImplementedByDriverError(self, WebServer._start_logging_http_requests)
+        # This could be done manually, but returning the log cannot
+
+
     def _stop_logging_http_requests(self, collection_id: str) -> WebServerLog:
         """
         Corresponding "stop logging" method.
@@ -131,18 +140,22 @@ class WebServer(Node):
         return: the collected HTTP requests
         see: _start_logging_http_requests
         """
-        raise NotImplementedByDriverError(WebServer._stop_logging_http_requests)
+        raise NotImplementedByDriverError(self, WebServer._stop_logging_http_requests)
+        # This cannot be done manually
 
 
 class WebClient(Node):
-    def __init__(self, rolename: str, node_driver: 'NodeDriver') -> None:
+    def __init__(self, rolename: str, node_driver: 'WebServer') -> None:
         super().__init__(rolename, node_driver)
+
 
     def http_get(self, uri: str) -> httpx.Response:
         """
-        Make this WebClientIUT perform an HTTP get on the provided uri.
+        Make this WebClientperform an HTTP get on the provided uri.
         """
-        raise NotImplementedByDriverError(WebClient._http_get)
+        raise NotImplementedByDriverError(self, WebClient._http_get)
+        # Unlikely that there is a manual action the user could take, so no prompt here
+
 
     class TooManyRedirectsError(RuntimeError):
         """
@@ -153,8 +166,9 @@ class WebClient(Node):
             """
             uri: the original URI before the first redirect
             """
-            self.uri = uri
-            
+            self._uri = uri
+
+
     class HttpUnsuccessfulError(RuntimeError):
         """
         Thrown to indicate an unsuccessful HTTP request.
@@ -164,5 +178,5 @@ class WebClient(Node):
             uri: the original URI
             response: the failed response
             """
-            self.uri = uri
-            self.response = response
+            self._uri = uri
+            self._response = response

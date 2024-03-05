@@ -25,7 +25,7 @@ class TestStep:
         self.function: Callable[..., None] = function
         self.test = test
 
-        
+
 class Test:
     """
     Captures the notion of a Test, such as "see whether a follower is told about a new post".
@@ -66,8 +66,11 @@ _loading_tests = False
 
 
 def load_tests_from(dirs: list[str]) -> None:
+    """
+    Load all tests found in the provided directories
+    """
     global _loading_tests
-    
+
     _loading_tests = True
     load_python_from(dirs, True)
     _loading_tests = False
@@ -76,7 +79,7 @@ def load_tests_from(dirs: list[str]) -> None:
 def step(to_register: Callable[..., None]) -> None:
     """
     Used as decorator of test functions, like this:
-    
+
     @step
     def test_something() : ...
     """
@@ -125,25 +128,29 @@ def step(to_register: Callable[..., None]) -> None:
 _loading_node_drivers = False
 
 def load_node_drivers_from(dirs: list[str]) -> None:
+    """
+    Load all node drivers found in the provided directories
+    """
     global _loading_node_drivers
-    
+
     _loading_node_drivers = True
     load_python_from(dirs, False)
     _loading_node_drivers = False
-    
 
+
+# Holds all node drivers
 all_node_drivers : dict[str,Type[Any]]= {}
 
 def nodedriver(to_register: Type[Any]):
     """
     Used as decorator of NodeDriver classes, like this:
-    
+
     @nodedriver
     class XYZDriver : ...
     """
     global _loading_node_drivers
     global all_node_drivers
-    
+
     if not _loading_node_drivers:
         fatal('Do not define NodeDrivers outside of nodedriversdir')
 

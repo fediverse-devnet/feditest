@@ -13,7 +13,7 @@ logging.config.dictConfig({
     'formatters'               : {
         'standard' : {
             'format' : '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-            'datefmt' : '%Y-%m-%dT%H:%M:%S'
+            'datefmt' : '%Y-%m-%dT%H:%M:%SZ'
         },
     },
     'handlers' : {
@@ -27,7 +27,7 @@ logging.config.dictConfig({
     'loggers' : {
         '' : { # root logger -- set level to most output that can happen
             'handlers'  : [ 'default' ],
-            'level'     : 'WARNING', 
+            'level'     : 'WARNING',
             'propagate' : True
         }
     }

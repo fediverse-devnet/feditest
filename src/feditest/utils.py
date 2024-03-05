@@ -26,13 +26,13 @@ def find_submodules(package: Module) -> list[str]:
 
 def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
     """
-    Helper to load the Python files recursively from a directory.
+    Helper to load the Python files found in the provided directories, and any subdirectory
     """
     sys_path_before = sys.path
     for dir in dirs:
         while dir.endswith('/') :
             dir = dir[:-1]
-    
+
         try:
             sys.path.append(dir) # needed to automatially pull in dependencies
             for f in glob.glob(dir + '/**/*.py', recursive=True):
@@ -41,7 +41,7 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
                     if skip_init_files:
                         continue
                     else:
-                        module_name = module_name[ : -9] # remote .__init__
+                        module_name = module_name[:-9] # remote .__init__
                 if not module_name:
                     module_name = 'default'
                 spec = importlib.util.spec_from_file_location(module_name, f)
@@ -57,12 +57,12 @@ def account_id_validate(candidate: str) -> bool:
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return True if valid
     """
-    match = re.match("acct:[^\s]+@[^\s]+", candidate)
+    match = re.match("acct:[-a-z0-9\.]+@[-a-z0-9\.]+", candidate) # FIXME: should tighten this regex
     if match:
         return True
     else:
         return False
-    
+
 
 def http_https_uri_validate(candidate: str) -> bool:
     """
@@ -86,7 +86,7 @@ def http_https_root_uri_validate(uri: str) -> bool:
             and (len(parsed.path) == 0 or parsed.path == '/')
             and len(parsed.params) == 0
             and len(parsed.query) == 0
-            and len(parsed.fragment) == 0 )
+            and len(parsed.fragment) == 0)
 
 
 def http_https_acct_uri_validate(candidate: str) -> bool:
