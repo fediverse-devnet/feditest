@@ -8,7 +8,6 @@ import json
 import random
 import string
 from typing import Any, Callable, Iterable
-from urllib.parse import urlparse, quote
 
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
@@ -264,12 +263,12 @@ class Imp(WebFingerClient):
     # @override # from WebClient
     def http_get(self, uri: str) -> httpx.Response:
         # Do not follow redirects automatically, we need to know whether there are any
-        info( f'XXX http_get of {uri}')
-        return httpx.get(uri, follow_redirects=False)
+        info( f'http_get of {uri}')
+        return httpx.get(uri, follow_redirects=False, verify=False) # FIXME: disable TLS cert verification for now
 
     # @override # from WebFingerClient
     def perform_webfinger_query_for(self, resource_uri: str) -> Jrd:
-        uri = self.construct_webfinger_uri(resource_uri)
+        uri = self.construct_webfinger_uri_for(resource_uri)
 
         response: httpx.Response = None
         with httpx.Client(verify=False) as client:  # FIXME disable TLS cert verification for now
@@ -287,32 +286,7 @@ class Imp(WebFingerClient):
             jrd.validate() # may raise
             return jrd
         else:
-            raise WebClient.HttpUnsuccessfulError(uri, response)
-
-
-    def construct_webfinger_uri(self, resource_uri: str) -> str:
-        """
-        Helper method to construct the WebFinger URI from a resource URI
-        """
-        parsed_resource_uri = urlparse(resource_uri)
-        match parsed_resource_uri.scheme:
-            case 'acct':
-                _, hostname = parsed_resource_uri.path.split('@', maxsplit=1) # 1: number of splits, not number of elements
-
-            case 'http':
-                hostname = parsed_resource_uri.netloc
-
-            case 'https':
-                hostname = parsed_resource_uri.netloc
-
-            case _:
-                raise WebFingerClient.UnsupportedUriSchemeError(uri)
-
-        if not hostname:
-            raise WebFingerClient.CannotDetermineWebfingerHost(resource_uri)
-
-        uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
-        return uri
+            raise WebFingerClient.UnknownResourceException(uri, response)
 
 
 @nodedriver

@@ -4,6 +4,7 @@ Abstractions for the WebFinger protocol
 
 import httpx
 from typing import Any
+from urllib.parse import urlparse, quote
 
 from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebClient, WebServer
@@ -64,6 +65,31 @@ class WebFingerClient(WebClient):
             f'Please take an action at node {self._rolename} that makes it perform a WebFinger query on URI {resource_uri}' )
 
 
+    def construct_webfinger_uri_for(self, resource_uri: str) -> str:
+        """
+        Helper method to construct the WebFinger URI from a resource URI
+        """
+        parsed_resource_uri = urlparse(resource_uri)
+        match parsed_resource_uri.scheme:
+            case 'acct':
+                _, hostname = parsed_resource_uri.path.split('@', maxsplit=1) # 1: number of splits, not number of elements
+
+            case 'http':
+                hostname = parsed_resource_uri.netloc
+
+            case 'https':
+                hostname = parsed_resource_uri.netloc
+
+            case _:
+                raise WebFingerClient.UnsupportedUriSchemeError(uri)
+
+        if not hostname:
+            raise WebFingerClient.CannotDetermineWebfingerHost(resource_uri)
+
+        uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
+        return uri
+
+
     class UnknownResourceException(RuntimeError):
         """
         Raised when a WebFinger query results in a 404 because the resource cannot be
@@ -72,20 +98,20 @@ class WebFingerClient(WebClient):
         http_response: the underlying Response object
         """
         def __init__(self, resource_uri: str, http_response: httpx.Response):
-            self._resource_uri = resource_uri
-            self._http_response = http_response
+            self.resource_uri = resource_uri
+            self.http_response = http_response
 
 
     class UnsupportedUriSchemeError(RuntimeError):
         def __init__(self, resource_uri: str):
-            self._resource_uri = resource_uri
+            self.resource_uri = resource_uri
 
 
     class InvalidUriError(RuntimeError):
         def __init__(self, resource_uri: str):
-            self._resource_uri = resource_uri
+            self.resource_uri = resource_uri
 
 
     class CannotDetermineWebfingerHost(RuntimeError):
         def __init__(self, resource_uri: str):
-            self._resource_uri = resource_uri
+            self.resource_uri = resource_uri

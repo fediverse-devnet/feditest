@@ -67,7 +67,7 @@ class TestRunSession:
         if len(self._plan_session.tests ):
             info('Running session:', self._name)
 
-            try :
+            try:
                 self._constellation = TestRunConstellation(self._plan_session.constellation)
                 self._constellation.setup()
 
@@ -75,10 +75,11 @@ class TestRunSession:
                     if test_spec.disabled:
                         info('Skipping TestSpec', test_spec.disabled, "reason:", test_spec.disabled)
                     else:
-                        self._run_test_spec(test_spec)
-            except Exception as e:
-                error('FAILED test run session:', e)
-                self._problems.append(e)
+                        try:
+                            self._run_test_spec(test_spec)
+                        except Exception as e:
+                             error('FAILED test:', e)
+                             self._problems.append(e)
             finally:
                 self._constellation.teardown()
 
