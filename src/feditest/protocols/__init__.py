@@ -97,7 +97,7 @@ class NodeDriver(ABC):
         return: the value entered by the user
         """
         while True:
-            ret = input(question)
+            ret = input("TESTER ACTION REQUIRED: " + question)
             if validation is None or validation(ret):
                 return ret
 

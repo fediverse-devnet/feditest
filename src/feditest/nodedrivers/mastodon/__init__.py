@@ -25,6 +25,10 @@ class MastodonUbosNode(FediverseNode):
         return f"acct:undefined@{self._hostname}"
 
 
+    def obtain_actor_document_uri(self, actor_rolename: str = None) -> str:
+        return f"https://{self._hostname}/users/{self._admin_id}"
+
+
 @nodedriver
 class MastodonUbosNodeDriver(UbosNodeDriver):
     def _instantiate_node(self, site_id: str, rolename: str, hostname: str, admin_id: str) -> None:
