@@ -1,9 +1,14 @@
-# Fediverse testsuite
+# Feditest: test federated protocols such as those in the Fediverse
 
-Work in progress. Feedback appreciated; use the issue tracker.
+This repo contains:
 
-## Docs
+* the FediTest test framework
 
-* [The plan](docs/plan/index.md) and corresponding [FAQ](docs/plan/faq.md).
-* Slides of the [presentation given to W3C SWICG 2023-08-11](docs/plan/fediverse-testsuite-swicg-20230811/)
+which allows you to define and run test plans that involve constellations of servers (like Fediverse instances) whose communication you want to test.
 
+The actual tests for the Fediverse are in their own [repository](https://github.com/fediverse-devnet/feditest-tests-fediverse).
+
+For more details, check out [feditest.org](https://feditest.org/) and find us on Matrix in [#fediverse-testing:matrix.org](https://matrix.to/#/%23fediverse-testing:matrix.org).
+
+> [!WARNING]
+> Early work in progress.
