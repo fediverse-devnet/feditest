@@ -7,8 +7,10 @@ from typing import List
 
 from feditest.protocols import Node, NotImplementedByDriverError
 
-
 class SandboxLogEvent:
+    """
+    The structure of the data inserted into the log.
+    """
     def __init__(self, a: int, b: int, c: int):
         self.when = datetime.utcnow()
         self.a = a
@@ -50,4 +52,4 @@ class SandboxMultClient(Node):
         """
         Enable FediTest to make the client perform the mult() operation on the server.
         """
-        raise NotImplementedByDriverError(self, SandboxMultServer.cause_mult)
+        raise NotImplementedByDriverError(self, SandboxMultClient.cause_mult)

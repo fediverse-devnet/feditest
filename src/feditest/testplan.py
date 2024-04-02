@@ -2,6 +2,8 @@
 Classes that represent a TestPlan and its parts.
 """
 
+# pylint: disable=missing-class-docstring
+
 from typing import Any
 import msgspec
 
@@ -48,7 +50,7 @@ class TestPlan(msgspec.Struct):
         """
         Read a file, and instantiate a TestPlan from what we find.
         """
-        with open(filename) as f:
+        with open(filename, 'r', encoding='utf-8') as f:
             data = f.read()
 
         return msgspec.json.decode(data, type=TestPlan)

@@ -3,19 +3,16 @@ An in-process Node implementation for now.
 """
 
 from datetime import datetime
-import httpx
 import json
-import random
-import string
 from typing import Any, Callable, Iterable
+import httpx
 
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
-from feditest.protocols.web import WebClient, WebServerLog, HttpRequestResponsePair, ParsedUri
+from feditest.protocols.web import WebClient
 from feditest.protocols.webfinger import WebFingerClient
-from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import info
-from feditest.utils import account_id_validate, http_https_uri_validate, http_https_acct_uri_validate
+from feditest.utils import http_https_uri_validate, http_https_acct_uri_validate
 
 class Jrd:
     """
@@ -26,13 +23,48 @@ class Jrd:
 
 
     class JrdError(RuntimeError):
-        pass
+        """
+        Represents a problem during JRD parsing, such as syntax error.
+        """
+        pass # pylint: disable=unnecessary-pass
 
 
     class InvalidTypeError(JrdError):
-        pass
+        """
+        The JSON structure is invalid for a Jrd.
+        """
+        pass # pylint: disable=unnecessary-pass
 
 
+    class InvalidUriError(JrdError):
+        """
+        The URI in a Jrd is invalid.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    class MissingMemberError(JrdError):
+        """
+        The JRD is missing a member that is required.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    class InvalidRelError(JrdError):
+        """
+        The JRD specifies a link relationship that is invalid.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    class InvalidMediaTypeError(JrdError):
+        """
+        The JRD specifies a media type that is invalid.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    @staticmethod
     def is_registered_relation_type(value: str) -> bool:
         """
         Return True if the provided value is a registered relation type in
@@ -164,7 +196,7 @@ working-copy
 working-copy-of"""
         return value in defined.split()
 
-
+    @staticmethod
     def is_valid_media_type(value: str) -> bool:
         """
         This should check for a valid media type per RFC 6838.
@@ -173,17 +205,17 @@ working-copy-of"""
         return value.find('/') > 0
 
 
-    def validate(self) -> None:
+    def validate(self) -> None: # pylint: disable=too-many-branches
         """
         Validate the correctness of the JRD. Throw Exceptions if it is not valid.
         """
-        if not type(self._json) is dict:
+        if not isinstance(self._json, dict):
             raise Jrd.InvalidTypeError(self, 'Must be a JSON object')
 
         if 'subject' in self._json:
             # is optional
 
-            if not type(self._json['subject']) is str:
+            if not isinstance(self._json['subject'], str):
                 raise Jrd.InvalidTypeError(self, 'Member subject must be a string')
 
             if not http_https_acct_uri_validate(self._json['subject']):
@@ -193,11 +225,11 @@ working-copy-of"""
         if 'aliases' in self._json:
             # is optional
 
-            if not type(self._json['aliases']) is list:
+            if not isinstance(self._json['aliases'], list):
                 raise Jrd.InvalidTypeError(self, 'Member aliases must be a JSON array')
 
             for alias in self._json['aliases'] :
-                if not type(alias) is str:
+                if not isinstance(alias, str):
                     raise Jrd.InvalidTypeError(self, 'Members of the aliases array must be strings')
 
                 if not http_https_acct_uri_validate(alias):
@@ -206,30 +238,30 @@ working-copy-of"""
         if 'properties' in self._json:
             # is optional
 
-            if not type(self._json['properties']) is dict:
+            if not isinstance(self._json['properties'], dict):
                 raise Jrd.InvalidTypeError(self, 'Member properties must be a JSON object')
 
             for key, value in self._json['properties']:
-                if not type(key) is str:
+                if not isinstance(key, str):
                     raise Jrd.InvalidTypeError(self, 'Names in the properties object must be strings')
 
-                if value is not None and type(value) is not str:
+                if value is not None and not isinstance(value, str):
                     raise Jrd.InvalidTypeError(self, 'Values in the properties object must be strings or null')
 
         if 'links' in self._json:
             # is optional
 
-            if not type(self._json['links']) is list:
+            if not isinstance(self._json['links'], list):
                 raise Jrd.InvalidTypeError(self, 'Member links must be a JSON array')
 
             for link in self._json['links']:
-                if not type(link) is dict:
+                if not isinstance(link, dict):
                     raise Jrd.InvalidTypeError(self, 'Members of the links array must be JSON objects')
 
                 if not 'rel' in link:
                     raise Jrd.MissingMemberError(self, 'All members of the links array must have a rel property')
 
-                if not type(link['rel']) is str:
+                if not isinstance(link['rel'], str):
                     raise Jrd.InvalidTypeError(self, 'Values for the rel member in the links array must be strings')
 
                 if not http_https_acct_uri_validate(link['rel']) and not Jrd.is_registered_relation_type(link['rel']):
@@ -238,7 +270,7 @@ working-copy-of"""
                 if 'type' in link:
                     # is optional
 
-                    if not type(link['type']) is str:
+                    if not isinstance(link['type'], str):
                         raise Jrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
                     if not Jrd.is_valid_media_type(link['type']):
@@ -247,7 +279,7 @@ working-copy-of"""
                 if 'href' in link:
                     # is optional
 
-                    if not type(link['href']) is str:
+                    if not isinstance(link['href'], str):
                         raise Jrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
                     if not http_https_uri_validate(link['href']):
@@ -258,6 +290,9 @@ working-copy-of"""
 
 
 class Imp(WebFingerClient):
+    """
+    Our placeholder test client. Its future is tbd.
+    """
     # use superclass constructor
 
     # @override # from WebClient
@@ -285,12 +320,15 @@ class Imp(WebFingerClient):
             jrd = Jrd(response.content) # may raise
             jrd.validate() # may raise
             return jrd
-        else:
-            raise WebFingerClient.UnknownResourceException(uri, response)
+
+        raise WebFingerClient.UnknownResourceException(uri, response)
 
 
 @nodedriver
 class ImpInProcessNodeDriver(NodeDriver):
+    """
+    Knows how to instantiate an Imp.
+    """
     # use superclass constructor
 
     # Python 3.12 @override
@@ -298,11 +336,10 @@ class ImpInProcessNodeDriver(NodeDriver):
         if parameters:
             raise Exception('ImpInProcessNodeDriver nodes do not take parameters')
 
-        node = Imp(rolename, self);
+        node = Imp(rolename, self)
         return node
 
 
     # Python 3.12 @override
     def _unprovision_node(self, node: Imp) -> None:
         pass
-

@@ -15,7 +15,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     Run this command.
     """
     if len(remaining):
-        parser.print_help();
+        parser.print_help()
         return 0
 
     feditest.load_tests_from(args.testsdir)
@@ -32,6 +32,9 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     if args.nodedriver:
         return run_info_node_driver(args.nodedriver)
+
+    parser.print_help()
+    return 0
 
 
 def run_info_test(name: str) -> int:
@@ -51,9 +54,8 @@ def run_info_test(name: str) -> int:
         print(format_name_value_string(test_metadata), end='')
         return 0
 
-    else:
-        warning( 'Test not found:', name)
-        return 1
+    warning( 'Test not found:', name)
+    return 1
 
 
 def run_info_testset(name: str) -> int:
@@ -70,9 +72,8 @@ def run_info_testset(name: str) -> int:
         print(format_name_value_string(test_set_metadata), end='')
         return 0
 
-    else:
-        warning( 'Test set not found:', name)
-        return 1
+    warning( 'Test set not found:', name)
+    return 1
 
 
 def run_info_node_driver(name: str) -> int:
@@ -89,9 +90,8 @@ def run_info_node_driver(name: str) -> int:
         print(format_name_value_string(test_metadata), end='')
         return 0
 
-    else:
-        warning( 'App driver not found:', name)
-        return 1
+    warning( 'App driver not found:', name)
+    return 1
 
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:

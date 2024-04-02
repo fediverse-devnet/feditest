@@ -7,6 +7,9 @@ from feditest.ubos import UbosNodeDriver
 
 
 class MastodonUbosNode(FediverseNode):
+    """
+    A Node running Mastodon, instantiated with UBOS.
+    """
     def __init__(self, site_id: str, rolename: str, hostname: str, admin_id: str, node_driver: 'MastodonUbosNodeDriver') -> None:
         super(FediverseNode, self).__init__(rolename, hostname, node_driver)
 
@@ -31,5 +34,12 @@ class MastodonUbosNode(FediverseNode):
 
 @nodedriver
 class MastodonUbosNodeDriver(UbosNodeDriver):
+    """
+    Knows how to instantiate Mastodon via UBOS.
+    """
     def _instantiate_node(self, site_id: str, rolename: str, hostname: str, admin_id: str) -> None:
         return MastodonUbosNode(site_id, rolename, hostname, admin_id, self)
+
+
+    def _unprovision_node(self, node: MastodonUbosNode) -> None:
+        self._exec_shell(f"sudo ubos-admin undeploy --siteid {node._site_id}") # pylint: disable=protected-access

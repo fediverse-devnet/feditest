@@ -2,13 +2,12 @@
 Abstractions for the WebFinger protocol
 """
 
-import httpx
 from typing import Any
 from urllib.parse import urlparse, quote
+import httpx
 
-from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebClient, WebServer
-
+from feditest.utils import account_id_validate
 
 class WebFingerServer(WebServer):
     """
@@ -26,10 +25,10 @@ class WebFingerServer(WebServer):
             return self.node_driver.prompt_user(
                     f'Please enter the URI of an existing or new account for {nickname} at node {self._rolename} (e.g. "acct:testuser@example.local" )',
                     account_id_validate )
-        else:
-            return self.node_driver.prompt_user(
-                    f'Please enter the URI of an existing or new account at node {self._rolename} (e.g. "acct:testuser@example.local" )',
-                    account_id_validate )
+
+        return self.node_driver.prompt_user(
+                f'Please enter the URI of an existing or new account at node {self._rolename} (e.g. "acct:testuser@example.local" )',
+                account_id_validate )
 
 
     def obtain_non_existing_account_identifier(self, nickname: str = None ) ->str:
@@ -44,10 +43,10 @@ class WebFingerServer(WebServer):
             return self.node_driver.prompt_user(
                 f'Please enter the URI of an non-existing account for {nickname} at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',
                 account_id_validate )
-        else:
-            return self.node_driver.prompt_user(
-                f'Please enter the URI of an non-existing account at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',
-                account_id_validate )
+
+        return self.node_driver.prompt_user(
+            f'Please enter the URI of an non-existing account at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',
+            account_id_validate )
 
 
 class WebFingerClient(WebClient):
@@ -81,7 +80,7 @@ class WebFingerClient(WebClient):
                 hostname = parsed_resource_uri.netloc
 
             case _:
-                raise WebFingerClient.UnsupportedUriSchemeError(uri)
+                raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
 
         if not hostname:
             raise WebFingerClient.CannotDetermineWebfingerHost(resource_uri)
@@ -103,15 +102,24 @@ class WebFingerClient(WebClient):
 
 
     class UnsupportedUriSchemeError(RuntimeError):
+        """
+        Raised when a WebFinger resource uses a scheme other than http, https, accct
+        """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
 
 
     class InvalidUriError(RuntimeError):
+        """
+        Raised when a Uri could not be parsed.
+        """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
 
 
     class CannotDetermineWebfingerHost(RuntimeError):
+        """
+        Raised when the WebFinger host could not be determined.
+        """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri

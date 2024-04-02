@@ -2,6 +2,8 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
+# pylint: disable=protected-access
+
 from datetime import datetime, timezone
 import time
 from typing import Any, List, Type
@@ -13,6 +15,9 @@ from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, 
 
 
 class TestRunConstellation:
+    """
+    The instance of a TestPlanConstellation associated with a particular test run.
+    """
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self._plan_constellation = plan_constellation
         self._run_constellation : dict[str, Node] = {}
@@ -36,7 +41,7 @@ class TestRunConstellation:
             if node:
                 self._run_constellation[plan_role_name] = node
             else:
-                raise Exception(f'NodeDriver {node_driver} return null Node from provision_node()')
+                raise Exception(f'NodeDriver {node_driver} returned null Node from provision_node()')
 
         time.sleep(10) # This is a fudge factor because apparently some applications take some time
                        # after deployment before they are ready to communicate.
@@ -57,6 +62,10 @@ class TestRunConstellation:
 
 
 class TestRunSession:
+    """
+    A TestRun consists of one or more TestRunSessions, each of which spins up a constallation, the runs
+    some tests and then tears itself down again. Then the next TestRunSession can run.
+    """
     def __init__(self, name: str, plan_session: TestPlanSession):
         self._name = name
         self._plan_session = plan_session
@@ -78,8 +87,8 @@ class TestRunSession:
                         try:
                             self._run_test_spec(test_spec)
                         except Exception as e:
-                             error('FAILED test:', e)
-                             self._problems.append(e)
+                            error('FAILED test:', e)
+                            self._problems.append(e)
             finally:
                 self._constellation.teardown()
 
@@ -109,11 +118,17 @@ class TestRunSession:
                 case 1:
                     test_step.function(run_constellation[plan_roles[0].name])
                 case 2:
-                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name])
+                    test_step.function(run_constellation[plan_roles[0].name],
+                                       run_constellation[plan_roles[1].name])
                 case 3:
-                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name], run_constellation[plan_roles[2].name])
+                    test_step.function(run_constellation[plan_roles[0].name],
+                                       run_constellation[plan_roles[1].name],
+                                       run_constellation[plan_roles[2].name])
                 case 4:
-                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name], run_constellation[plan_roles[2].name], run_constellation[plan_roles[3].name])
+                    test_step.function(run_constellation[plan_roles[0].name],
+                                       run_constellation[plan_roles[1].name],
+                                       run_constellation[plan_roles[2].name],
+                                       run_constellation[plan_roles[3].name])
                 case _:
                     error( 'Constellation size not supported yet:', len(plan_roles))
 
@@ -130,16 +145,15 @@ class TestRun:
         info( f'RUNNING test plan: {self._plan.name} (id: {self._runid})' )
 
         all_passed : bool = True
-        for i in range(0, len(self._plan.sessions)):
+        for i in range(0, len(self._plan.sessions)): # pylint: disable=consider-using-enumerate
             plan_session = self._plan.sessions[i]
             run_session = TestRunSession(plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}', plan_session)
 
             run_session.run()
-            if len(run_session._problems):
+            if run_session._problems:
                 all_passed = False
 
         if all_passed:
             return 0
-        else:
-            info('FAILED')
-            return 1
+        info('FAILED')
+        return 1
