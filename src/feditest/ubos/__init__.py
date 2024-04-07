@@ -19,9 +19,9 @@ class UbosNodeDriver(NodeDriver):
         cmd = None
         if not parameters:
             raise Exception('UbosNodeDriver needs parameters')
-        if not 'siteid' in parameters:
+        if 'siteid' not in parameters:
             raise Exception('UbosNodeDriver needs parameter siteid for now') # FIXME: should get it from the JSON file
-        if not 'adminid' in parameters:
+        if 'adminid' not in parameters:
             raise Exception('UbosNodeDriver needs parameter adminid for now') # FIXME: should get it from the JSON file
         if 'sitejsonfile' in parameters:
             cmd = f"sudo ubos-admin deploy --file {parameters['sitejsonfile']}"

@@ -2,20 +2,31 @@
 An in-process Node implementation for now.
 """
 
-from datetime import datetime
-import httpx
 import json
 import random
 import string
+from datetime import datetime
 from typing import Any, Callable, Iterable
+
+import httpx
 
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
-from feditest.protocols.web import WebClient, WebServerLog, HttpRequestResponsePair, ParsedUri
-from feditest.protocols.webfinger import WebFingerClient
 from feditest.protocols.fediverse import FediverseNode
+from feditest.protocols.web import (
+    HttpRequestResponsePair,
+    ParsedUri,
+    WebClient,
+    WebServerLog,
+)
+from feditest.protocols.webfinger import WebFingerClient
 from feditest.reporting import info
-from feditest.utils import account_id_validate, http_https_uri_validate, http_https_acct_uri_validate
+from feditest.utils import (
+    account_id_validate,
+    http_https_acct_uri_validate,
+    http_https_uri_validate,
+)
+
 
 class Jrd:
     """
@@ -177,13 +188,13 @@ working-copy-of"""
         """
         Validate the correctness of the JRD. Throw Exceptions if it is not valid.
         """
-        if not type(self._json) is dict:
+        if not isinstance(self._json, dict):
             raise Jrd.InvalidTypeError(self, 'Must be a JSON object')
 
         if 'subject' in self._json:
             # is optional
 
-            if not type(self._json['subject']) is str:
+            if not isinstance(self._json['subject'], str):
                 raise Jrd.InvalidTypeError(self, 'Member subject must be a string')
 
             if not http_https_acct_uri_validate(self._json['subject']):
@@ -193,11 +204,11 @@ working-copy-of"""
         if 'aliases' in self._json:
             # is optional
 
-            if not type(self._json['aliases']) is list:
+            if not isinstance(self._json['aliases'], list):
                 raise Jrd.InvalidTypeError(self, 'Member aliases must be a JSON array')
 
             for alias in self._json['aliases'] :
-                if not type(alias) is str:
+                if not isinstance(alias, str):
                     raise Jrd.InvalidTypeError(self, 'Members of the aliases array must be strings')
 
                 if not http_https_acct_uri_validate(alias):
@@ -206,30 +217,30 @@ working-copy-of"""
         if 'properties' in self._json:
             # is optional
 
-            if not type(self._json['properties']) is dict:
+            if not isinstance(self._json['properties'], dict):
                 raise Jrd.InvalidTypeError(self, 'Member properties must be a JSON object')
 
             for key, value in self._json['properties']:
-                if not type(key) is str:
+                if not isinstance(key, str):
                     raise Jrd.InvalidTypeError(self, 'Names in the properties object must be strings')
 
-                if value is not None and type(value) is not str:
+                if value is not None and not isinstance(value, str):
                     raise Jrd.InvalidTypeError(self, 'Values in the properties object must be strings or null')
 
         if 'links' in self._json:
             # is optional
 
-            if not type(self._json['links']) is list:
+            if not isinstance(self._json['links'], list):
                 raise Jrd.InvalidTypeError(self, 'Member links must be a JSON array')
 
             for link in self._json['links']:
-                if not type(link) is dict:
+                if not isinstance(link, dict):
                     raise Jrd.InvalidTypeError(self, 'Members of the links array must be JSON objects')
 
-                if not 'rel' in link:
+                if 'rel' not in link:
                     raise Jrd.MissingMemberError(self, 'All members of the links array must have a rel property')
 
-                if not type(link['rel']) is str:
+                if not isinstance(link['rel'], str):
                     raise Jrd.InvalidTypeError(self, 'Values for the rel member in the links array must be strings')
 
                 if not http_https_acct_uri_validate(link['rel']) and not Jrd.is_registered_relation_type(link['rel']):
@@ -238,7 +249,7 @@ working-copy-of"""
                 if 'type' in link:
                     # is optional
 
-                    if not type(link['type']) is str:
+                    if not isinstance(link['type'], str):
                         raise Jrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
                     if not Jrd.is_valid_media_type(link['type']):
@@ -247,7 +258,7 @@ working-copy-of"""
                 if 'href' in link:
                     # is optional
 
-                    if not type(link['href']) is str:
+                    if not isinstance(link['href'], str):
                         raise Jrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
                     if not http_https_uri_validate(link['href']):
@@ -298,7 +309,7 @@ class ImpInProcessNodeDriver(NodeDriver):
         if parameters:
             raise Exception('ImpInProcessNodeDriver nodes do not take parameters')
 
-        node = Imp(rolename, self);
+        node = Imp(rolename, self)
         return node
 
 

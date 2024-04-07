@@ -57,7 +57,7 @@ class NodeDriver(ABC):
         if rolename is None:
             raise Exception("rolename must be given")
         ret = self._provision_node(rolename, hostname, parameters)
-        return ret;
+        return ret
 
 
     @final
@@ -87,7 +87,7 @@ class NodeDriver(ABC):
         pass # by default, do nothing
 
 
-    def prompt_user(self, question: str, validation: Callable[[str],bool] = None) -> str:
+    def prompt_user(self, question: str, validation: Callable[[str],bool] | None = None) -> str:
         """
         If an NodeDriver does not natively implement support for a particular method,
         this method is invoked as a fallback. It prompts the user to enter information

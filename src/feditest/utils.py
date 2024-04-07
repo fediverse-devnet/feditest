@@ -2,12 +2,12 @@
 Utility functions
 """
 
-from ast import Module
 import glob
 import importlib
 import pkgutil
 import re
 import sys
+from ast import Module
 from urllib.parse import urlparse
 
 
@@ -114,7 +114,7 @@ def format_name_value_string(data: dict[str,str]) -> str:
 
     line_width = 120 # FIXME?
     col1_width = len(max(data, key=len)) + 1
-    col2_width = line_width - col1_width
+    # col2_width = line_width - col1_width
     ret = ''
     line = ''
     for key, value in data.items():
