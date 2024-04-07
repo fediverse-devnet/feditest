@@ -57,7 +57,7 @@ class NodeDriver(ABC):
         if rolename is None:
             raise Exception("rolename must be given")
         ret = self._provision_node(rolename, hostname, parameters)
-        return ret;
+        return ret
 
 
     @final
