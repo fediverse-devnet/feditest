@@ -2,11 +2,11 @@
 Abstractions for the WebFinger protocol
 """
 
-import httpx
 from typing import Any
-from urllib.parse import urlparse, quote
+from urllib.parse import quote, urlparse
 
-from feditest.protocols import NodeDriver
+import httpx
+
 from feditest.protocols.web import WebClient, WebServer
 
 
@@ -22,6 +22,10 @@ class WebFingerServer(WebServer):
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """
+
+        # TODO
+        account_id_validate = None
+  
         if nickname:
             return self.node_driver.prompt_user(
                     f'Please enter the URI of an existing or new account for {nickname} at node {self._rolename} (e.g. "acct:testuser@example.local" )',
@@ -40,6 +44,9 @@ class WebFingerServer(WebServer):
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """
+        # TODO
+        account_id_validate = None
+
         if nickname:
             return self.node_driver.prompt_user(
                 f'Please enter the URI of an non-existing account for {nickname} at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',
@@ -81,7 +88,7 @@ class WebFingerClient(WebClient):
                 hostname = parsed_resource_uri.netloc
 
             case _:
-                raise WebFingerClient.UnsupportedUriSchemeError(uri)
+                raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
 
         if not hostname:
             raise WebFingerClient.CannotDetermineWebfingerHost(resource_uri)

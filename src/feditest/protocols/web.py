@@ -1,7 +1,7 @@
 """
 """
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 import httpx
 from typing import Callable, List, final
 from urllib.parse import ParseResult, parse_qs

@@ -2,12 +2,9 @@
 Abstractions for the ActivityPub protocol
 """
 
-from enum import Enum
 import httpx
-import json
 from typing import Any
 
-from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebServer
 from feditest.utils import http_https_uri_validate
 
