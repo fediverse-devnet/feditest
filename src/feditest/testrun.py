@@ -2,14 +2,23 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
-from datetime import datetime, timezone
+import os
+import sys
 import time
-from typing import Any, List, Type
+from contextlib import redirect_stdout
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import IO, Any, List, Protocol, Type
 
-from feditest import all_node_drivers, all_tests, Test
+from feditest import Test, all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
-from feditest.reporting import info, error, fatal
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+from feditest.reporting import error, fatal, info
+from feditest.testplan import (
+    TestPlan,
+    TestPlanConstellation,
+    TestPlanSession,
+    TestPlanTestSpec,
+)
 
 
 class TestRunConstellation:
@@ -21,7 +30,6 @@ class TestRunConstellation:
         """
         Set up the constellation of nodes needed for some tests.
         """
-        global all_node_drivers
 
         info('Setting up constellation:', self._plan_constellation.name)
 
@@ -38,9 +46,10 @@ class TestRunConstellation:
             else:
                 raise Exception(f'NodeDriver {node_driver} return null Node from provision_node()')
 
-        time.sleep(10) # This is a fudge factor because apparently some applications take some time
-                       # after deployment before they are ready to communicate.
-                       # FIXME? This should potentially be in the NodeDrivers
+        if not os.environ.get("UNIT_TESTING"):
+            time.sleep(10) # This is a fudge factor because apparently some applications take some time
+                           # after deployment before they are ready to communicate.
+                           # FIXME? This should potentially be in the NodeDrivers
 
     def teardown(self):
         info('Tearing down constellation:', self._plan_constellation.name)
@@ -58,14 +67,14 @@ class TestRunConstellation:
 
 class TestRunSession:
     def __init__(self, name: str, plan_session: TestPlanSession):
-        self._name = name
+        self.name = name
+        self.problems : List[Exception] = []
         self._plan_session = plan_session
         self._constellation = None
-        self._problems : List[Exception] = []
 
     def run(self):
         if len(self._plan_session.tests ):
-            info('Running session:', self._name)
+            info('Running session:', self.name)
 
             try:
                 self._constellation = TestRunConstellation(self._plan_session.constellation)
@@ -79,22 +88,20 @@ class TestRunSession:
                             self._run_test_spec(test_spec)
                         except Exception as e:
                              error('FAILED test:', e)
-                             self._problems.append(e)
+                             self.problems.append(TestProblem(test_spec, e))
             finally:
                 self._constellation.teardown()
 
             if self._constellation._run_constellation:
                 fatal( 'Still have nodes in the constellation', self._constellation._run_constellation )
 
-            info('End running session:', self._name)
+            info('End running session:', self.name)
 
         else:
-            info('Skipping session:', self._name, ': no tests defined')
+            info('Skipping session:', self.name, ': no tests defined')
 
 
     def _run_test_spec(self, test_spec: TestPlanTestSpec):
-        global all_tests
-
         info('Running test', test_spec.name)
         test : Test = all_tests.get(test_spec.name)
 
@@ -117,29 +124,93 @@ class TestRunSession:
                 case _:
                     error( 'Constellation size not supported yet:', len(plan_roles))
 
+@dataclass
+class TestProblem:
+    """Information about test failure/problem."""
+    test: TestPlanTestSpec
+    exc: Exception
 
-class TestRun:
-    """
-    Encapsulates the state of a test run while feditest is executing a TestPlan
-    """
-    def __init__(self, plan: TestPlan):
-        self._plan = plan
-        self._runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
 
-    def run(self):
-        info( f'RUNNING test plan: {self._plan.name} (id: {self._runid})' )
-
-        all_passed : bool = True
-        for i in range(0, len(self._plan.sessions)):
-            plan_session = self._plan.sessions[i]
-            run_session = TestRunSession(plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}', plan_session)
-
-            run_session.run()
-            if len(run_session._problems):
-                all_passed = False
-
+class TestResultWriter(Protocol):
+    """An object that writes test results in some format."""
+    def write(self, plan: TestPlan, 
+              run_sessions: list[TestRunSession], 
+              metadata: dict[str, Any]|None = None):
+        """Write test results."""
+        ...
+        
+class DefaultTestResultWriter:
+    def write(self, 
+              plan: TestPlan,
+              run_sessions: list[TestRunSession], 
+              metadata: dict[str, Any]|None = None):
+        all_passed = sum(1 for s in run_sessions if s.problems) == 0
         if all_passed:
             return 0
         else:
             info('FAILED')
             return 1
+
+class TapTestResultWriter:
+    def __init__(self, out: IO = sys.stdout):
+        self.out = out
+
+    def write(self, plan, run_sessions, metadata = None):
+        with redirect_stdout(self.out):
+            print("TAP version 14")
+            print(f"# test plan: {plan.name}")
+            if metadata:
+                for key, value in metadata.items():
+                    print(f"# {key}: {value}")
+            # date, etc.
+            test_id = 0
+            for run_session, plan_session in zip(run_sessions, plan.sessions):
+                print(f"# session: {run_session.name}")
+                print(f"# constellation: {plan_session.constellation.name}")
+                print(f"#   name: {plan_session.constellation.name}")
+                print("#   roles:")
+                for role in plan_session.constellation.roles:
+                    print(f"#     - name: {role.name}")
+                    print(f"#       driver: {role.nodedriver}")
+                for test in plan_session.tests:
+                    test_id += 1
+                    if problem := self._get_problem(run_session, test):
+                        print(f"not ok {test_id} - {test.name}")
+                        print("  ---")
+                        print("  problem: |")
+                        for line in str(problem).strip().split("\n"):
+                            print(f"    {line}")
+                        print("  ...")
+                    else:
+                        directives = f" # SKIP {test.disabled}" if test.disabled else ""
+                        print(f"ok {test_id} - {test.name}{directives}")
+            print(f"1..{test_id}")
+
+    @staticmethod
+    def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem:
+        return next((p for p in run_session.problems if p.test.name == test.name), None)
+
+class TestRun:
+    """
+    Encapsulates the state of a test run while feditest is executing a TestPlan
+    """
+    def __init__(self, plan: TestPlan, result_writer: TestResultWriter):
+        self._plan = plan
+        self._result_writer = result_writer
+        self._runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
+
+    def run(self):
+        info( f'RUNNING test plan: {self._plan.name} (id: {self._runid})' )
+
+        run_sessions: list[TestRunSession] = []
+
+        for i in range(0, len(self._plan.sessions)):
+            plan_session = self._plan.sessions[i]
+            run_session = TestRunSession(plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}', plan_session)
+            run_session.run()
+            run_sessions.append(run_session)
+
+        self._result_writer.write(self._plan, run_sessions)
+
+        all_passed = sum(1 for s in run_sessions if s.problems)
+        return 0 if all_passed == 0 else 1

@@ -6,7 +6,8 @@ from argparse import ArgumentParser, Namespace
 
 import feditest
 from feditest.testplan import TestPlan
-from feditest.testrun import TestRun
+from feditest.testrun import DefaultTestResultWriter, TapTestResultWriter, TestRun
+
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -25,8 +26,15 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     plan = TestPlan.load(args.testplan)
     plan.check_can_be_executed();
 
-    run = TestRun(plan)
-    return run.run()
+    if isinstance(args.tap, str):
+        with open(args.tap, "w") as out:
+            result_writer = TapTestResultWriter(out)
+            run = TestRun(plan, result_writer)
+            return run.run()
+    else:
+        result_writer = DefaultTestResultWriter() if not args.tap else TapTestResultWriter()
+        run = TestRun(plan, result_writer)
+        return run.run()
 
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
@@ -40,3 +48,5 @@ def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
     parser.add_argument('--testplan', default='feditest-default.json', help='Name of the file that contains the test plan to run')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find drivers for nodes that can be tested')
         # Can't set a default value, because action='append' adds to the default value, instead of replacing it
+    parser.add_argument('--tap', nargs="?", const=True, default=False,
+                        help="Use TAP test result format. Can also provide an optional filename for results. Default is standard out.")
