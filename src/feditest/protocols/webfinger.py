@@ -3,7 +3,7 @@ Abstractions for the WebFinger protocol
 """
 
 from typing import Any
-from urllib.parse import urlparse, quote
+from urllib.parse import quote, urlparse
 import httpx
 
 from feditest.protocols.web import WebClient, WebServer
@@ -21,6 +21,7 @@ class WebFingerServer(WebServer):
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """
+
         if nickname:
             return self.node_driver.prompt_user(
                     f'Please enter the URI of an existing or new account for {nickname} at node {self._rolename} (e.g. "acct:testuser@example.local" )',
@@ -39,6 +40,7 @@ class WebFingerServer(WebServer):
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """
+
         if nickname:
             return self.node_driver.prompt_user(
                 f'Please enter the URI of an non-existing account for {nickname} at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',

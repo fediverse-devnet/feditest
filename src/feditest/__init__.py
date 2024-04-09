@@ -9,7 +9,6 @@ from pkgutil import resolve_name
 from types import FunctionType
 from typing import Any, Type
 
-from feditest.protocols import Node
 from feditest.reporting import fatal, warning
 from feditest.utils import load_python_from
 

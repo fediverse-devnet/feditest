@@ -2,9 +2,8 @@
 An in-process Node implementation for now.
 """
 
-from datetime import datetime
 import json
-from typing import Any, Callable, Iterable
+from typing import Any
 import httpx
 
 from feditest import nodedriver
@@ -12,7 +11,10 @@ from feditest.protocols import NodeDriver
 from feditest.protocols.web import WebClient
 from feditest.protocols.webfinger import WebFingerClient
 from feditest.reporting import info
-from feditest.utils import http_https_uri_validate, http_https_acct_uri_validate
+from feditest.utils import (
+    http_https_acct_uri_validate,
+    http_https_uri_validate,
+)
 
 class Jrd:
     """
@@ -258,7 +260,7 @@ working-copy-of"""
                 if not isinstance(link, dict):
                     raise Jrd.InvalidTypeError(self, 'Members of the links array must be JSON objects')
 
-                if not 'rel' in link:
+                if 'rel' not in link:
                     raise Jrd.MissingMemberError(self, 'All members of the links array must have a rel property')
 
                 if not isinstance(link['rel'], str):

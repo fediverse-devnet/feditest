@@ -2,9 +2,9 @@
 """
 
 from datetime import date, datetime
+import httpx
 from typing import Callable, List, final
 from urllib.parse import ParseResult, parse_qs
-import httpx
 
 from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
 
