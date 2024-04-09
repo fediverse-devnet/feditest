@@ -2,15 +2,16 @@
 Nodes managed via UBOS https://ubos.net/
 """
 
-import json
 import subprocess
 from typing import Any
 
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import info
 
-
 class UbosNodeDriver(NodeDriver):
+    """
+    A general-purpose NodeDriver for Nodes provisioned through UBOS Gears.
+    """
     def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
         """
         The UBOS driver knows how to provision a node either by deploying a UBOS Site JSON file
@@ -30,13 +31,9 @@ class UbosNodeDriver(NodeDriver):
         else:
             raise Exception('UbosNodeDriver needs parameter sitejsonfile or backupfile')
 
-        self._execShell(cmd)
+        self._exec_shell(cmd)
         ret = self._instantiate_node(parameters['siteid'], rolename, hostname, parameters['adminid'])
         return ret
-
-
-    def _unprovision_node(self, node: Node) -> None:
-        self._execShell(f"sudo ubos-admin undeploy --siteid {node._site_id}")
 
 
     def _instantiate_node(self, site_id: str, rolename: str, hostname: str, admin_id: str) -> None:
@@ -46,8 +43,8 @@ class UbosNodeDriver(NodeDriver):
         raise Exception('_instantiate_node must be overridden')
 
 
-    def _execShell(self, cmd: str):
+    def _exec_shell(self, cmd: str):
         info( f"Executing '{cmd}'")
-        ret = subprocess.run(cmd, shell=True)
+        ret = subprocess.run(cmd, shell=True, check=False)
 
         return ret.returncode

@@ -2,12 +2,12 @@
 Utility functions
 """
 
+from ast import Module
 import glob
 import importlib
 import pkgutil
 import re
 import sys
-from ast import Module
 from urllib.parse import urlparse
 
 
@@ -29,19 +29,18 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
     Helper to load the Python files found in the provided directories, and any subdirectory
     """
     sys_path_before = sys.path
-    for dir in dirs:
-        while dir.endswith('/') :
-            dir = dir[:-1]
+    for d in dirs:
+        while d.endswith('/') :
+            d = d[:-1]
 
         try:
-            sys.path.append(dir) # needed to automatially pull in dependencies
-            for f in glob.glob(dir + '/**/*.py', recursive=True):
-                module_name = f[ len(dir)+1 : -3 ].replace('/', '.' ) # remove dir from the front, and the extension from the back
+            sys.path.append(d) # needed to automatially pull in dependencies
+            for f in glob.glob(d + '/**/*.py', recursive=True):
+                module_name = f[ len(d)+1 : -3 ].replace('/', '.' ) # remove d from the front, and the extension from the back
                 if module_name.endswith('__init__'):
                     if skip_init_files:
                         continue
-                    else:
-                        module_name = module_name[:-9] # remote .__init__
+                    module_name = module_name[:-9] # remote .__init__
                 if not module_name:
                     module_name = 'default'
                 spec = importlib.util.spec_from_file_location(module_name, f)
@@ -57,11 +56,8 @@ def account_id_validate(candidate: str) -> bool:
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return True if valid
     """
-    match = re.match("acct:[-a-z0-9\.]+@[-a-z0-9\.]+", candidate) # FIXME: should tighten this regex
-    if match:
-        return True
-    else:
-        return False
+    match = re.match(r"acct:[-a-z0-9\.]+@[-a-z0-9\.]+", candidate) # FIXME: should tighten this regex
+    return bool(match)
 
 
 def http_https_uri_validate(candidate: str) -> bool:
@@ -97,11 +93,10 @@ def http_https_acct_uri_validate(candidate: str) -> bool:
     parsed = urlparse(candidate)
     if parsed.scheme in ['http', 'https']:
         return len(parsed.netloc) > 0
-    elif parsed.scheme == 'acct':
+    if parsed.scheme == 'acct':
         # Don't like this parser
-        return len(parsed.netloc) == 0 and re.match("[-a-z0-9\.]+@[-a-z0-9\.]+", parsed.path) and len(parsed.params) == 0 and len(parsed.query) == 0
-    else:
-        return False
+        return len(parsed.netloc) == 0 and re.match(r"[-a-z0-9\.]+@[-a-z0-9\.]+", parsed.path) and len(parsed.params) == 0 and len(parsed.query) == 0
+    return False
 
 
 def format_name_value_string(data: dict[str,str]) -> str:
@@ -111,10 +106,8 @@ def format_name_value_string(data: dict[str,str]) -> str:
     data: the name-value pairs
     return: formatted string
     """
-
     line_width = 120 # FIXME?
     col1_width = len(max(data, key=len)) + 1
-    # col2_width = line_width - col1_width
     ret = ''
     line = ''
     for key, value in data.items():

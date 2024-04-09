@@ -2,9 +2,9 @@
 List the available test sets
 """
 
-import feditest
-
 from argparse import ArgumentParser, Namespace
+
+import feditest
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """

@@ -25,8 +25,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     plan = TestPlan.load(args.testplan)
     plan.check_can_be_executed()
 
-    run = TestRun(plan)
-    return run.run()
+    test_run = TestRun(plan)
+    return test_run.run()
 
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:

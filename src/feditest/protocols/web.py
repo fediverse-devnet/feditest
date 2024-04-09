@@ -10,8 +10,12 @@ from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
 
 
 class ParsedUri(ParseResult):
-    def __init__(self):
-        self._params: dict[str,list[str]|None] | None = None
+    """
+    An abstract data type for Uris.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._params : dict[str,str] | None = None
 
 
     def has_param(self, name: str) -> bool:
@@ -37,8 +41,8 @@ class ParsedUri(ParseResult):
     def _parse_params(self):
         if self._params:
             return
-        if self._query:
-            self._params = parse_qs(self._query)
+        if self.query:
+            self._params = parse_qs(self.query)
         else:
             self._params = {}
 
@@ -71,9 +75,9 @@ class WebServerLog:
     """
     A list of logged HTTP requests to a web server.
     """
-    def __init__(self, time_started: date = datetime.utcnow(), entries: List[HttpRequestResponsePair] = [] ):
+    def __init__(self, time_started: date = datetime.utcnow(), entries: List[HttpRequestResponsePair] | None = None ):
         self._time_started : date = time_started
-        self._web_log_entries : List[HttpRequestResponsePair] = entries
+        self._web_log_entries : List[HttpRequestResponsePair] = entries or []
 
 
     def append(self, to_add: HttpRequestResponsePair) -> None:
@@ -81,7 +85,7 @@ class WebServerLog:
 
 
     def entries_since(self, cutoff: date) ->  'WebServerLog':
-        ret : List[HttpRequestResponsePair] = ()
+        ret : List[HttpRequestResponsePair] = []
         for entry in self._web_log_entries:
             if entry.when_started >= cutoff :
                 ret.append(entry)
@@ -118,9 +122,10 @@ class WebServer(Node):
         collection_id : str = self._start_logging_http_requests()
         try:
             code()
+            return self._stop_logging_http_requests(collection_id)
 
         finally:
-            return self._stop_logging_http_requests(collection_id)
+            self._stop_logging_http_requests(collection_id)
 
 
     def _start_logging_http_requests(self) -> str:
@@ -145,6 +150,9 @@ class WebServer(Node):
 
 
 class WebClient(Node):
+    """
+    Abstract class used for Nodes that speak HTTP as client.
+    """
     def __init__(self, rolename: str, node_driver: 'WebServer') -> None:
         super().__init__(rolename, node_driver)
 
@@ -153,7 +161,7 @@ class WebClient(Node):
         """
         Make this WebClientperform an HTTP get on the provided uri.
         """
-        raise NotImplementedByDriverError(self, WebClient._http_get)
+        raise NotImplementedByDriverError(self, WebClient.http_get)
         # Unlikely that there is a manual action the user could take, so no prompt here
 
 

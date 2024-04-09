@@ -2,8 +2,8 @@
 Abstractions for the ActivityPub protocol
 """
 
-import httpx
 from typing import Any
+import httpx
 
 from feditest.protocols.web import WebServer
 from feditest.utils import http_https_uri_validate
@@ -31,9 +31,9 @@ class AnyObject:
     We use a generic container because we also want to be able to hold objects
     that are invalid according to the spec.
     """
-    def __init__(self, uri: str, json: Any):
+    def __init__(self, uri: str, json_data: Any):
         self.uri = uri
-        self.json = json
+        self.json = json_data
 
 
     def check_is_valid_object(self):
@@ -51,6 +51,9 @@ class AnyObject:
 
 
 class ActivityPubNode(WebServer):
+    """
+    A Node that can speak ActivityPub.
+    """
     # Use superclass constructor
 
     def obtain_actor_document_uri(self, actor_rolename: str = None) -> str:
@@ -64,10 +67,10 @@ class ActivityPubNode(WebServer):
             return self.node_driver.prompt_user(
                     f'Please enter an URI at node {self._rolename} that serves an ActivityPub Actor document for actor in role {actor_rolename}:',
                     http_https_uri_validate )
-        else:
-            return self.node_driver.prompt_user(
-                    f'Please enter an URI at node {self._rolename} that serves an ActivityPub Actor document:',
-                    http_https_uri_validate )
+
+        return self.node_driver.prompt_user(
+                f'Please enter an URI at node {self._rolename} that serves an ActivityPub Actor document:',
+                http_https_uri_validate )
 
 
     def make_a_follow_b(self, a_uri_here: str, b_uri_there: str, node_there: 'ActivityPubNode') -> None:
@@ -97,5 +100,3 @@ class ActivityPubNode(WebServer):
         """
         def __init__(self, uri: str):
             self.uri = uri
-
-

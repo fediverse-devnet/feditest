@@ -51,7 +51,7 @@ class NodeDriver(ABC):
     def provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
         """
         Instantiate a Node
-        rolename: the name of this instance in the constellation
+        rolename: the name of this Node in the constellation
         hostname: the DNS hostname
         """
         if rolename is None:
@@ -61,14 +61,14 @@ class NodeDriver(ABC):
 
 
     @final
-    def unprovision_node(self, instance: Node) -> None:
+    def unprovision_node(self, node: Node) -> None:
         """
         Deactivate and delete a Node
         node: the Node
         """
-        if instance.node_driver() != self :
-            raise Exception(f"Instance does not belong to this driver: {instance.node_driver()} vs {self}")
-        self._unprovision_node(instance)
+        if node.node_driver() != self :
+            raise Exception(f"Node does not belong to this NodeDriver: {node.node_driver()} vs {self}")
+        self._unprovision_node(node)
 
 
     def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
@@ -79,12 +79,13 @@ class NodeDriver(ABC):
         raise NotImplementedByDriverError(self, NodeDriver._provision_node)
 
 
-    def _unprovision_node(self, instance: Node) -> None:
+    def _unprovision_node(self, node: Node) -> None:
         """
         Invoked when a Node gets unprovisioned, in case cleanup needs to be performed.
         This is here so subclasses of NodeDriver can override it.
         """
-        pass # by default, do nothing
+        # by default, do nothing
+        pass # pylint: disable=unnecessary-pass
 
 
     def prompt_user(self, question: str, validation: Callable[[str],bool] | None = None) -> str:
@@ -107,5 +108,5 @@ class NotImplementedByDriverError(RuntimeError):
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.
     """
-    def __init__(self, instance: Any, method: Callable[...,Any] ):
-        super().__init__(f"Not implemented on instance {instance}: {method}")
+    def __init__(self, node: Node, method: Callable[...,Any] ):
+        super().__init__(f"Not implemented on node {node}: {method}")

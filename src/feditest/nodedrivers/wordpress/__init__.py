@@ -7,6 +7,9 @@ from feditest.ubos import UbosNodeDriver
 
 
 class WordPressPlusActivityPubPluginUbosNode(FediverseNode):
+    """
+    A Node running WordPress with the ActivityPub plugin, instantiated with UBOS.
+    """
     def __init__(self, site_id: str, rolename: str, hostname: str, admin_id: str, node_driver: 'WordPressPlusActivityPubPluginUbosNodeDriver') -> None:
         super(FediverseNode, self).__init__(rolename, hostname, node_driver)
 
@@ -31,5 +34,12 @@ class WordPressPlusActivityPubPluginUbosNode(FediverseNode):
 
 @nodedriver
 class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
+    """
+    Knows how to instantiate WordPress with the ActivityPub plugin via UBOS.
+    """
     def _instantiate_node(self, site_id: str, rolename: str, hostname: str, admin_id: str) -> None:
         return WordPressPlusActivityPubPluginUbosNode(site_id, rolename, hostname, admin_id, self)
+
+
+    def _unprovision_node(self, node: WordPressPlusActivityPubPluginUbosNode) -> None:
+        self._exec_shell(f"sudo ubos-admin undeploy --siteid {node._site_id}") # pylint: disable=protected-access

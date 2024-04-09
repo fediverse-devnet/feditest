@@ -3,30 +3,18 @@ An in-process Node implementation for now.
 """
 
 import json
-import random
-import string
-from datetime import datetime
-from typing import Any, Callable, Iterable
-
+from typing import Any
 import httpx
 
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
-from feditest.protocols.fediverse import FediverseNode
-from feditest.protocols.web import (
-    HttpRequestResponsePair,
-    ParsedUri,
-    WebClient,
-    WebServerLog,
-)
+from feditest.protocols.web import WebClient
 from feditest.protocols.webfinger import WebFingerClient
 from feditest.reporting import info
 from feditest.utils import (
-    account_id_validate,
     http_https_acct_uri_validate,
     http_https_uri_validate,
 )
-
 
 class Jrd:
     """
@@ -37,13 +25,48 @@ class Jrd:
 
 
     class JrdError(RuntimeError):
-        pass
+        """
+        Represents a problem during JRD parsing, such as syntax error.
+        """
+        pass # pylint: disable=unnecessary-pass
 
 
     class InvalidTypeError(JrdError):
-        pass
+        """
+        The JSON structure is invalid for a Jrd.
+        """
+        pass # pylint: disable=unnecessary-pass
 
 
+    class InvalidUriError(JrdError):
+        """
+        The URI in a Jrd is invalid.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    class MissingMemberError(JrdError):
+        """
+        The JRD is missing a member that is required.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    class InvalidRelError(JrdError):
+        """
+        The JRD specifies a link relationship that is invalid.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    class InvalidMediaTypeError(JrdError):
+        """
+        The JRD specifies a media type that is invalid.
+        """
+        pass # pylint: disable=unnecessary-pass
+
+
+    @staticmethod
     def is_registered_relation_type(value: str) -> bool:
         """
         Return True if the provided value is a registered relation type in
@@ -175,7 +198,7 @@ working-copy
 working-copy-of"""
         return value in defined.split()
 
-
+    @staticmethod
     def is_valid_media_type(value: str) -> bool:
         """
         This should check for a valid media type per RFC 6838.
@@ -184,7 +207,7 @@ working-copy-of"""
         return value.find('/') > 0
 
 
-    def validate(self) -> None:
+    def validate(self) -> None: # pylint: disable=too-many-branches
         """
         Validate the correctness of the JRD. Throw Exceptions if it is not valid.
         """
@@ -269,6 +292,9 @@ working-copy-of"""
 
 
 class Imp(WebFingerClient):
+    """
+    Our placeholder test client. Its future is tbd.
+    """
     # use superclass constructor
 
     # @override # from WebClient
@@ -296,12 +322,15 @@ class Imp(WebFingerClient):
             jrd = Jrd(response.content) # may raise
             jrd.validate() # may raise
             return jrd
-        else:
-            raise WebFingerClient.UnknownResourceException(uri, response)
+
+        raise WebFingerClient.UnknownResourceException(uri, response)
 
 
 @nodedriver
 class ImpInProcessNodeDriver(NodeDriver):
+    """
+    Knows how to instantiate an Imp.
+    """
     # use superclass constructor
 
     # Python 3.12 @override
@@ -316,4 +345,3 @@ class ImpInProcessNodeDriver(NodeDriver):
     # Python 3.12 @override
     def _unprovision_node(self, node: Imp) -> None:
         pass
-
