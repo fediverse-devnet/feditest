@@ -1,6 +1,8 @@
 """
 """
 
+# pylint: disable=invalid-name
+
 from typing import Any, List
 
 from feditest import nodedriver
@@ -76,7 +78,8 @@ class SandboxMultServer_Implementation2(SandboxMultServer):
 
     def mult(self, a: int, b: int) -> int:
         c = 0
-        for i in range(0, a): # << here's the key 'mult' functionality
+        # << here's the key 'mult' functionality
+        for i in range(0, a): # pylint: disable=unused-variable
             c += b
         if self._log is not None:
             self._log.append(SandboxLogEvent(a, b, c))

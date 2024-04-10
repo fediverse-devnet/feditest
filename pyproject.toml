@@ -42,5 +42,6 @@ exclude = [
     "docs/"
 ]
 
-[tool.pylint]
+[tool.pylint."MESSAGES CONTROL"]
 max-line-length=120
+disable="global-variable-not-assigned, line-too-long, empty-docstring, missing-function-docstring, too-few-public-methods, too-many-arguments"

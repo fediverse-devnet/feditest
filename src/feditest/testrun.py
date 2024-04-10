@@ -22,6 +22,9 @@ from feditest.testplan import (
 
 
 class TestRunConstellation:
+    """
+    The instance of a TestPlanConstellation associated with a particular test run.
+    """
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self._plan_constellation = plan_constellation
         self._run_constellation : dict[str, Node] = {}
@@ -44,7 +47,7 @@ class TestRunConstellation:
             if node:
                 self._run_constellation[plan_role_name] = node
             else:
-                raise Exception(f'NodeDriver {node_driver} return null Node from provision_node()')
+                raise Exception(f'NodeDriver {node_driver} returned null Node from provision_node()')
 
         if not os.environ.get("UNIT_TESTING"):
             time.sleep(10) # This is a fudge factor because apparently some applications take some time
@@ -66,6 +69,10 @@ class TestRunConstellation:
 
 
 class TestRunSession:
+    """
+    A TestRun consists of one or more TestRunSessions, each of which spins up a constallation, the runs
+    some tests and then tears itself down again. Then the next TestRunSession can run.
+    """
     def __init__(self, name: str, plan_session: TestPlanSession):
         self.name = name
         self.problems : List[Exception] = []
@@ -87,8 +94,8 @@ class TestRunSession:
                         try:
                             self._run_test_spec(test_spec)
                         except Exception as e:
-                             error('FAILED test:', e)
-                             self.problems.append(TestProblem(test_spec, e))
+                            error('FAILED test:', e)
+                            self.problems.append(TestProblem(test_spec, e))
             finally:
                 self._constellation.teardown()
 
@@ -116,11 +123,17 @@ class TestRunSession:
                 case 1:
                     test_step.function(run_constellation[plan_roles[0].name])
                 case 2:
-                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name])
+                    test_step.function(run_constellation[plan_roles[0].name],
+                                       run_constellation[plan_roles[1].name])
                 case 3:
-                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name], run_constellation[plan_roles[2].name])
+                    test_step.function(run_constellation[plan_roles[0].name],
+                                       run_constellation[plan_roles[1].name],
+                                       run_constellation[plan_roles[2].name])
                 case 4:
-                    test_step.function(run_constellation[plan_roles[0].name], run_constellation[plan_roles[1].name], run_constellation[plan_roles[2].name], run_constellation[plan_roles[3].name])
+                    test_step.function(run_constellation[plan_roles[0].name],
+                                       run_constellation[plan_roles[1].name],
+                                       run_constellation[plan_roles[2].name],
+                                       run_constellation[plan_roles[3].name])
                 case _:
                     error( 'Constellation size not supported yet:', len(plan_roles))
 

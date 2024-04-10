@@ -2,10 +2,13 @@
 Classes that represent a TestPlan and its parts.
 """
 
+# pylint: disable=missing-class-docstring
+
 from typing import Any
+
 import msgspec
 
-from feditest import all_node_drivers, all_tests, Test
+from feditest import Test, all_node_drivers, all_tests
 from feditest.reporting import fatal
 
 
@@ -48,7 +51,7 @@ class TestPlan(msgspec.Struct):
         """
         Read a file, and instantiate a TestPlan from what we find.
         """
-        with open(filename) as f:
+        with open(filename, 'r', encoding='utf-8') as f:
             data = f.read()
 
         return msgspec.json.decode(data, type=TestPlan)
@@ -59,9 +62,6 @@ class TestPlan(msgspec.Struct):
         Check that we have all the tests and node drivers needed for this plan. If all is well,
         return. If not well, throw an Exception that explains the problem
         """
-        global all_node_drivers
-        global all_tests
-
         for session in self.sessions:
             all_roles = {}
             for role in session.constellation.roles:
@@ -71,7 +71,7 @@ class TestPlan(msgspec.Struct):
                 all_roles[role_name] = True
                 node_driver_name : str = role.nodedriver
 
-                if not node_driver_name in all_node_drivers:
+                if node_driver_name not in all_node_drivers:
                     fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
 
             for test_spec in session.tests:

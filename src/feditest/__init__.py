@@ -9,7 +9,6 @@ from pkgutil import resolve_name
 from types import FunctionType
 from typing import Any, Type
 
-from feditest.protocols import Node
 from feditest.reporting import fatal, warning
 from feditest.utils import load_python_from
 
@@ -51,8 +50,7 @@ class TestSet:
     def get(self, name: str) -> Test | None:
         if name in self.tests:
             return self.tests[name]
-        else:
-            return None
+        return None
 
     def all(self) -> dict[str,Test]:
         return self.tests
@@ -121,8 +119,8 @@ def step(to_register: Callable[..., None]) -> None:
         if test_set:
             test_set.tests[test.name] = test
 
-    step = TestStep(step_name, step_description, test, to_register)
-    test.steps.append(step)
+    test_step = TestStep(step_name, step_description, test, to_register)
+    test.steps.append(test_step)
 
 
 _loading_node_drivers = False

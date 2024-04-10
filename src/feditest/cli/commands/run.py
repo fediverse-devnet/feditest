@@ -14,7 +14,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     Run this command.
     """
     if len(remaining):
-        parser.print_help();
+        parser.print_help()
         return 0
 
     feditest.load_tests_from(args.testsdir)
@@ -24,7 +24,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         feditest.load_node_drivers_from(feditest.cli.default_node_drivers_dir)
 
     plan = TestPlan.load(args.testplan)
-    plan.check_can_be_executed();
+    plan.check_can_be_executed()
 
     if isinstance(args.tap, str):
         with open(args.tap, "w") as out:
