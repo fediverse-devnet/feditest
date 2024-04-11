@@ -157,12 +157,8 @@ class DefaultTestResultWriter:
               plan: TestPlan,
               run_sessions: list[TestRunSession], 
               metadata: dict[str, Any]|None = None):
-        all_passed = sum(1 for s in run_sessions if s.problems) == 0
-        if all_passed:
-            return 0
-        else:
+        if any(s.problems for s in run_sessions):
             info('FAILED')
-            return 1
 
 class TapTestResultWriter:
     def __init__(self, out: IO = sys.stdout):
@@ -225,5 +221,5 @@ class TestRun:
 
         self._result_writer.write(self._plan, run_sessions)
 
-        all_passed = sum(1 for s in run_sessions if s.problems)
-        return 0 if all_passed == 0 else 1
+        all_passed = all(not s.problems for s in run_sessions)
+        return 0 if all_passed else 1
