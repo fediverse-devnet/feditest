@@ -2,6 +2,8 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
+# pylint: disable=protected-access
+
 import os
 import sys
 import time
@@ -213,7 +215,7 @@ class TestRun:
 
         run_sessions: list[TestRunSession] = []
 
-        for i in range(0, len(self._plan.sessions)):
+        for i in range(0, len(self._plan.sessions)): # pylint: disable=consider-using-enumerate
             plan_session = self._plan.sessions[i]
             run_session = TestRunSession(plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}', plan_session)
             run_session.run()
