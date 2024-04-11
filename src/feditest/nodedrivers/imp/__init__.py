@@ -338,7 +338,7 @@ class ImpInProcessNodeDriver(NodeDriver):
         if parameters:
             raise Exception('ImpInProcessNodeDriver nodes do not take parameters')
 
-        node = Imp(rolename, self)
+        node = Imp(rolename, hostname, self)
         return node
 
 

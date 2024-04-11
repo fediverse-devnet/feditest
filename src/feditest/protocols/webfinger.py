@@ -23,12 +23,12 @@ class WebFingerServer(WebServer):
         """
 
         if nickname:
-            return self.node_driver.prompt_user(
-                    f'Please enter the URI of an existing or new account for {nickname} at node {self._rolename} (e.g. "acct:testuser@example.local" )',
+            return self.node_driver().prompt_user(
+                    f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     account_id_validate )
 
-        return self.node_driver.prompt_user(
-                f'Please enter the URI of an existing or new account at node {self._rolename} (e.g. "acct:testuser@example.local" )',
+        return self.node_driver().prompt_user(
+                f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                 account_id_validate )
 
 
@@ -42,12 +42,12 @@ class WebFingerServer(WebServer):
         """
 
         if nickname:
-            return self.node_driver.prompt_user(
-                f'Please enter the URI of an non-existing account for {nickname} at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',
+            return self.node_driver().prompt_user(
+                f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                 account_id_validate )
 
-        return self.node_driver.prompt_user(
-            f'Please enter the URI of an non-existing account at node {self._rolename} (e.g. "acct:does-not-exist@example.local" )',
+        return self.node_driver().prompt_user(
+            f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
             account_id_validate )
 
 
@@ -62,8 +62,8 @@ class WebFingerClient(WebClient):
         'https://example.com/aabc' (not escaped).
         Return a dict that is the parsed form of the JRD or throws an exception
         """
-        return self.node_driver.prompt_user(
-            f'Please take an action at node {self._rolename} that makes it perform a WebFinger query on URI {resource_uri}' )
+        return self.node_driver().prompt_user(
+                f'Please take an action at Node "{self._rolename}" that makes it perform a WebFinger query on URI "{resource_uri}" and hit return when done.' )
 
 
     def construct_webfinger_uri_for(self, resource_uri: str) -> str:

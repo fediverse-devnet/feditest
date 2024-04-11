@@ -52,6 +52,7 @@ class TestRunConstellation:
                 raise Exception(f'NodeDriver {node_driver} returned null Node from provision_node()')
 
         if not os.environ.get("UNIT_TESTING"):
+            info('Sleeping for 10sec to give the Nodes some time to get ready.')
             time.sleep(10) # This is a fudge factor because apparently some applications take some time
                            # after deployment before they are ready to communicate.
                            # FIXME? This should potentially be in the NodeDrivers
