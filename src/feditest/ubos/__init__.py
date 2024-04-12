@@ -34,13 +34,17 @@ class UbosNodeDriver(NodeDriver):
         if 'hostname' not in parameters:
             raise Exception('UbosNodeDriver needs parameter hostname for now') # FIXME: should get it from the JSON file
         if not hostname_validate(parameters['hostname']):
-            raise Exception(f'Invalid hostname: "{ parameters['hostname'] }"')
+            raise Exception(f'Invalid hostname: "{ parameters["hostname"] }"')
         if 'sitejsonfile' in parameters:
             cmd = f"sudo ubos-admin deploy --file {parameters['sitejsonfile']}"
         elif 'backupfile' in parameters:
             cmd = f"sudo ubos-admin restore --in {parameters['backupfile']}"
         else:
             raise Exception('UbosNodeDriver needs parameter sitejsonfile or backupfile')
+
+        parameters = dict(parameters)
+        parameters['existing-account-uri'] = f"acct:{ parameters['adminid'] }@{ parameters['hostname'] }"
+        parameters['nonexisting-account-uri'] = f"acct:does-not-exist@{ parameters['hostname'] }"
 
         self._exec_shell(cmd)
         ret = self._instantiate_node(parameters['siteid'], rolename, parameters)
