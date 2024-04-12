@@ -10,6 +10,7 @@ from feditest import all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
 from feditest.testrun import DefaultTestResultWriter, TapTestResultWriter
 from feditest.testrun import TestRun as _TestRun
+from hamcrest import assert_that, equal_to
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -37,6 +38,10 @@ def passing_feditest(test_spec: feditest.testplan.TestPlanTestSpec): ...
 
 def problem_feditest(test_spec: feditest.testplan.TestPlanTestSpec):
     raise Exception("Exception for unit testing")
+
+
+def problem_feditest_hamcrest(test_spec: feditest.testplan.TestPlanTestSpec):
+    assert_that(1, equal_to(2))
 
 
 class StubNode(Node):
@@ -115,7 +120,18 @@ ok 1 - unittest-test-passing
 not ok 2 - unittest-test-other
   ---
   problem: |
-    TestProblem(test=TestPlanTestSpec(name='unittest-test-other', disabled=None), exc=Exception('Exception for unit testing'))
+    Exception for unit testing
+  ...
+1..2
+""".lstrip()
+
+EXPECTED_TAP_FAILURE_HAMCREST = """
+ok 1 - unittest-test-passing
+not ok 2 - unittest-test-other
+  ---
+  problem: |
+    Expected: <2>
+         but: was <1>
   ...
 1..2
 """.lstrip()
@@ -124,8 +140,24 @@ not ok 2 - unittest-test-other
 @pytest.mark.parametrize(
     ["test_function", "expected_exit_code", "expected_results"],
     [
-        pytest.param(passing_feditest, 0, EXPECTED_TAP_ALL_PASSED, id="passing"),
-        pytest.param(problem_feditest, 1, EXPECTED_TAP_FAILURE, id="problem"),
+        pytest.param(
+            passing_feditest,
+            0,
+            EXPECTED_TAP_ALL_PASSED,
+            id="passing",
+        ),
+        pytest.param(
+            problem_feditest,
+            1,
+            EXPECTED_TAP_FAILURE,
+            id="problem",
+        ),
+        pytest.param(
+            problem_feditest_hamcrest,
+            1,
+            EXPECTED_TAP_FAILURE_HAMCREST,
+            id="problem_hamcrest",
+        ),
     ],
 )
 def test_result_writer_tap(test_function, expected_exit_code, expected_results):
