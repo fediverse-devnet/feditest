@@ -334,11 +334,11 @@ class ImpInProcessNodeDriver(NodeDriver):
     # use superclass constructor
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None ) -> Imp:
+    def _provision_node(self, rolename: str, parameters: dict[str,Any] | None ) -> Imp:
         if parameters:
             raise Exception('ImpInProcessNodeDriver nodes do not take parameters')
 
-        node = Imp(rolename, hostname, self)
+        node = Imp(rolename, parameters, self)
         return node
 
 

@@ -1,5 +1,4 @@
 import logging
-import os
 from io import StringIO
 from typing import Any
 
@@ -10,13 +9,6 @@ from feditest import all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
 from feditest.testrun import DefaultTestResultWriter, TapTestResultWriter
 from feditest.testrun import TestRun as _TestRun
-
-
-@pytest.fixture(scope="session", autouse=True)
-def set_testing_context():
-    # I don't know if we'll end up using pytest or not so I'm not using
-    # the pytest-specific environment variables for this purpose.
-    os.environ["UNIT_TESTING"] = "true"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -50,7 +42,7 @@ class StubNodeDriver(NodeDriver):
         ...
 
     def _provision_node(
-        self, rolename: str, hostname: str, parameters: dict[str, Any] | None = None
+        self, rolename: str, parameters: dict[str, Any] | None = None
     ) -> Node:
         return StubNode(rolename, self)
 

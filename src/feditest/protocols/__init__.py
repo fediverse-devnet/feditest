@@ -22,23 +22,27 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
+    def __init__(self, rolename: str, parameters: dict[str,Any] | None, node_driver: 'NodeDriver') -> None:
         """
         rolename: name of the role in the constellation
-        hostname: the hostname of this Node
+        parameters: parameters for this Node, if any
         node_driver: the NodeDriver that provisioned this Node
         """
         self._rolename = rolename
-        self._hostname = hostname
+        self._parameters = parameters
         self._node_driver = node_driver
 
 
-    def rolename(self):
+    def rolename(self) -> str | None:
         return self._rolename
 
 
-    def hostname(self):
-        return self._hostname
+    def hostname(self) -> str | None:
+        return self._parameters.get('hostname')
+
+
+    def parameter(self, name: str) -> str | None:
+        return self._parameters.get(name)
 
 
     def node_driver(self):
@@ -54,16 +58,15 @@ class NodeDriver(ABC):
 
 
     @final
-    def provision_node(self, rolename: str, hostname: str | None, parameters: dict[str,Any] | None = None) -> Node:
+    def provision_node(self, rolename: str, parameters: dict[str,Any] | None = None) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
-        hostname: the DNS hostname that was specified in the test plan, or None if none. The actual hostname is carried
-                  by the returned Node
+        parameters: parameters for the Node, if any
         """
         if rolename is None:
             raise Exception("rolename must be given")
-        ret = self._provision_node(rolename, hostname, parameters)
+        ret = self._provision_node(rolename, parameters)
         return ret
 
 
@@ -78,7 +81,7 @@ class NodeDriver(ABC):
         self._unprovision_node(node)
 
 
-    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
+    def _provision_node(self, rolename: str, parameters: dict[str,Any] | None) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.
@@ -95,20 +98,25 @@ class NodeDriver(ABC):
         pass # pylint: disable=unnecessary-pass
 
 
-    def prompt_user(self, question: str, validation: Callable[[str],bool] | None = None) -> str:
+    def prompt_user(self, question: str, value_if_known: str | None = None, validation: Callable[[str],bool] | None = None) -> str:
         """
         If an NodeDriver does not natively implement support for a particular method,
         this method is invoked as a fallback. It prompts the user to enter information
         at the console.
         question: the text to be emitted to the user as a prompt
+        value_if_known: if given, that value can be used instead of asking the user
         validation: optional function that validates user input and returns True if valid
         return: the value entered by the user
         """
+        if value_if_known:
+            return value_if_known
+
         while True:
             ret = input(f'TESTER ACTION REQUIRED: { question }')
             if validation is None or validation(ret):
                 return ret
             print(f'INPUT ERROR: invalid input, try again. Was: "{ ret}"')
+
 
 class NotImplementedByDriverError(RuntimeError):
     """

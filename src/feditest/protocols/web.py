@@ -2,10 +2,9 @@
 """
 
 from datetime import date, datetime
-import httpx
-from typing import Callable, List, final
+from typing import Any, Callable, List, final
 from urllib.parse import ParseResult, parse_qs
-
+import httpx
 from feditest.protocols import Node, NodeDriver, NotImplementedByDriverError
 
 
@@ -96,17 +95,8 @@ class WebServer(Node):
     """
     Abstract class used for Nodes that speak HTTP as server.
     """
-    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
-        super().__init__(rolename, hostname, node_driver)
-
-        self._hostname = hostname
-
-
-    def get_hostname(self) -> str:
-        """
-        Return a resolvable DNS hostname that resolves to this WebServerNode.
-        """
-        return self._hostname
+    def __init__(self, rolename: str, parameters: dict[str,Any] | None, node_driver: 'NodeDriver') -> None:
+        super().__init__(rolename, parameters, node_driver)
 
 
     @final

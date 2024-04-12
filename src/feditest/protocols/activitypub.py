@@ -66,10 +66,12 @@ class ActivityPubNode(WebServer):
         if actor_rolename:
             return self.node_driver().prompt_user(
                     f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{actor_rolename}": ',
+                    self.parameter('node-uri'),
                     http_https_uri_validate )
 
         return self.node_driver().prompt_user(
                 f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
+                self.parameter('node-uri'),
                 http_https_uri_validate )
 
 
@@ -81,7 +83,7 @@ class ActivityPubNode(WebServer):
         relationship is fully established.
         """
         return self.node_driver().prompt_user(
-                f'On ActivityPub Node "{node_there.get_hostname()}", make actor "{a_uri_here}" follow actor "{b_uri_there}" and hit return once the relationship is fully established.' )
+                f'On ActivityPub Node "{node_there.hostname()}", make actor "{a_uri_here}" follow actor "{b_uri_there}" and hit return once the relationship is fully established.' )
 
 
     class NotFoundError(RuntimeError):

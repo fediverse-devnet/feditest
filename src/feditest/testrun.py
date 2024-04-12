@@ -4,7 +4,6 @@ Classes that represent a running TestPlan and its its parts.
 
 # pylint: disable=protected-access
 
-import os
 import sys
 import time
 from contextlib import redirect_stdout
@@ -35,9 +34,9 @@ class TestRunConstellation:
         """
         Set up the constellation of nodes needed for some tests.
         """
-
         info('Setting up constellation:', self._plan_constellation.name)
 
+        wait_time = 0
         for plan_role in self._plan_constellation.roles:
             plan_role_name = plan_role.name
             node_driver_class : Type[Any] = all_node_drivers[plan_role.nodedriver]
@@ -45,17 +44,19 @@ class TestRunConstellation:
             info('Setting up role', plan_role_name, f'(node driver: {plan_role.nodedriver})')
 
             node_driver : NodeDriver = node_driver_class(plan_role_name)
-            node : Node = node_driver.provision_node(plan_role_name, plan_role.hostname, plan_role.parameters)
+            node : Node = node_driver.provision_node(plan_role_name, plan_role.parameters)
             if node:
                 self._run_constellation[plan_role_name] = node
             else:
                 raise Exception(f'NodeDriver {node_driver} returned null Node from provision_node()')
 
-        if not os.environ.get("UNIT_TESTING"):
-            info('Sleeping for 10sec to give the Nodes some time to get ready.')
-            time.sleep(10) # This is a fudge factor because apparently some applications take some time
-                           # after deployment before they are ready to communicate.
-                           # FIXME? This should potentially be in the NodeDrivers
+            if plan_role.parameters and 'start-delay' in plan_role.parameters:
+                wait_time = max(wait_time, int(plan_role.parameters['start-delay']))
+
+        if wait_time:
+            info(f'Sleeping for { wait_time } sec to give the Nodes some time to get ready.')
+            time.sleep(wait_time) # Apparently some applications take some time
+                                  # after deployment before they are ready to communicate.
 
     def teardown(self):
         info('Tearing down constellation:', self._plan_constellation.name)

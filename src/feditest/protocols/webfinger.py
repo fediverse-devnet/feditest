@@ -21,14 +21,15 @@ class WebFingerServer(WebServer):
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """
-
         if nickname:
             return self.node_driver().prompt_user(
                     f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
+                    self.parameter('existing-account-uri'),
                     account_id_validate )
 
         return self.node_driver().prompt_user(
                 f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
+                self.parameter('existing-account-uri'),
                 account_id_validate )
 
 
@@ -40,14 +41,15 @@ class WebFingerServer(WebServer):
         nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
         return: the identifier
         """
-
         if nickname:
             return self.node_driver().prompt_user(
                 f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
+                self.parameter('nonexisting-account-uri'),
                 account_id_validate )
 
         return self.node_driver().prompt_user(
             f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
+            self.parameter('nonexisting-account-uri'),
             account_id_validate )
 
 

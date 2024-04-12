@@ -11,13 +11,14 @@ from feditest.utils import hostname_validate
 
 
 class ManualFediverseNode(FediverseNode):
-    def __init__(self, rolename: str, hostname: str, node_driver: 'ManualFediverseNodeDriver') -> None:
-        super(ManualFediverseNode, self).__init__(rolename, hostname, node_driver)
+    def __init__(self, rolename: str, parameters: dict[str,Any] | None, node_driver: 'ManualFediverseNodeDriver'):
+        super(ManualFediverseNode, self).__init__(rolename, parameters, node_driver)
 
 
 @nodedriver
 class ManualFediverseNodeDriver(NodeDriver):
-    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> ManualFediverseNode:
+    def _provision_node(self, rolename: str, parameters: dict[str,Any] | None ) -> ManualFediverseNode:
+        hostname = parameters.get('hostname')
         if hostname:
             self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
                              + f' with hostname "{ hostname }" and hit return when done.')
@@ -25,8 +26,11 @@ class ManualFediverseNodeDriver(NodeDriver):
             hostname = self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
                                         + ' and enter the hostname when done: ',
                                         hostname_validate)
-            
-        return ManualFediverseNode(rolename, hostname, self)
+            parameters= dict(parameters)
+            parameters['hostname'] = hostname
+
+        return ManualFediverseNode(rolename, parameters, self)
+
 
     def _unprovision_node(self, node: Node) -> None:
         self.prompt_user(f'Manually unprovision the Node for constellation role { node.rolename() } and hit return when done.')

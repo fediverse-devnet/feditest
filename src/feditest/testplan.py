@@ -10,13 +10,10 @@ import msgspec
 
 from feditest import Test, all_node_drivers, all_tests
 from feditest.reporting import fatal
-from feditest.utils import hostname_validate
-
 
 class TestPlanConstellationRole(msgspec.Struct):
     name: str
     nodedriver: str
-    hostname: str | None = None # If none is given, one is provisioned
     parameters: dict[str,Any] | None = None
 
 
@@ -74,9 +71,6 @@ class TestPlan(msgspec.Struct):
 
                 if node_driver_name not in all_node_drivers:
                     fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
-
-            if role.hostname and not hostname_validate(role.hostname):
-                fatal(f'Invalid hostname: { role.hostname }')
 
             for test_spec in session.tests:
                 test : Test | None = all_tests.get(test_spec.name)
