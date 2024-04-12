@@ -3,6 +3,7 @@ Nodes managed via UBOS https://ubos.net/
 """
 
 import subprocess
+import shutil
 from typing import Any
 
 from feditest.protocols import Node, NodeDriver
@@ -17,6 +18,9 @@ class UbosNodeDriver(NodeDriver):
         The UBOS driver knows how to provision a node either by deploying a UBOS Site JSON file
         with "ubos-admin deploy" or to restore a known state of a Site with "ubos-admin restore".
         """
+        if not shutil.which('ubos-admin'):
+            raise Exception(f'UbosNodeDriver ({ type(self)}) can only be used on UBOS.')
+        
         cmd = None
         if not parameters:
             raise Exception('UbosNodeDriver needs parameters')
