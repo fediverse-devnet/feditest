@@ -187,7 +187,7 @@ class TapTestResultWriter:
                         print(f"not ok {test_id} - {test.name}")
                         print("  ---")
                         print("  problem: |")
-                        for line in str(problem).strip().split("\n"):
+                        for line in str(problem.exc).strip().split("\n"):
                             print(f"    {line}")
                         print("  ...")
                     else:
