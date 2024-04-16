@@ -22,6 +22,7 @@ class UbosNodeDriver(NodeDriver):
             raise Exception(f'UbosNodeDriver ({ type(self)}) can only be used on UBOS.')
         
         # FIXME: reconcile provided hostname with what's in the site json / backup
+
         cmd = None
         if not parameters:
             raise Exception('UbosNodeDriver needs parameters')
