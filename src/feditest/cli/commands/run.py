@@ -27,14 +27,14 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     plan.check_can_be_executed()
 
     if isinstance(args.tap, str):
-        with open(args.tap, "w") as out:
+        with open(args.tap, "w", encoding="utf8") as out:
             result_writer = TapTestResultWriter(out)
-            run = TestRun(plan, result_writer)
-            return run.run()
+            test_run = TestRun(plan, result_writer)
+            return test_run.run()
     else:
         result_writer = DefaultTestResultWriter() if not args.tap else TapTestResultWriter()
-        run = TestRun(plan, result_writer)
-        return run.run()
+        test_run = TestRun(plan, result_writer)
+        return test_run.run()
 
 
 def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:

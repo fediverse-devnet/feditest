@@ -9,6 +9,7 @@ import pkgutil
 import re
 import sys
 from urllib.parse import urlparse
+from langcodes import Language
 
 
 def find_submodules(package: Module) -> list[str]:
@@ -77,6 +78,7 @@ def http_https_root_uri_validate(uri: str) -> bool:
     return: True if valid
     """
     parsed = urlparse(uri)
+    # FIXME: check that urlparse faithfully implements the relevant RFCs
     return (parsed.scheme in ['http', 'https']
             and len(parsed.netloc) > 0
             and (len(parsed.path) == 0 or parsed.path == '/')
@@ -95,8 +97,27 @@ def http_https_acct_uri_validate(candidate: str) -> bool:
         return len(parsed.netloc) > 0
     if parsed.scheme == 'acct':
         # Don't like this parser
-        return len(parsed.netloc) == 0 and re.match(r"[-a-z0-9\.]+@[-a-z0-9\.]+", parsed.path) and len(parsed.params) == 0 and len(parsed.query) == 0
+        # FIXME: regex likely does not match the relevant RFCs
+        return len(parsed.netloc) == 0 and re.match(r"[-a-zA-Z0-9\.]+@[-a-zA-Z0-9\.]+", parsed.path) and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0
     return False
+
+
+def uri_validate(candidate: str) -> bool:
+    """
+    Validate that the provided string is a valid URI.
+    return: True if valid
+    """
+    parsed = urlparse(candidate)
+    return (len(parsed.scheme) > 0
+            and len(parsed.netloc) > 0)
+
+
+def rfc5646_language_tag_validate(candidate: str) -> bool:
+    """
+    Validate a language tag according to RFC 5646, see https://www.rfc-editor.org/rfc/rfc5646.html
+    return: True if valid
+    """
+    return Language.get(candidate).is_valid() # FIXME needs checking that this library actually does what it says it does
 
 
 def hostname_validate(candidate: str) -> bool:
@@ -107,7 +128,7 @@ def hostname_validate(candidate: str) -> bool:
     # from https://stackoverflow.com/questions/2532053/validate-a-hostname-string but we don't want trailing periods
     if len(candidate) > 255:
         return False
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+    allowed = re.compile(r"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     return all(allowed.match(x) for x in candidate.split("."))
 
 

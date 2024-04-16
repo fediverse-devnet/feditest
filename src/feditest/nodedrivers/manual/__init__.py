@@ -11,8 +11,13 @@ from feditest.utils import hostname_validate
 
 
 class ManualFediverseNode(FediverseNode):
+<<<<<<< Updated upstream
     def __init__(self, rolename: str, hostname: str, node_driver: 'ManualFediverseNodeDriver') -> None:
         super(ManualFediverseNode, self).__init__(rolename, hostname, node_driver)
+=======
+    def __init__(self, rolename: str, parameters: dict[str,Any] | None, node_driver: 'ManualFediverseNodeDriver'):
+        super().__init__(rolename, parameters, node_driver)
+>>>>>>> Stashed changes
 
 
 @nodedriver

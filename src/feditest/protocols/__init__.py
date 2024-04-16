@@ -62,8 +62,13 @@ class NodeDriver(ABC):
                   by the returned Node
         """
         if rolename is None:
+<<<<<<< Updated upstream
             raise Exception("rolename must be given")
         ret = self._provision_node(rolename, hostname, parameters)
+=======
+            raise NodeSpecificationInvalidError(self, 'rolename', 'rolename must be given')
+        ret = self._provision_node(rolename, parameters)
+>>>>>>> Stashed changes
         return ret
 
 
@@ -74,7 +79,7 @@ class NodeDriver(ABC):
         node: the Node
         """
         if node.node_driver() != self :
-            raise Exception(f"Node does not belong to this NodeDriver: {node.node_driver()} vs {self}")
+            raise Exception(f"Node does not belong to this NodeDriver: {node.node_driver()} vs {self}") # pylint: disable=broad-exception-raised
         self._unprovision_node(node)
 
 
@@ -115,5 +120,23 @@ class NotImplementedByDriverError(RuntimeError):
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.
     """
-    def __init__(self, node: Node, method: Callable[...,Any] ):
-        super().__init__(f"Not implemented on node {node}: {method}")
+    def __init__(self, node: Node, method: Callable[...,Any], arg: Any = None ):
+        super().__init__(f"Not implemented on node {node}: {method}" + (f" ({ arg })" if arg else ""))
+
+
+class NodeSpecificationInsufficientError(RuntimeError):
+    """
+    This exception is raised when a NodeDriver cannot instantiate a Node because insufficient
+    information (parameters) has been provided.
+    """
+    def __init__(self, node_driver: NodeDriver, details: str ):
+        super().__init__(f"Node specification is insufficient for {node_driver}: {details}" )
+
+
+class NodeSpecificationInvalidError(RuntimeError):
+    """
+    This exception is raised when a NodeDriver cannot instantiate a Node because invalid
+    information (e.g. a syntax error in a parameter) has been provided.
+    """
+    def __init__(self, node_driver: NodeDriver, parameter: str, details: str ):
+        super().__init__(f"Node specification is invalid for {node_driver}, parameter {parameter}: {details}" )

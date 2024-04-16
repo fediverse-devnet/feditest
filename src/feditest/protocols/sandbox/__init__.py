@@ -2,7 +2,7 @@
 Abstractions for the toy "Sandbox" protocol.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List
 
 from feditest.protocols import Node, NotImplementedByDriverError
@@ -12,7 +12,7 @@ class SandboxLogEvent:
     The structure of the data inserted into the log.
     """
     def __init__(self, a: int, b: int, c: int):
-        self.when = datetime.utcnow()
+        self.when = datetime.now(UTC)
         self.a = a
         self.b = b
         self.c = c

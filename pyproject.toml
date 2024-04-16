@@ -10,7 +10,9 @@ authors = [
 ]
 dependencies = [
   "httpx",
+  "langcodes",
   "msgspec",
+  "multidict",
   "pyhamcrest"
 ]
 description = "Testing federated protocols"

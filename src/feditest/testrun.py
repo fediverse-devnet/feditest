@@ -2,7 +2,7 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
 import os
 import sys
@@ -149,19 +149,19 @@ class TestProblem:
 
 class TestResultWriter(Protocol):
     """An object that writes test results in some format."""
-    def write(self, plan: TestPlan, 
-              run_sessions: list[TestRunSession], 
+    def write(self, plan: TestPlan,
+              run_sessions: list[TestRunSession],
               metadata: dict[str, Any]|None = None):
         """Write test results."""
         ...
-        
+
 class DefaultTestResultWriter:
-    def write(self, 
+    def write(self,
               plan: TestPlan,
-              run_sessions: list[TestRunSession], 
+              run_sessions: list[TestRunSession],
               metadata: dict[str, Any]|None = None):
         if any(s.problems for s in run_sessions):
-            info('FAILED')
+            error('FAILED')
 
 class TapTestResultWriter:
     def __init__(self, out: IO = sys.stdout):
