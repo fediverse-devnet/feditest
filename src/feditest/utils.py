@@ -99,6 +99,18 @@ def http_https_acct_uri_validate(candidate: str) -> bool:
     return False
 
 
+def hostname_validate(candidate: str) -> bool:
+    """
+    Validate that the provided string is a valid hostname.
+    return: True if valid
+    """
+    # from https://stackoverflow.com/questions/2532053/validate-a-hostname-string but we don't want trailing periods
+    if len(candidate) > 255:
+        return False
+    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+    return all(allowed.match(x) for x in candidate.split("."))
+
+
 def format_name_value_string(data: dict[str,str]) -> str:
     """
     Format name-value pairs to a string similar to how an HTML definition list would

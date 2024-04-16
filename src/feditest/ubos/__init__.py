@@ -19,8 +19,8 @@ class UbosNodeDriver(NodeDriver):
         with "ubos-admin deploy" or to restore a known state of a Site with "ubos-admin restore".
         """
         if not shutil.which('ubos-admin'):
-            raise Exception(f'UbosNodeDriver ({ type(self)}) can only be used on UBOS.')
-        
+            raise Exception(f'UbosNodeDriver ({ type(self)}) can only be used on UBOS.'
+
         cmd = None
         if not parameters:
             raise Exception('UbosNodeDriver needs parameters')

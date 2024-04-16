@@ -22,17 +22,23 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, node_driver: 'NodeDriver') -> None:
+    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
         """
         rolename: name of the role in the constellation
+        hostname: the hostname of this Node
         node_driver: the NodeDriver that provisioned this Node
         """
         self._rolename = rolename
+        self._hostname = hostname
         self._node_driver = node_driver
 
 
     def rolename(self):
         return self._rolename
+
+
+    def hostname(self):
+        return self._hostname
 
 
     def node_driver(self):
@@ -48,11 +54,12 @@ class NodeDriver(ABC):
 
 
     @final
-    def provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
+    def provision_node(self, rolename: str, hostname: str | None, parameters: dict[str,Any] | None = None) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
-        hostname: the DNS hostname
+        hostname: the DNS hostname that was specified in the test plan, or None if none. The actual hostname is carried
+                  by the returned Node
         """
         if rolename is None:
             raise Exception("rolename must be given")
@@ -98,10 +105,10 @@ class NodeDriver(ABC):
         return: the value entered by the user
         """
         while True:
-            ret = input("TESTER ACTION REQUIRED: " + question)
+            ret = input(f'TESTER ACTION REQUIRED: { question }')
             if validation is None or validation(ret):
                 return ret
-
+            print(f'INPUT ERROR: invalid input, try again. Was: "{ ret}"')
 
 class NotImplementedByDriverError(RuntimeError):
     """
