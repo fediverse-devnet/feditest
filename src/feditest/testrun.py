@@ -154,20 +154,63 @@ class TestResultWriter(Protocol):
               metadata: dict[str, Any]|None = None):
         """Write test results."""
         ...
-        
+
+@dataclass
+class TestSummary:
+    total: int
+    passed: int
+    failed: int
+    skipped: int
+
+    @staticmethod
+    def for_run(plan: TestPlan, run_sessions: list[TestRunSession]) -> "TestSummary":
+        count = 0
+        passed = 0
+        failed = 0
+        skipped = 0
+        for run_session, plan_session in zip(run_sessions, plan.sessions):
+            for test in plan_session.tests:
+                count += 1
+                if _get_problem(run_session, test):
+                    failed += 1
+                elif test.disabled:
+                    skipped += 1
+                else:
+                    passed += 1
+        return TestSummary(count, passed, failed, skipped)
+
+
 class DefaultTestResultWriter:
-    def write(self, 
-              plan: TestPlan,
-              run_sessions: list[TestRunSession], 
-              metadata: dict[str, Any]|None = None):
+    def write(
+        self,
+        plan: TestPlan,
+        run_sessions: list[TestRunSession],
+        metadata: dict[str, Any] | None = None,
+    ):
         if any(s.problems for s in run_sessions):
-            info('FAILED')
+            info("FAILED")
+        summary = TestSummary.for_run(plan, run_sessions)
+        info(
+            "Test summary: total=%d, passed=%d, failed=%d, skipped=%d"
+            % (
+                summary.total,
+                summary.passed,
+                summary.failed,
+                summary.skipped,
+            )
+        )
+
 
 class TapTestResultWriter:
     def __init__(self, out: IO = sys.stdout):
         self.out = out
 
-    def write(self, plan, run_sessions, metadata = None):
+    def write(
+        self,
+        plan: TestPlan,
+        run_sessions: list[TestRunSession],
+        metadata: dict[str, Any] | None = None,
+    ):
         with redirect_stdout(self.out):
             print("TAP version 14")
             print(f"# test plan: {plan.name}")
@@ -186,7 +229,7 @@ class TapTestResultWriter:
                     print(f"#       driver: {role.nodedriver}")
                 for test in plan_session.tests:
                     test_id += 1
-                    if problem := self._get_problem(run_session, test):
+                    if problem := _get_problem(run_session, test):
                         print(f"not ok {test_id} - {test.name}")
                         print("  ---")
                         print("  problem: |")
@@ -197,10 +240,17 @@ class TapTestResultWriter:
                         directives = f" # SKIP {test.disabled}" if test.disabled else ""
                         print(f"ok {test_id} - {test.name}{directives}")
             print(f"1..{test_id}")
+            summary = TestSummary.for_run(plan, run_sessions)
+            print("# test run summary:")
+            print(f"#   total: {summary.total}")
+            print(f"#   passed: {summary.passed}")
+            print(f"#   failed: {summary.failed}")
+            print(f"#   skipped: {summary.skipped}")
 
-    @staticmethod
-    def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem:
-        return next((p for p in run_session.problems if p.test.name == test.name), None)
+
+def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem:
+    return next((p for p in run_session.problems if p.test.name == test.name), None)
+
 
 class TestRun:
     """
