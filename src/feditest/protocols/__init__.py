@@ -22,53 +22,54 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, hostname: str, node_driver: 'NodeDriver') -> None:
+    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
         """
         rolename: name of the role in the constellation
-        hostname: the hostname of this Node
+        parameters: parameters for this Node. Always provided, even if empty
         node_driver: the NodeDriver that provisioned this Node
         """
         self._rolename = rolename
-        self._hostname = hostname
+        self._parameters = parameters
         self._node_driver = node_driver
 
 
+    @property
     def rolename(self):
         return self._rolename
 
 
+    @property
     def hostname(self):
-        return self._hostname
+        return self._parameters.get('hostname')
 
 
+    @property
     def node_driver(self):
         return self._node_driver
+
+
+    def parameter(self, name:str) -> str | None:
+        return self._parameters.get(name)
 
 
 class NodeDriver(ABC):
     """
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
     """
-    def __init__(self, name: str) -> None:
-        self._name : str = name
+    def __init__(self, name: str):
+        self.name : str = name
 
 
     @final
-    def provision_node(self, rolename: str, hostname: str | None, parameters: dict[str,Any] | None = None) -> Node:
+    def provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
-        hostname: the DNS hostname that was specified in the test plan, or None if none. The actual hostname is carried
-                  by the returned Node
+        parameters: parameters for this Node
         """
         if rolename is None:
-<<<<<<< Updated upstream
-            raise Exception("rolename must be given")
-        ret = self._provision_node(rolename, hostname, parameters)
-=======
             raise NodeSpecificationInvalidError(self, 'rolename', 'rolename must be given')
         ret = self._provision_node(rolename, parameters)
->>>>>>> Stashed changes
         return ret
 
 
@@ -78,17 +79,17 @@ class NodeDriver(ABC):
         Deactivate and delete a Node
         node: the Node
         """
-        if node.node_driver() != self :
-            raise Exception(f"Node does not belong to this NodeDriver: {node.node_driver()} vs {self}") # pylint: disable=broad-exception-raised
+        if node.node_driver != self :
+            raise Exception(f"Node does not belong to this NodeDriver: { node.node_driver } vs { self }") # pylint: disable=broad-exception-raised
         self._unprovision_node(node)
 
 
-    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None) -> Node:
+    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.
         """
-        raise NotImplementedByDriverError(self, NodeDriver._provision_node)
+        raise NotImplementedByNodeDriverError(self, NodeDriver._provision_node)
 
 
     def _unprovision_node(self, node: Node) -> None:
@@ -115,13 +116,23 @@ class NodeDriver(ABC):
                 return ret
             print(f'INPUT ERROR: invalid input, try again. Was: "{ ret}"')
 
-class NotImplementedByDriverError(RuntimeError):
+
+class NotImplementedByNodeError(RuntimeError):
     """
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.
     """
     def __init__(self, node: Node, method: Callable[...,Any], arg: Any = None ):
-        super().__init__(f"Not implemented on node {node}: {method}" + (f" ({ arg })" if arg else ""))
+        super().__init__(f"Not implemented by node {node}: {method}" + (f" ({ arg })" if arg else ""))
+
+
+class NotImplementedByNodeDriverError(RuntimeError):
+    """
+    This exception is raised when a Node cannot perform a certain operation because it
+    has not been implemented in this subtype of Node.
+    """
+    def __init__(self, node_driver: NodeDriver, method: Callable[...,Any], arg: Any = None ):
+        super().__init__(f"Not implemented by node driver {node_driver}: {method}" + (f" ({ arg })" if arg else ""))
 
 
 class NodeSpecificationInsufficientError(RuntimeError):

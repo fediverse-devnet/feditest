@@ -45,17 +45,12 @@ def problem_feditest_hamcrest(test_spec: feditest.testplan.TestPlanTestSpec):
 
 
 class StubNode(Node):
-    def __init__(self, rolename: str, node_driver: NodeDriver) -> None:
-        super().__init__(rolename, node_driver)
+    pass
 
 
 class StubNodeDriver(NodeDriver):
-    def __init__(self, rolename: str):
-        self.role_name = rolename
-        ...
-
     def _provision_node(
-        self, rolename: str, hostname: str, parameters: dict[str, Any] | None = None
+        self, rolename: str, parameters: dict[str, Any]
     ) -> Node:
         return StubNode(rolename, self)
 
@@ -113,6 +108,11 @@ EXPECTED_TAP_ALL_PASSED = """
 ok 1 - unittest-test-passing
 ok 2 - unittest-test-other
 1..2
+# test run summary:
+#   total: 2
+#   passed: 2
+#   failed: 0
+#   skipped: 0
 """.lstrip()
 
 EXPECTED_TAP_FAILURE = """
@@ -123,6 +123,11 @@ not ok 2 - unittest-test-other
     Exception for unit testing
   ...
 1..2
+# test run summary:
+#   total: 2
+#   passed: 1
+#   failed: 1
+#   skipped: 0
 """.lstrip()
 
 EXPECTED_TAP_FAILURE_HAMCREST = """
@@ -134,11 +139,16 @@ not ok 2 - unittest-test-other
          but: was <1>
   ...
 1..2
+# test run summary:
+#   total: 2
+#   passed: 1
+#   failed: 1
+#   skipped: 0
 """.lstrip()
 
 
 @pytest.mark.parametrize(
-    ["test_function", "expected_exit_code", "expected_results"],
+    ["test_function", "expected_exit_code", "expected_trailer"],
     [
         pytest.param(
             passing_feditest,
@@ -160,7 +170,7 @@ not ok 2 - unittest-test-other
         ),
     ],
 )
-def test_result_writer_tap(test_function, expected_exit_code, expected_results):
+def test_result_writer_tap(test_function, expected_exit_code, expected_trailer):
     test_set = feditest.TestSet("unittest-testset", "a test set for a unit test", None)
     passing_test = feditest.Test(
         "unittest-test", "a test for unit testing", test_set, 0
@@ -210,5 +220,5 @@ def test_result_writer_tap(test_function, expected_exit_code, expected_results):
 
     results = out.getvalue()
     assert results.startswith(EXPECTED_TAP_HEADER)
-    assert results.endswith(expected_results)
+    assert results.endswith(expected_trailer)
     assert exit_code == expected_exit_code

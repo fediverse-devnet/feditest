@@ -309,7 +309,7 @@ working-copy-of"""
                         raise ClaimedJrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
                     if not ClaimedJrd.is_valid_media_type(link['type']):
-                        raise ClaimedJrd.InvalidMediaTypeError(self, f'Values for the type member in the links array must be valid media types: { link['type'] }')
+                        raise ClaimedJrd.InvalidMediaTypeError(self, f'Values for the type member in the links array must be valid media types: { link["type"] }')
 
                 if 'href' in link:
                     # is optional
@@ -360,7 +360,7 @@ working-copy-of"""
         """
         super_links = jrd_with_superset.links()
         sub_links = self.links()
-        
+
         if super_links:
             if sub_links:
                 if len(sub_links) > len(super_links):
@@ -375,7 +375,7 @@ working-copy-of"""
                             super_position = super_i + 1
                             found = True
                             break
-                        if super_link['rel'] in self._rels:
+                        if super_link['rel'] in sub_links:
                             # should not have removed this one
                             return False
                     if not found:
@@ -409,7 +409,7 @@ working-copy-of"""
 
         if not self._dict_equals(a.get('properties'), b.get('properties')):
             return False
-        
+
         return True
 
 
@@ -427,8 +427,8 @@ working-copy-of"""
 
         if len(a) != len(b):
             return False
-        
-        for a_key, a_value in a:
+
+        for a_key, a_value in a.values():
             if a_key in b:
                 b_value = b[a_key]
                 if a_value != b_value:

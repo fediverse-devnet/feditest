@@ -2,7 +2,7 @@
 Provide information on a variety of objects
 """
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
 import feditest.cli
@@ -64,7 +64,7 @@ def run_info_testset(name: str) -> int:
     """
     test_set = feditest.all_test_sets.get(name)
     if test_set:
-        test_set_metadata = {
+        test_set_metadata : dict[str, str | None]= {
             'Test set name:' : test_set.name,
             'Description:' : test_set.description
         }
@@ -80,21 +80,21 @@ def run_info_node_driver(name: str) -> int:
     """
     Provide information on a node driver
     """
-    test = feditest.all_node_drivers.get(name)
-    if test:
-        test_metadata = {
-            'App driver name:' : test.name,
-            'Description:' : test.description
+    node_driver_class = feditest.all_node_drivers.get(name)
+    if node_driver_class:
+        node_driver_metadata = {
+            'Node driver name:' : node_driver_class.__qualname__,
+            'Description:' : node_driver_class.__doc__
         }
 
-        print(format_name_value_string(test_metadata), end='')
+        print(format_name_value_string(node_driver_metadata), end='')
         return 0
 
-    warning( 'App driver not found:', name)
+    warning( 'Node driver not found:', name)
     return 1
 
 
-def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     Add command-line options for this sub-command
     parent_parser: the parent argparse parser

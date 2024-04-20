@@ -2,17 +2,17 @@
 Main entry point for CLI invocation
 """
 
-from argparse import ArgumentParser
-from ast import Module
+from argparse import ArgumentParser, Action
 import importlib
 import sys
 import traceback
+from types import ModuleType
 
 from feditest.reporting import fatal, set_reporting_level
 from feditest.utils import find_submodules
 import feditest.cli.commands
 
-def main():
+def main() -> None:
     """
     Main entry point for CLI invocation.
     """
@@ -23,7 +23,7 @@ def main():
     parser = ArgumentParser(description='FediTest: test federated protocols')
     parser.add_argument('-v', '--verbose', action='count', default=0,
             help='Display extra output. May be repeated for even more output' )
-    cmd_parsers = parser.add_subparsers(dest='command', required=True)
+    cmd_parsers : Action = parser.add_subparsers(dest='command', required=True)
 
     for cmd_name, cmd in cmds.items():
         cmd.add_sub_parser(cmd_parsers, cmd_name)
@@ -47,11 +47,11 @@ def main():
         fatal('Sub-command not found:', cmd_name, '. Add --help for help.' )
 
 
-def find_commands() -> dict[str,Module]:
+def find_commands() -> dict[str,ModuleType]:
     """
     Find available commands.
     """
-    cmd_names = find_submodules( feditest.cli.commands )
+    cmd_names = find_submodules(feditest.cli.commands)
 
     cmds = {}
     for cmd_name in cmd_names:

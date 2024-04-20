@@ -2,25 +2,25 @@
 Core module.
 """
 
-from ast import Module
 from collections.abc import Callable
 from inspect import signature, getmodule
 from pkgutil import resolve_name
-from types import FunctionType
-from typing import Any, Type
+from types import FunctionType, ModuleType
+from typing import Any, Type, TypeAlias
 
 from feditest.reporting import fatal, warning
 from feditest.utils import load_python_from
 
+TestSetOrNone: TypeAlias = "TestSet | None"
 
 class TestStep:
     """
     A step in a test. TestSteps for the same Test are all declared with @step in the same source file,
     and will be executed in sequence unless specified otherwise.
     """
-    def __init__(self, name: str, description: str, test: 'Test', function: Callable[..., None]) -> None:
+    def __init__(self, name: str, description: str | None, test: 'Test', function: Callable[..., None]) -> None:
         self.name: str = name
-        self.description: str = description
+        self.description: str | None = description
         self.function: Callable[..., None] = function
         self.test = test
 
@@ -29,19 +29,19 @@ class Test:
     """
     Captures the notion of a Test, such as "see whether a follower is told about a new post".
     """
-    def __init__(self, name: str, description: str, test_set: 'TestSet', constellation_size: int ) -> None:
+    def __init__(self, name: str, description: str | None, test_set: TestSetOrNone, constellation_size: int ) -> None:
         self.name: str = name
-        self.description: str = description
+        self.description: str | None = description
         self.constellation_size = constellation_size
         self.test_set = test_set
-        self.steps = []
+        self.steps : list[TestStep] = []
 
 
 class TestSet:
     """
     A set of tests that can be treated as a unit.
     """
-    def __init__(self, name: str, description: str, package: Module) -> None:
+    def __init__(self, name: str, description: str, package: ModuleType | None) -> None:
         self.name = name
         self.description = description
         self.package = package
@@ -92,14 +92,17 @@ def step(to_register: Callable[..., None]) -> None:
         fatal('Cannot register a non-function test:', to_register.__name__)
 
     module = getmodule(to_register)
-    parent_module_name = '.'.join( module.__name__.split('.')[0:-1])
-    if parent_module_name :
-        if parent_module_name in all_test_sets:
-            test_set = all_test_sets[parent_module_name]
+    if module:
+        parent_module_name = '.'.join( module.__name__.split('.')[0:-1])
+        if parent_module_name :
+            if parent_module_name in all_test_sets:
+                test_set = all_test_sets[parent_module_name]
+            else:
+                parent_module = resolve_name(parent_module_name)
+                test_set = TestSet(parent_module_name, parent_module.__doc__, parent_module)
+                all_test_sets[parent_module_name] = test_set
         else:
-            parent_module = resolve_name(parent_module_name)
-            test_set = TestSet(parent_module_name, parent_module.__doc__, parent_module)
-            all_test_sets[parent_module_name] = test_set
+            test_set = None
     else:
         test_set = None
 
@@ -156,8 +159,9 @@ def nodedriver(to_register: Type[Any]):
         fatal('Cannot register a non-Class NodeDriver:', to_register.__name__)
 
     module = getmodule(to_register)
-    full_name = f'{module.__name__}.{to_register.__qualname__}'
+    if module is not None:
+        full_name = f'{module.__name__}.{to_register.__qualname__}'
 
-    if full_name in all_node_drivers:
-        fatal('Cannot re-register NodeDriver', full_name )
-    all_node_drivers[full_name] = to_register
+        if full_name in all_node_drivers:
+            fatal('Cannot re-register NodeDriver', full_name )
+        all_node_drivers[full_name] = to_register

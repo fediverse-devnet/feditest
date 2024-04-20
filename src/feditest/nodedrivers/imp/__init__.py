@@ -7,7 +7,7 @@ import httpx
 from multidict import MultiDict
 
 from feditest import nodedriver
-from feditest.protocols import NodeDriver, NodeSpecificationInvalidError
+from feditest.protocols import Node, NodeDriver, NodeSpecificationInvalidError
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, HttpResponse
 from feditest.protocols.webfinger import WebFingerClient
@@ -32,7 +32,7 @@ class Imp(WebFingerClient):
             httpx_response = httpx_client.send(httpx_request)
 
         if httpx_response:
-            response_headers = MultiDict()
+            response_headers : MultiDict = MultiDict()
             for key, value in httpx_response.headers.items():
                 response_headers.add(key.lower(), value)
             return HttpRequestResponsePair(request, request, HttpResponse(httpx_response.status_code, response_headers, httpx_response.read()))
@@ -45,22 +45,26 @@ class Imp(WebFingerClient):
 
         first_request = HttpRequest(ParsedUri.parse(uri))
         current_request = first_request
-        pair : HttpRequestResponsePair = None
+        pair : HttpRequestResponsePair | None = None
         for redirect_count in range(10, 0, -1):
             pair = self.http(current_request)
-            if pair.response.is_redirect():
+            if pair.response and pair.response.is_redirect():
                 if redirect_count <= 0:
-                    raise WebClient.TooManyRedirectsError(uri)
+                    raise WebClient.TooManyRedirectsError(current_request)
                 current_request = HttpRequest(ParsedUri.parse(pair.response.location()))
             break
 
-        # I guess we always have a non-null responses here
-        ret_pair = HttpRequestResponsePair(first_request, current_request, pair.response)
-        if ret_pair.response.http_status == 200 and ( ret_pair.response.content_type() == 'application/jrd+json') or ret_pair.response.content_type().startswith('application/jrd+json;'):
-            json_string = ret_pair.response.payload.decode(ret_pair.response.payload_charset())
-            jrd = ClaimedJrd(json_string)
-            jrd.validate()
-            return WebFingerQueryResponse(pair, jrd)
+        # I guess we always have a non-null responses here, but mypy complains without the if
+        if pair:
+            ret_pair = HttpRequestResponsePair(first_request, current_request, pair.response)
+            if ret_pair.response is not None:
+                if ret_pair.response.http_status == 200:
+                    if ret_pair.response.content_type() == 'application/jrd+json' or ret_pair.response.content_type().startswith('application/jrd+json;'):
+                        if ret_pair.response.payload is not None:
+                            json_string = ret_pair.response.payload.decode(encoding=ret_pair.response.payload_charset() )
+                            jrd = ClaimedJrd(json_string)
+                            jrd.validate()
+                            return WebFingerQueryResponse(pair, jrd)
 
         raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair)
 
@@ -73,14 +77,14 @@ class ImpInProcessNodeDriver(NodeDriver):
     # use superclass constructor
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, hostname: str, parameters: dict[str,Any] | None = None ) -> Imp:
+    def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> Imp:
         if parameters:
             raise NodeSpecificationInvalidError(self, 'any', 'No parameters can be specified')
 
-        node = Imp(rolename, hostname, self)
+        node = Imp(rolename, parameters, self)
         return node
 
 
     # Python 3.12 @override
-    def _unprovision_node(self, node: Imp) -> None:
+    def _unprovision_node(self, node: Node) -> None:
         pass

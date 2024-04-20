@@ -2,7 +2,7 @@
 Run one or more tests
 """
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
 from feditest.testplan import TestPlan
@@ -26,6 +26,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     plan = TestPlan.load(args.testplan)
     plan.check_can_be_executed()
 
+    result_writer: object | None = None
     if isinstance(args.tap, str):
         with open(args.tap, "w", encoding="utf8") as out:
             result_writer = TapTestResultWriter(out)
@@ -37,13 +38,13 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         return test_run.run()
 
 
-def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     Add command-line options for this sub-command
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parser = parent_parser.add_parser( cmd_name, help='Run one or more tests' )
+    parser = parent_parser.add_parser(cmd_name, help='Run one or more tests' )
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
     parser.add_argument('--testplan', default='feditest-default.json', help='Name of the file that contains the test plan to run')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find drivers for nodes that can be tested')

@@ -2,8 +2,8 @@
 """
 
 from datetime import date, datetime, UTC
-from typing import Any, Callable, List, final
-from feditest.protocols import Node, NotImplementedByDriverError
+from typing import Callable, List, final
+from feditest.protocols import Node, NotImplementedByNodeError
 from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, ParsedUri
 
 
@@ -27,7 +27,7 @@ class WebServerLog:
     def entries_since(self, cutoff: date) ->  'WebServerLog':
         ret : List[HttpRequestResponsePair] = []
         for entry in self._web_log_entries:
-            if entry.when_started >= cutoff :
+            if entry.request.when_started >= cutoff :
                 ret.append(entry)
         return WebServerLog(cutoff, ret)
 
@@ -61,7 +61,7 @@ class WebServer(Node):
         return: an identifier for the log
         see: _stop_logging_http_requests
         """
-        raise NotImplementedByDriverError(self, WebServer._start_logging_http_requests)
+        raise NotImplementedByNodeError(self, WebServer._start_logging_http_requests)
         # This could be done manually, but returning the log cannot
 
 
@@ -72,7 +72,7 @@ class WebServer(Node):
         return: the collected HTTP requests
         see: _start_logging_http_requests
         """
-        raise NotImplementedByDriverError(self, WebServer._stop_logging_http_requests)
+        raise NotImplementedByNodeError(self, WebServer._stop_logging_http_requests)
         # This cannot be done manually
 
 
@@ -80,15 +80,11 @@ class WebClient(Node):
     """
     Abstract class used for Nodes that speak HTTP as client.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any] | None, node_driver: 'WebServer') -> None:
-        super().__init__(rolename, parameters, node_driver)
-
-
     def http(self, request: HttpRequest) -> HttpRequestResponsePair:
         """
         Make this WebClient perform an HTTP request.
         """
-        raise NotImplementedByDriverError(self, WebClient.http, request.method)
+        raise NotImplementedByNodeError(self, WebClient.http, request.method)
         # Unlikely that there is a manual action the user could take, so no prompt here
 
 

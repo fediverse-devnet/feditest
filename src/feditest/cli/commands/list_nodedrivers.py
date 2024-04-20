@@ -2,7 +2,7 @@
 List the available drivers for nodes that can be tested
 """
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
 import feditest.cli
@@ -26,12 +26,12 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     return 0
 
 
-def add_sub_parser( parent_parser: ArgumentParser, cmd_name: str ) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     Add command-line options for this sub-command
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parser = parent_parser.add_parser( cmd_name, help='List the available drivers for nodes that can be tested' )
+    parser = parent_parser.add_parser(cmd_name, help='List the available drivers for nodes that can be tested')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find drivers for nodes that can be tested')
         # Can't set a default value, because action='append' adds to the default value, instead of replacing it

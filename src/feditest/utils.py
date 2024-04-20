@@ -2,17 +2,17 @@
 Utility functions
 """
 
-from ast import Module
 import glob
-import importlib
+import importlib.util
 import pkgutil
 import re
 import sys
+from types import ModuleType
 from urllib.parse import urlparse
 from langcodes import Language
 
 
-def find_submodules(package: Module) -> list[str]:
+def find_submodules(package: ModuleType) -> list[str]:
     """
     Find all submodules in the named package
 
@@ -45,9 +45,10 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
                 if not module_name:
                     module_name = 'default'
                 spec = importlib.util.spec_from_file_location(module_name, f)
-                module = importlib.util.module_from_spec(spec)
-                sys.modules[module_name] = module
-                spec.loader.exec_module(module)
+                if spec is not None and spec.loader is not None:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[module_name] = module
+                    spec.loader.exec_module(module)
         finally:
             sys.path = sys_path_before
 
@@ -98,7 +99,7 @@ def http_https_acct_uri_validate(candidate: str) -> bool:
     if parsed.scheme == 'acct':
         # Don't like this parser
         # FIXME: regex likely does not match the relevant RFCs
-        return len(parsed.netloc) == 0 and re.match(r"[-a-zA-Z0-9\.]+@[-a-zA-Z0-9\.]+", parsed.path) and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0
+        return len(parsed.netloc) == 0 and re.match(r"[-a-zA-Z0-9\.]+@[-a-zA-Z0-9\.]+", parsed.path) is not None and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0
     return False
 
 
@@ -132,7 +133,7 @@ def hostname_validate(candidate: str) -> bool:
     return all(allowed.match(x) for x in candidate.split("."))
 
 
-def format_name_value_string(data: dict[str,str]) -> str:
+def format_name_value_string(data: dict[str,str | None]) -> str:
     """
     Format name-value pairs to a string similar to how an HTML definition list would
     do it.
