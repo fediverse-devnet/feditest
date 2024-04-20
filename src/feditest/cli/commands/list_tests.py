@@ -2,7 +2,8 @@
 List the available tests
 """
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, _SubParsersAction
+
 import feditest
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
@@ -19,11 +20,11 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     return 0
 
-def add_sub_parser(parent_parser: ArgumentParser, cmd_name: str) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     Add command-line options for this sub-command
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parser = parent_parser.add_parser(cmd_name, help='List the available tests' )
+    parser = parent_parser.add_parser(cmd_name, help='List the available tests')
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')

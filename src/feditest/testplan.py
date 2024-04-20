@@ -16,13 +16,18 @@ from feditest.utils import hostname_validate
 class TestPlanConstellationRole(msgspec.Struct):
     name: str
     nodedriver: str
-    hostname: str | None = None # If none is given, one is provisioned
     parameters: dict[str,Any] | None = None
+
+
+    def parameter(self, name: str) -> Any | None:
+        if self.parameters:
+            return self.parameters.get(name)
+        return None
 
 
 class TestPlanConstellation(msgspec.Struct):
     roles : list[TestPlanConstellationRole]
-    name: str = None
+    name: str | None = None
 
 
 class TestPlanTestSpec(msgspec.Struct):
@@ -33,7 +38,7 @@ class TestPlanTestSpec(msgspec.Struct):
 class TestPlanSession(msgspec.Struct):
     constellation : TestPlanConstellation
     tests : list[TestPlanTestSpec]
-    name: str = None
+    name: str | None = None
 
 
 class TestPlan(msgspec.Struct):
@@ -44,7 +49,7 @@ class TestPlan(msgspec.Struct):
     test. The constellation has 1 or more roles, which are bound to nodes that communicate with
     each other according to the to-be-tested protocol(s) during the test.
     """
-    name: str = None
+    name: str | None = None
     sessions : list[TestPlanSession] = []
 
     @staticmethod
@@ -75,12 +80,17 @@ class TestPlan(msgspec.Struct):
                 if node_driver_name not in all_node_drivers:
                     fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
 
-            if role.hostname and not hostname_validate(role.hostname):
-                fatal(f'Invalid hostname: { role.hostname }')
+                if role.parameter('hostname'):
+                    if isinstance(role.parameter('hostname'), str):
+                        hostname : str = role.parameter('hostname') or "" # make mypy happy
+                        if not hostname_validate(hostname):
+                            fatal(f"Invalid hostname: { hostname }")
+                    else:
+                        fatal("Invalid value for hostname: requires a string")
 
             for test_spec in session.tests:
                 test : Test | None = all_tests.get(test_spec.name)
                 if test is None:
                     fatal('Cannot find test:', test_spec.name)
-                if test.constellation_size != len(session.constellation.roles):
+                elif test.constellation_size != len(session.constellation.roles):
                     fatal('Cannot run test with constellation of size', len(session.constellation.roles), ':', test_spec.name)

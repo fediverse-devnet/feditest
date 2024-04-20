@@ -1,5 +1,4 @@
 import logging
-import os
 from io import StringIO
 from typing import Any
 
@@ -11,13 +10,6 @@ from feditest.protocols import Node, NodeDriver
 from feditest.testrun import DefaultTestResultWriter, TapTestResultWriter
 from feditest.testrun import TestRun as _TestRun
 from hamcrest import assert_that, equal_to
-
-
-@pytest.fixture(scope="session", autouse=True)
-def set_testing_context():
-    # I don't know if we'll end up using pytest or not so I'm not using
-    # the pytest-specific environment variables for this purpose.
-    os.environ["UNIT_TESTING"] = "true"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -45,17 +37,12 @@ def problem_feditest_hamcrest(test_spec: feditest.testplan.TestPlanTestSpec):
 
 
 class StubNode(Node):
-    def __init__(self, rolename: str, node_driver: NodeDriver) -> None:
-        super().__init__(rolename, None, node_driver)
+    pass
 
 
 class StubNodeDriver(NodeDriver):
-    def __init__(self, rolename: str):
-        self.role_name = rolename
-        ...
-
     def _provision_node(
-        self, rolename: str, hostname: str, parameters: dict[str, Any] | None = None
+        self, rolename: str, parameters: dict[str, Any]
     ) -> Node:
         return StubNode(rolename, self)
 

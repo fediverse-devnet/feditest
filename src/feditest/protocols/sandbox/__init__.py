@@ -2,17 +2,17 @@
 Abstractions for the toy "Sandbox" protocol.
 """
 
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List
 
-from feditest.protocols import Node, NotImplementedByDriverError
+from feditest.protocols import Node, NotImplementedByNodeError
 
 class SandboxLogEvent:
     """
     The structure of the data inserted into the log.
     """
     def __init__(self, a: int, b: int, c: int):
-        self.when = datetime.utcnow()
+        self.when = datetime.now(UTC)
         self.a = a
         self.b = b
         self.c = c
@@ -26,14 +26,14 @@ class SandboxMultServer(Node):
         """
         The operation that's being tested
         """
-        raise NotImplementedByDriverError(self, SandboxMultServer.mult)
+        raise NotImplementedByNodeError(self, SandboxMultServer.mult)
 
 
     def start_logging(self):
         """
         Activate logging of mult() operations
         """
-        raise NotImplementedByDriverError(self, SandboxMultServer.start_logging)
+        raise NotImplementedByNodeError(self, SandboxMultServer.start_logging)
 
 
     def get_and_clear_log(self) -> List[SandboxLogEvent]:
@@ -41,7 +41,7 @@ class SandboxMultServer(Node):
         Stop logging of mult() operations, return what has been logged so far
         and clear the log
         """
-        raise NotImplementedByDriverError(self, SandboxMultServer.get_and_clear_log)
+        raise NotImplementedByNodeError(self, SandboxMultServer.get_and_clear_log)
 
 
 class SandboxMultClient(Node):
@@ -52,4 +52,4 @@ class SandboxMultClient(Node):
         """
         Enable FediTest to make the client perform the mult() operation on the server.
         """
-        raise NotImplementedByDriverError(self, SandboxMultClient.cause_mult)
+        raise NotImplementedByNodeError(self, SandboxMultClient.cause_mult)

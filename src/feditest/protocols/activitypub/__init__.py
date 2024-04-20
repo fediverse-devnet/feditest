@@ -56,7 +56,7 @@ class ActivityPubNode(WebServer):
     """
     # Use superclass constructor
 
-    def obtain_actor_document_uri(self, actor_rolename: str = None) -> str:
+    def obtain_actor_document_uri(self, actor_rolename: str | None = None) -> str:
         """
         Return the URI that leads to an Actor document that either exists already or is
         newly created.
@@ -64,12 +64,14 @@ class ActivityPubNode(WebServer):
         return: the URI
         """
         if actor_rolename:
-            return self.node_driver().prompt_user(
+            return self.node_driver.prompt_user(
                     f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{actor_rolename}": ',
+                    self.parameter('node-uri'),
                     http_https_uri_validate )
 
-        return self.node_driver().prompt_user(
+        return self.node_driver.prompt_user(
                 f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
+                self.parameter('node-uri'),
                 http_https_uri_validate )
 
 
@@ -80,8 +82,8 @@ class ActivityPubNode(WebServer):
         which is hosted on ActivityPubNode node_there. Only return when the follow
         relationship is fully established.
         """
-        return self.node_driver().prompt_user(
-                f'On ActivityPub Node "{node_there.get_hostname()}", make actor "{a_uri_here}" follow actor "{b_uri_there}" and hit return once the relationship is fully established.' )
+        return self.node_driver.prompt_user(
+                f'On ActivityPub Node "{node_there.hostname()}", make actor "{a_uri_here}" follow actor "{b_uri_there}" and hit return once the relationship is fully established.' )
 
 
     class NotFoundError(RuntimeError):
