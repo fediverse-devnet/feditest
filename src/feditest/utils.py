@@ -53,13 +53,15 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
             sys.path = sys_path_before
 
 
-def account_id_validate(candidate: str) -> bool:
+def account_id_validate(candidate: str) -> tuple[str,str] | None:
     """
     Validate that the provided string is of the form 'acct:foo@bar.com'.
-    return True if valid
+    return tuple of user, host if valid, None otherwise
     """
-    match = re.match(r"acct:[-a-z0-9\.]+@[-a-z0-9\.]+", candidate) # FIXME: should tighten this regex
-    return bool(match)
+    match = re.match(r"acct:([-a-z0-9\.]+)@([-a-z0-9\.]+)", candidate) # FIXME: should tighten this regex
+    if match:
+        return (match.group(1) or "", match.group(2) or "")
+    return None
 
 
 def http_https_uri_validate(candidate: str) -> bool:

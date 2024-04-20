@@ -12,8 +12,7 @@ from feditest.utils import hostname_validate
 
 
 class SaasFediverseNode(FediverseNode):
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SaasFediverseNodeDriver'):
-        super().__init__(rolename, parameters, node_driver)
+    pass
 
 
 @nodedriver
@@ -25,7 +24,7 @@ class SaasFediverseNodeDriver(NodeDriver):
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SaasFediverseNode:
         hostname = parameters.get('hostname')
         if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', hostname_validate)
+            hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', None, hostname_validate)
             parameters= dict(parameters)
             parameters['hostname'] = hostname
 

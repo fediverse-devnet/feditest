@@ -4,7 +4,6 @@ Classes that represent a running TestPlan and its its parts.
 
 # pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
-import os
 import sys
 import time
 from contextlib import redirect_stdout

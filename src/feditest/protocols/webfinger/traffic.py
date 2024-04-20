@@ -388,7 +388,7 @@ working-copy-of"""
         return True # neither has any
 
 
-    def _element_equals(self, a: dict[str, Any], b: dict[str, Any]) -> bool:
+    def _element_equals(self, a: dict[str, Any], b: dict[str, Any]) -> bool: # pylint: disable=too-many-return-statements
         """
         Helper to compare two link elements for equality.
         """
@@ -413,7 +413,7 @@ working-copy-of"""
         return True
 
 
-    def _dict_equals(self, a: dict[str,Any] | None, b: dict[str,Any] | None) -> bool:
+    def _dict_equals(self, a: dict[str,Any] | None, b: dict[str,Any] | None) -> bool: # pylint: disable=too-many-return-statements
         """
         Helper to compare two dicts for equality.
         """

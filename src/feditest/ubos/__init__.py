@@ -43,6 +43,10 @@ class UbosNodeDriver(NodeDriver):
         else:
             raise NodeSpecificationInsufficientError(self, 'Need parameter sitejsonfile or backupfile')
 
+        parameters = dict(parameters)
+        parameters['existing-account-uri'] = f"acct:{ parameters['adminid'] }@{ parameters['hostname'] }"
+        parameters['nonexisting-account-uri'] = f"acct:does-not-exist@{ parameters['hostname'] }"
+
         self._exec_shell(cmd)
         ret = self._instantiate_ubos_node(rolename, parameters)
         return ret

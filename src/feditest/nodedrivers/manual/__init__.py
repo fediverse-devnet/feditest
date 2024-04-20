@@ -27,6 +27,7 @@ class ManualFediverseNodeDriver(NodeDriver):
         else:
             hostname = self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
                                         + ' and enter the hostname when done: ',
+                                        None,
                                         hostname_validate)
             parameters = dict(parameters)
             parameters['hostname'] = hostname

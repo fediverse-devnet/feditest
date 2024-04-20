@@ -13,10 +13,6 @@ class WordPressPlusActivityPubPluginUbosNode(FediverseNode):
     """
     A Node running WordPress with the ActivityPub plugin, instantiated with UBOS.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'WordPressPlusActivityPubPluginUbosNodeDriver'):
-        super(FediverseNode, self).__init__(rolename, parameters, node_driver)
-
-
     def obtain_actor_document_uri(self, actor_rolename: str | None = None) -> str:
         return f"https://{self.hostname}/author/{ self.parameter('adminid') }/"
 

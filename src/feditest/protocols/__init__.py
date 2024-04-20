@@ -101,15 +101,19 @@ class NodeDriver(ABC):
         pass # pylint: disable=unnecessary-pass
 
 
-    def prompt_user(self, question: str, validation: Callable[[str],bool] | None = None) -> str:
+    def prompt_user(self, question: str, value_if_known: str | None = None, validation: Callable[[str],bool] | None = None) -> str:
         """
         If an NodeDriver does not natively implement support for a particular method,
         this method is invoked as a fallback. It prompts the user to enter information
         at the console.
         question: the text to be emitted to the user as a prompt
+        value_if_known: if given, that value can be used instead of asking the user
         validation: optional function that validates user input and returns True if valid
         return: the value entered by the user
         """
+        if value_if_known:
+            return value_if_known
+
         while True:
             ret = input(f'TESTER ACTION REQUIRED: { question }')
             if validation is None or validation(ret):

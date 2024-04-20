@@ -20,7 +20,7 @@ class ParsedUri:
         self.params = params
         self.query = query
         self.fragment = fragment
-        self._query_pars : dict[str,str] | None = None
+        self._query_params : dict[str,list[str]] | None = None
 
 
     @staticmethod
@@ -48,22 +48,29 @@ class ParsedUri:
 
     def has_query_param(self, name: str) -> bool:
         self._parse_query_params()
-        return name in self._query_params
+        if self._query_params:
+            return name in self._query_params
+        return False
 
 
     def query_param_single(self, name: str) -> str | None:
         self._parse_query_params()
-        found = self._query_params.get(name)
-        match len(found):
-            case 1:
-                return found[0]
-            case _:
-                raise RuntimeError(f'Query has {len(found)} values for query parameter {name}')
+        if self._query_params:
+            found = self._query_params.get(name)
+            if found:
+                match len(found):
+                    case 1:
+                        return found[0]
+                    case _:
+                        raise RuntimeError(f'Query has {len(found)} values for query parameter {name}')
+        return None
 
 
     def query_param_mult(self, name: str) -> List[str] | None:
         self._parse_query_params()
-        return self._query_params.get(name)
+        if self._query_params:
+            return self._query_params.get(name)
+        return None
 
 
     def _parse_query_params(self):
@@ -104,19 +111,18 @@ class HttpResponse:
 
 
     def payload_charset(self):
-        type = self.content_type()
+        content_type = self.content_type()
         tag = 'charset='
-        if type and type.index(tag) >= 0:
-            return type[ type.index(tag)+len(tag) : ]
+        if content_type and content_type.index(tag) >= 0:
+            return content_type[ content_type.index(tag)+len(tag) : ]
         return None
-            
+
 
     def payload_as_string(self):
         if not self.payload:
             return None
-        type = self.content_type()
-        print( f'TYPE is "{ type }"')
-        if type and type.startswith('text/'):
+        content_type = self.content_type()
+        if content_type and content_type.startswith('text/'):
             return self.payload.decode(self.payload_charset())
         raise ValueError()
 
@@ -129,7 +135,7 @@ class HttpResponse:
         return self.http_status in [301, 302, 303, 307, 308]
 
 
-            
+
 
 @dataclass
 class HttpRequestResponsePair:
