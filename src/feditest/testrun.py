@@ -9,10 +9,11 @@ import time
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import traceback
 from typing import IO, Any, List, Protocol, Type
 
 from feditest import Test, TestStep, all_node_drivers, all_tests
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import Node, NodeDriver, NotImplementedError
 from feditest.reporting import error, fatal, info, trace
 from feditest.testplan import (
     TestPlan,
@@ -143,13 +144,16 @@ class TestRunSession:
 
                 except AssertionError as e:
                     problem = TestProblem(test_spec, test_step, e)
-                    error('FAILED test assertion:', problem)
+                    error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
                     self.problems.append(problem)
                     break # no point about the remaining steps in the test
 
+                except NotImplementedError as e:
+                    info(f'Skipping test "{ test_spec.name }", step { test_step.name } because: { e }' )
+
                 except Exception as e:
                     problem = TestProblem(test_spec, test_step, e)
-                    error('FAILED test (other reason):', problem)
+                    error('FAILED test (other reason):', problem, "\n".join(traceback.format_exception(problem.exc)))
                     self.problems.append(problem)
                     break # no point about the remaining steps in the test
 

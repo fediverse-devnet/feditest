@@ -2,6 +2,7 @@
 Abstractions for the WebFinger protocol
 """
 
+from typing import Any, Callable
 from urllib.parse import quote, urlparse
 
 from feditest.protocols import NotImplementedByNodeError
@@ -53,6 +54,13 @@ class WebFingerServer(WebServer):
             f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
             self.parameter('nonexisting-account-uri'),
             account_id_validate )
+
+
+    def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+        """
+        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+        """
+        raise NotImplementedByNodeError(self, WebFingerServer.override_webfinger_response)
 
 
 class WebFingerClient(WebClient):
