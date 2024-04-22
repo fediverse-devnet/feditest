@@ -1,7 +1,5 @@
 """
 Generate a test plan
-
-feditest generate-testplan --constellation c1.json --constellation c2.json --session s1.json --session s2.json
 """
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
