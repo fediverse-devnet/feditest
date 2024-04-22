@@ -12,7 +12,7 @@ from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, HttpResponse
 from feditest.protocols.webfinger import WebFingerClient
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
-from feditest.reporting import info
+from feditest.reporting import trace
 
 
 class Imp(WebFingerClient):
@@ -23,7 +23,7 @@ class Imp(WebFingerClient):
 
     # @override # from WebClient
     def http(self, request: HttpRequest) -> HttpRequestResponsePair:
-        info( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
+        trace( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
 
         httpx_response = None
         # Do not follow redirects automatically, we need to know whether there are any

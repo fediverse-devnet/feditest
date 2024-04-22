@@ -13,7 +13,7 @@ from typing import IO, Any, List, Protocol, Type
 
 from feditest import Test, TestStep, all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
-from feditest.reporting import error, fatal, info
+from feditest.reporting import error, fatal, info, trace
 from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,
@@ -35,7 +35,10 @@ class TestRunConstellation:
         """
         Set up the constellation of nodes needed for some tests.
         """
-        info('Setting up constellation:', self._plan_constellation.name)
+        if self._plan_constellation.name:
+            trace('Setting up constellation:', self._plan_constellation.name)
+        else:
+            trace('Setting up constellation')
 
         wait_time = 0
         for plan_role in self._plan_constellation.roles:
@@ -43,7 +46,7 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
             node_driver_class : Type[Any] = all_node_drivers[plan_role.nodedriver]
 
-            info('Setting up role', plan_role.name, f'(node driver: {plan_role.nodedriver})')
+            trace('Setting up role', plan_role.name, f'(node driver: {plan_role.nodedriver})')
 
             node_driver : NodeDriver = node_driver_class(plan_role.name)
             parameters = plan_role.parameters if plan_role.parameters else {}
@@ -63,13 +66,16 @@ class TestRunConstellation:
 
 
     def teardown(self):
-        info('Tearing down constellation:', self._plan_constellation.name)
+        if self._plan_constellation.name:
+            trace('Tearing down constellation:', self._plan_constellation.name)
+        else:
+            trace('Tearing down constellation')
 
         for plan_role in reversed(self._plan_constellation.roles):
             plan_role.name = plan_role.name
 
             if plan_role.name in self._run_constellation: # setup may never have succeeded
-                info('Tearing down role', plan_role.name)
+                trace('Tearing down role', plan_role.name)
                 node = self._run_constellation[plan_role.name]
                 node.node_driver.unprovision_node(node)
                 del self._run_constellation[plan_role.name]
@@ -94,14 +100,14 @@ class TestRunSession:
     """
     def __init__(self, name: str, plan_session: TestPlanSession):
         self.name = name
-        self.problems : List[Exception] = []
+        self.problems : List[TestProblem] = []
         self._plan_session = plan_session
         self._constellation : TestRunConstellation | None = None
 
 
     def run(self):
         if len(self._plan_session.tests ):
-            info('Running session:', self.name)
+            info(f'Running session "{ self.name }"')
 
             try:
                 self._constellation = TestRunConstellation(self._plan_session.constellation)
@@ -109,13 +115,9 @@ class TestRunSession:
 
                 for test_spec in self._plan_session.tests:
                     if test_spec.disabled:
-                        info('Skipping TestSpec', test_spec.disabled, "reason:", test_spec.disabled)
+                        info(f'Skipping test "{ test_spec.name }" because: {test_spec.disabled}' )
                     else:
-                        try:
-                            self._run_test_spec(test_spec)
-                        except Exception as e:
-                            error('FAILED test:', e)
-                            self.problems.append(TestProblem(test_spec, e))
+                        self._run_test_spec(test_spec)
             finally:
                 self._constellation.teardown()
 
@@ -125,17 +127,32 @@ class TestRunSession:
             info('End running session:', self.name)
 
         else:
-            info('Skipping session:', self.name, ': no tests defined')
+            info(f'Skipping session "{ self.name }": no tests defined')
 
 
     def _run_test_spec(self, test_spec: TestPlanTestSpec):
-        info('Running test', test_spec.name)
+        info(f'Running test "{ test_spec.name }"')
         test : Test | None = all_tests.get(test_spec.name)
 
         if test and self._constellation:
             for test_step in test.steps:
-                info('Running step', test_step.name )
-                self._constellation.run_test_step(test_step)
+                trace(f'Running test step "{ test_step.name }"')
+
+                try:
+                    self._constellation.run_test_step(test_step)
+
+                except AssertionError as e:
+                    problem = TestProblem(test_spec, test_step, e)
+                    error('FAILED test assertion:', problem)
+                    self.problems.append(problem)
+                    break # no point about the remaining steps in the test
+
+                except Exception as e:
+                    problem = TestProblem(test_spec, test_step, e)
+                    error('FAILED test (other reason):', problem)
+                    self.problems.append(problem)
+                    break # no point about the remaining steps in the test
+
         else:
             error(f'Test not found: { test_spec.name}')
 
@@ -144,7 +161,11 @@ class TestRunSession:
 class TestProblem:
     """Information about test failure/problem."""
     test: TestPlanTestSpec
+    test_step: TestStep
     exc: Exception
+
+    def __str__(self):
+        return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
 
 
 class TestResultWriter(Protocol):
@@ -189,17 +210,10 @@ class DefaultTestResultWriter:
         metadata: dict[str, Any] | None = None,
     ):
         if any(s.problems for s in run_sessions):
-            info("FAILED")
+            print("FAILED")
         summary = TestSummary.for_run(plan, run_sessions)
-        info(
-            "Test summary: total=%d, passed=%d, failed=%d, skipped=%d"
-            % (
-                summary.total,
-                summary.passed,
-                summary.failed,
-                summary.skipped,
-            )
-        )
+        print(f"Test summary: total={ summary.total }, passed={ summary.passed }, failed={ summary.failed }, skipped={ summary.skipped }")
+
 
 class TapTestResultWriter:
     def __init__(self, out: IO = sys.stdout):
@@ -263,13 +277,16 @@ class TestRun:
 
 
     def run(self) -> int:
-        info( f'RUNNING test plan: {self._plan.name} (id: {self._runid})' )
+        if self._plan.name:
+            info( f'Running test plan: "{ self._plan.name }" (id: "{ self._runid }")' )
+        else:
+            info( f'Running test plan (id: "{ self._runid }")' )
 
         run_sessions: list[TestRunSession] = []
 
-        for i in range(0, len(self._plan.sessions)): # pylint: disable=consider-using-enumerate
-            plan_session = self._plan.sessions[i]
-            run_session = TestRunSession(f'{self._plan.name}/{str(i)}', plan_session)
+        for i, plan_session in enumerate(self._plan.sessions):
+            session_name = f'{self._plan.name}/{str(i)}' if self._plan.name else str(i)
+            run_session = TestRunSession(session_name, plan_session)
             run_session.run()
             run_sessions.append(run_session)
 
