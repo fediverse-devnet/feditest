@@ -3,7 +3,7 @@ Core module.
 """
 
 from collections.abc import Callable
-from inspect import signature, getmodule
+from inspect import signature, getfullargspec, getmodule
 from pkgutil import resolve_name
 from types import FunctionType, ModuleType
 from typing import Any, Type, TypeAlias
@@ -25,6 +25,18 @@ class TestStep:
         self.test = test
 
 
+    def needed_role_names(self) -> set[str]:
+        """
+        Determines the names of the constellation roles this test steps needs.
+        It determines that by creating the union of the parameter names of all the TestSteps in the Test
+        """
+        ret = {}
+        function_spec = getfullargspec(self.function)
+        for arg in function_spec.args:
+            ret[arg] = 1
+        return set(ret)
+
+
 class Test:
     """
     Captures the notion of a Test, such as "see whether a follower is told about a new post".
@@ -35,6 +47,17 @@ class Test:
         self.constellation_size = constellation_size
         self.test_set = test_set
         self.steps : list[TestStep] = []
+
+
+    def needed_role_names(self) -> set[str]:
+        """
+        Determines the names of the constellation roles this test needs.
+        It determines that by creating the union of the parameter names of all the TestSteps in the Test
+        """
+        ret : set[str]= set()
+        for s in self.steps:
+            ret |= s.needed_role_names()
+        return set(ret)
 
 
 class TestSet:

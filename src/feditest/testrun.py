@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import IO, Any, List, Protocol, Type
 
-from feditest import Test, all_node_drivers, all_tests
+from feditest import Test, TestStep, all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import error, fatal, info
 from feditest.testplan import (
@@ -39,16 +39,17 @@ class TestRunConstellation:
 
         wait_time = 0
         for plan_role in self._plan_constellation.roles:
-            plan_role_name = plan_role.name
+            if plan_role.nodedriver is None:
+                raise ValueError('Unexpected null nodedriver')
             node_driver_class : Type[Any] = all_node_drivers[plan_role.nodedriver]
 
-            info('Setting up role', plan_role_name, f'(node driver: {plan_role.nodedriver})')
+            info('Setting up role', plan_role.name, f'(node driver: {plan_role.nodedriver})')
 
-            node_driver : NodeDriver = node_driver_class(plan_role_name)
+            node_driver : NodeDriver = node_driver_class(plan_role.name)
             parameters = plan_role.parameters if plan_role.parameters else {}
-            node : Node = node_driver.provision_node(plan_role_name, parameters)
+            node : Node = node_driver.provision_node(plan_role.name, parameters)
             if node:
-                self._run_constellation[plan_role_name] = node
+                self._run_constellation[plan_role.name] = node
             else:
                 raise Exception(f'NodeDriver {node_driver} returned null Node from provision_node()')
 
@@ -65,13 +66,25 @@ class TestRunConstellation:
         info('Tearing down constellation:', self._plan_constellation.name)
 
         for plan_role in reversed(self._plan_constellation.roles):
-            plan_role_name = plan_role.name
+            plan_role.name = plan_role.name
 
-            if plan_role_name in self._run_constellation: # setup may never have succeeded
-                info('Tearing down role', plan_role_name)
-                node = self._run_constellation[plan_role_name]
+            if plan_role.name in self._run_constellation: # setup may never have succeeded
+                info('Tearing down role', plan_role.name)
+                node = self._run_constellation[plan_role.name]
                 node.node_driver.unprovision_node(node)
-                del self._run_constellation[plan_role_name]
+                del self._run_constellation[plan_role.name]
+
+
+    def run_test_step(self, test_step: TestStep):
+        """
+        Run this test step in this constellation.
+        """
+        role_names = test_step.needed_role_names()
+        args = {}
+        for role_name in role_names:
+            args[role_name] = self._run_constellation[role_name]
+
+        test_step.function(**args)
 
 
 class TestRunSession:
@@ -120,30 +133,9 @@ class TestRunSession:
         test : Test | None = all_tests.get(test_spec.name)
 
         if test and self._constellation:
-            plan_roles = self._constellation._plan_constellation.roles
-            run_constellation = self._constellation._run_constellation
-
             for test_step in test.steps:
                 info('Running step', test_step.name )
-
-                # FIXME: we should map the plan_roles to the names of the @test function parameters
-                match len(plan_roles):
-                    case 1:
-                        test_step.function(run_constellation[plan_roles[0].name])
-                    case 2:
-                        test_step.function(run_constellation[plan_roles[0].name],
-                                        run_constellation[plan_roles[1].name])
-                    case 3:
-                        test_step.function(run_constellation[plan_roles[0].name],
-                                        run_constellation[plan_roles[1].name],
-                                        run_constellation[plan_roles[2].name])
-                    case 4:
-                        test_step.function(run_constellation[plan_roles[0].name],
-                                        run_constellation[plan_roles[1].name],
-                                        run_constellation[plan_roles[2].name],
-                                        run_constellation[plan_roles[3].name])
-                    case _:
-                        error('Constellation size not supported yet:', len(plan_roles))
+                self._constellation.run_test_step(test_step)
         else:
             error(f'Test not found: { test_spec.name}')
 
@@ -277,7 +269,7 @@ class TestRun:
 
         for i in range(0, len(self._plan.sessions)): # pylint: disable=consider-using-enumerate
             plan_session = self._plan.sessions[i]
-            run_session = TestRunSession(plan_session.name if plan_session.name else f'{self._plan.name}/{str(i)}', plan_session)
+            run_session = TestRunSession(f'{self._plan.name}/{str(i)}', plan_session)
             run_session.run()
             run_sessions.append(run_session)
 

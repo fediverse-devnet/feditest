@@ -73,6 +73,10 @@ class ParsedUri:
         return None
 
 
+    def __repr__(self):
+        return f'ParsedUri({ self.get_uri() })'
+    
+    
     def _parse_query_params(self):
         if self._query_params:
             return
