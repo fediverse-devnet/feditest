@@ -2,7 +2,7 @@
 """
 
 from datetime import date, datetime, UTC
-from typing import Callable, List, final
+from typing import Any, Callable, List, final
 from feditest.protocols import Node, NotImplementedByNodeError
 from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, ParsedUri
 
@@ -74,6 +74,13 @@ class WebServer(Node):
         """
         raise NotImplementedByNodeError(self, WebServer._stop_logging_http_requests)
         # This cannot be done manually
+
+
+    def override_http_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+        """
+        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+        """
+        raise NotImplementedByNodeError(self, WebServer.override_http_response)
 
 
 class WebClient(Node):

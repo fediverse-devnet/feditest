@@ -4,19 +4,34 @@ Classes that represent a TestPlan and its parts.
 
 # pylint: disable=missing-class-docstring
 
+import json
 from typing import Any
 
 import msgspec
 
 from feditest import Test, all_node_drivers, all_tests
-from feditest.reporting import fatal
 from feditest.utils import hostname_validate
+
+
+class TestPlanError(RuntimeError):
+    """
+    This exception is raised when a TestPlan is defined incorrectly or incompletely.
+    """
+    def __init__(self, details: str ):
+        super().__init__(f"TestPlan defined insufficiently: {details}" )
 
 
 class TestPlanConstellationRole(msgspec.Struct):
     name: str
-    nodedriver: str
+    nodedriver: str | None = None
     parameters: dict[str,Any] | None = None
+
+
+    def is_template(self):
+        """
+        Returns true if the roles in the constellation have not all been bound to NodeDrivers.
+        """
+        return self.nodedriver is None
 
 
     def parameter(self, name: str) -> Any | None:
@@ -25,9 +40,68 @@ class TestPlanConstellationRole(msgspec.Struct):
         return None
 
 
+    def check_can_be_executed(self, context_msg: str = "") -> None:
+        if self.is_template():
+            raise TestPlanError(context_msg + 'No NodeDriver assigned')
+
+        if self.nodedriver not in all_node_drivers:
+            raise TestPlanError(context_msg + f'Cannot find node driver "{ self.nodedriver }".')
+
+        # also check well-known parameters
+        if self.parameters and 'hostname' in self.parameters:
+            hostname = self.parameter('hostname')
+            if isinstance(hostname, str):
+                if not hostname_validate(hostname):
+                    raise TestPlanError(context_msg + f'Invalid hostname: "{ hostname }".')
+            else:
+                raise TestPlanError(context_msg + 'Invalid hostname: not a string')
+
+
 class TestPlanConstellation(msgspec.Struct):
     roles : list[TestPlanConstellationRole]
     name: str | None = None
+
+
+    @staticmethod
+    def load(filename: str) -> 'TestPlanConstellation':
+        """
+        Read a file, and instantiate a TestPlanConstellation from what we find.
+        """
+        with open(filename, 'r', encoding='utf-8') as f:
+            testplanconstellation_json = json.load(f)
+
+        return msgspec.convert(testplanconstellation_json, type=TestPlanConstellation)
+
+
+    def is_template(self):
+        """
+        Returns true if the roles in the constellation have not all been bound to NodeDrivers.
+        """
+        for role in self.roles:
+            if role.is_template() :
+                return True
+        return False
+
+
+    def check_can_be_executed(self, context_msg: str = "") -> None:
+        if not self.roles:
+            raise TestPlanError(context_msg + 'No roles have been defined.')
+
+        all_roles = {}
+        for role in self.roles:
+            role_context_msg = context_msg + "Role {role.name}: "
+            if role.name in all_roles:
+                raise TestPlanError(role_context_msg + 'Role names must be unique.')
+            all_roles[role.name] = True
+
+            role.check_can_be_executed(role_context_msg)
+
+
+    def check_defines_all_role_names(self, want_role_names: set[str], context_msg: str = ""):
+        have_role_names = { role.name for role in self.roles }
+        for want_role_name in want_role_names:
+            if want_role_name not in have_role_names:
+                raise TestPlanError(context_msg + f' Constellation does not define role "{ want_role_name }".')
 
 
 class TestPlanTestSpec(msgspec.Struct):
@@ -35,19 +109,101 @@ class TestPlanTestSpec(msgspec.Struct):
     disabled: str | None = None # if a string is given, it's a reason message why disabled
 
 
+    def get_test(self, context_msg : str = "" ) -> Test:
+        ret = all_tests.get(self.name)
+        if ret is None:
+            raise TestPlanError(context_msg + f'Cannot find test "{ self.name }".')
+        return ret
+
+
+    def needed_role_names(self) -> set[str]:
+        return self.get_test().needed_role_names()
+
+
+    def check_can_be_executed(self, constellation: TestPlanConstellation, context_msg: str = "") -> None:
+        test_context_msg = context_msg + f'Test "{ self.name }": '
+        test = self.get_test(test_context_msg)
+        constellation.check_defines_all_role_names(test.needed_role_names(), test_context_msg )
+
+
 class TestPlanSession(msgspec.Struct):
+    """
+    A TestPlanSession spins up and tears down a constellation of Nodes against which a sequence of tests
+    is run. The constellation has 1 or more roles, which are bound to nodes that communicate with
+    each other according to the to-be-tested protocol(s) during the test.
+
+    This class is used in two ways:
+    1. as part of a TestPlan, which means the roles in the constellation are bound to particular NodeDrivers
+    2. as a template in TestPlan generation, which means the roles in the constellation have been defined
+       but aren't bound to particular NodeDrivers yet
+    """
     constellation : TestPlanConstellation
     tests : list[TestPlanTestSpec]
-    name: str | None = None
+
+
+    @staticmethod
+    def load(filename: str) -> 'TestPlanSession':
+        """
+        Read a file, and instantiate a TestPlanSession from what we find.
+        """
+        with open(filename, 'r', encoding='utf-8') as f:
+            testplansession_json = json.load(f)
+
+        return msgspec.convert(testplansession_json, type=TestPlanSession)
+
+
+    def is_template(self):
+        """
+        Returns true if the roles in the constellation have not all been bound to NodeDrivers.
+        """
+        return self.constellation.is_template()
+
+
+    def check_can_be_executed(self, context_msg: str = "") -> None:
+        self.constellation.check_can_be_executed(context_msg)
+
+        if not self.tests:
+            raise TestPlanError(context_msg + 'No tests have been defined.')
+
+        for index, test_spec in enumerate(self.tests):
+            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test "{ test_spec.name }" (index { index }: ')
+
+
+    def needed_role_names(self) -> set[str]:
+        ret = set()
+        for test in self.tests:
+            ret |= test.needed_role_names()
+        return ret
+
+
+    def instantiate_with_constellation(self, constellation: TestPlanConstellation) -> 'TestPlanSession':
+        """
+        Treat this session as a template. Create a new (non-template) session that's like this one
+        and that uses the provided constellation.
+        """
+        constellation.check_defines_all_role_names(self.needed_role_names())
+        return TestPlanSession(constellation=constellation,tests=self.tests)
+
+
+    def as_json(self) -> bytes:
+        ret = msgspec.json.encode(self)
+        ret = msgspec.json.format(ret, indent=4)
+        return ret
+
+
+    def save(self, filename: str) -> None:
+        with open(filename, 'wb') as f:
+            f.write(self.as_json())
+
+
+    def print(self) -> None:
+        print(self.as_json().decode('utf-8'))
 
 
 class TestPlan(msgspec.Struct):
     """
     A TestPlan defines one or more TestPlanSessions. TestPlanSessions can be run sequentially, or
     (in theory; no code yet) in parallel.
-    Each TestPlanSession spins up and tears down a constellation of Nodes that participate in the
-    test. The constellation has 1 or more roles, which are bound to nodes that communicate with
-    each other according to the to-be-tested protocol(s) during the test.
     """
     name: str | None = None
     sessions : list[TestPlanSession] = []
@@ -58,39 +214,32 @@ class TestPlan(msgspec.Struct):
         Read a file, and instantiate a TestPlan from what we find.
         """
         with open(filename, 'r', encoding='utf-8') as f:
-            data = f.read()
+            testplan_json = json.load(f)
 
-        return msgspec.json.decode(data, type=TestPlan)
+        return msgspec.convert(testplan_json, type=TestPlan)
 
 
-    def check_can_be_executed(self) -> None:
+    def as_json(self) -> bytes:
+        ret = msgspec.json.encode(self)
+        ret = msgspec.json.format(ret, indent=4)
+        return ret
+
+
+    def save(self, filename: str) -> None:
+        with open(filename, 'wb') as f:
+            f.write(self.as_json())
+
+
+    def print(self) -> None:
+        print(self.as_json().decode('utf-8'))
+
+
+    def check_can_be_executed(self, context_msg: str = "") -> None:
         """
-        Check that we have all the tests and node drivers needed for this plan. If all is well,
-        return. If not well, throw an Exception that explains the problem
+        Check that this TestPlan is ready for execution. If not, raise a TestPlanEerror that explains the problem.
         """
-        for session in self.sessions:
-            all_roles = {}
-            for role in session.constellation.roles:
-                role_name = role.name
-                if role_name in all_roles:
-                    fatal('Role names must be unique within a constellation:', role_name)
-                all_roles[role_name] = True
-                node_driver_name : str = role.nodedriver
+        if not self.sessions:
+            raise TestPlanError('No TestPlanSessions have been defined in TestPlan')
 
-                if node_driver_name not in all_node_drivers:
-                    fatal('Cannot find node driver:', node_driver_name, 'for role:', role.name)
-
-                if role.parameter('hostname'):
-                    if isinstance(role.parameter('hostname'), str):
-                        hostname : str = role.parameter('hostname') or "" # make mypy happy
-                        if not hostname_validate(hostname):
-                            fatal(f"Invalid hostname: { hostname }")
-                    else:
-                        fatal("Invalid value for hostname: requires a string")
-
-            for test_spec in session.tests:
-                test : Test | None = all_tests.get(test_spec.name)
-                if test is None:
-                    fatal('Cannot find test:', test_spec.name)
-                elif test.constellation_size != len(session.constellation.roles):
-                    fatal('Cannot run test with constellation of size', len(session.constellation.roles), ':', test_spec.name)
+        for index, session in enumerate(self.sessions):
+            session.check_can_be_executed(context_msg + f'TestPlanSession {index}:')

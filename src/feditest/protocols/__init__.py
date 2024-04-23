@@ -52,6 +52,10 @@ class Node(ABC):
         return self._parameters.get(name)
 
 
+    def __str__(self) -> str:
+        return f'"{ type(self).__name__}" in constellation role "{self.rolename}"'
+
+
 class NodeDriver(ABC):
     """
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
@@ -121,22 +125,30 @@ class NodeDriver(ABC):
             print(f'INPUT ERROR: invalid input, try again. Was: "{ ret}"')
 
 
-class NotImplementedByNodeError(RuntimeError):
+    def __str__(self) -> str:
+        return f'"{ self.name }"'
+
+
+class NotImplementedError(RuntimeError):
+    pass
+
+
+class NotImplementedByNodeError(NotImplementedError):
     """
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.
     """
     def __init__(self, node: Node, method: Callable[...,Any], arg: Any = None ):
-        super().__init__(f"Not implemented by node {node}: {method}" + (f" ({ arg })" if arg else ""))
+        super().__init__(f"Not implemented by node {node}: {method.__name__}" + (f" ({ arg })" if arg else ""))
 
 
-class NotImplementedByNodeDriverError(RuntimeError):
+class NotImplementedByNodeDriverError(NotImplementedError):
     """
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.
     """
     def __init__(self, node_driver: NodeDriver, method: Callable[...,Any], arg: Any = None ):
-        super().__init__(f"Not implemented by node driver {node_driver}: {method}" + (f" ({ arg })" if arg else ""))
+        super().__init__(f"Not implemented by node driver {node_driver}: {method.__name__}" + (f" ({ arg })" if arg else ""))
 
 
 class NodeSpecificationInsufficientError(RuntimeError):

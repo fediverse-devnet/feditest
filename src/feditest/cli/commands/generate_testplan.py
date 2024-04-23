@@ -3,8 +3,9 @@ Generate a test plan
 """
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
-import json
 import feditest
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession
+
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -14,40 +15,30 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         parser.print_help()
         return 0
 
-    if args.constellation:
-        with open(args.constellation, 'r', encoding='utf-8') as f:
-            constellation_json = json.load(f)
-    else:
-        constellation_json = {
-            'name' : 'unnamed',
-            'roles' : [
-                {
-                    'name' : 'REPLACE',
-                    'nodedriver' : 'REPLACE'
-                }
-            ]
-        }
-
     feditest.load_tests_from(args.testsdir)
 
-    tests_json = []
-    for name in sorted(feditest.all_tests.all().keys()):
-        tests_json.append( { 'name' : name } )
+    constellations = []
+    for constellation_file in args.constellation:
+        constellations.append(TestPlanConstellation.load(constellation_file))
 
-    testplan_json = {
-        'name' : 'unnamed',
-        'sessions' : [
-            {
-                'constellation' : constellation_json,
-                'tests' : tests_json
-            }
-        ]
-    }
+    session_templates = []
+    for session_file in args.session:
+        session_templates.append(TestPlanSession.load(session_file))
+
+    test_plan = TestPlan()
+    for session_template in session_templates:
+        # Let's make this the outer loop: we pick a feature domain and make
+        # sure it works in all constellations, before moving to the next
+        # feature domain
+
+        for constellation in constellations:
+            session = session_template.instantiate_with_constellation(constellation)
+            test_plan.sessions.append(session)
+
     if args.out:
-        with open(args.out, 'w', encoding="utf8") as w:
-            json.dump(testplan_json, w, indent=4)
+        test_plan.save(args.out)
     else:
-        print(json.dumps(testplan_json, indent=4))
+        test_plan.print()
 
     return 0
 
@@ -58,7 +49,8 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parser = parent_parser.add_parser(cmd_name, help='Generate a test plan')
-    parser.add_argument('--constellation', default=None, required=False, help='Name of a file containing a JSON fragment to use for the constellation')
-    parser.add_argument('--out', default=None, required=False, help='Name of the file for the generated test plan')
+    parser = parent_parser.add_parser(cmd_name, help='Generate a test plan by running all provided test sessions in all provided constellations')
+    parser.add_argument('--constellation', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a constellation')
+    parser.add_argument('--session', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a test session')
+    parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test plan')
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
