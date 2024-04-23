@@ -127,6 +127,7 @@ class WebFingerClient(WebClient):
         """
         Raised when no JRD could be obtained (e.g. got 404)
         """
-        def __init__(self, resource_uri: str, http_request_response_pair: HttpRequestResponsePair | None):
+        def __init__(self, resource_uri: str, http_request_response_pair: HttpRequestResponsePair | None, msg: str | None = None ):
+            super().__init__(msg)
             self.resource_uri = resource_uri
             self.http_request_response_pair = http_request_response_pair
