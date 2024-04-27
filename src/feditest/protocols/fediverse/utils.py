@@ -1,0 +1,5 @@
+"""
+Fediverse testing utils
+"""
+
+pass

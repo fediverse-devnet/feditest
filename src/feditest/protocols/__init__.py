@@ -56,6 +56,21 @@ class Node(ABC):
         return f'"{ type(self).__name__}" in constellation role "{self.rolename}"'
 
 
+    def prompt_user(self, question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
+        """
+        If an Node does not natively implement support for a particular method,
+        this method is invoked as a fallback. It prompts the user to enter information
+        at the console.
+
+        question: the text to be emitted to the user as a prompt
+        value_if_known: if given, that value can be used instead of asking the user
+        parse_validate: optional function that attempts to parse and validate the provided user input.
+        If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
+        return: the value entered by the user, parsed, or None
+        """
+        return self._node_driver.prompt_user(question, value_if_known, parse_validate)
+
+
 class NodeDriver(ABC):
     """
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
@@ -105,35 +120,43 @@ class NodeDriver(ABC):
         pass # pylint: disable=unnecessary-pass
 
 
-    def prompt_user(self, question: str, value_if_known: str | None = None, validation: Callable[[str],bool] | None = None) -> str:
+    def prompt_user(self, question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
         """
         If an NodeDriver does not natively implement support for a particular method,
         this method is invoked as a fallback. It prompts the user to enter information
         at the console.
+
+        This is implemented on NodeDriver rather than Node, so we can also ask
+        provisioning-related questions.
+
         question: the text to be emitted to the user as a prompt
         value_if_known: if given, that value can be used instead of asking the user
-        validation: optional function that validates user input and returns True if valid
-        return: the value entered by the user
+        parse_validate: optional function that attempts to parse and validate the provided user input.
+        If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
+        return: the value entered by the user, parsed, or None
         """
         if value_if_known:
             return value_if_known
 
         while True:
             ret = input(f'TESTER ACTION REQUIRED: { question }')
-            if validation is None or validation(ret):
+            if parse_validate is None:
                 return ret
-            print(f'INPUT ERROR: invalid input, try again. Was: "{ ret}"')
+            ret_parsed = parse_validate(ret)
+            if ret_parsed is not None:
+                return ret_parsed
+            print(f'INPUT ERROR: invalid input, try again. Was: "{ ret }"')
 
 
     def __str__(self) -> str:
         return f'"{ self.name }"'
 
 
-class NotImplementedError(RuntimeError):
+class NotImplementedByNodeOrDriverError(RuntimeError):
     pass
 
 
-class NotImplementedByNodeError(NotImplementedError):
+class NotImplementedByNodeError(NotImplementedByNodeOrDriverError):
     """
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.
@@ -142,7 +165,7 @@ class NotImplementedByNodeError(NotImplementedError):
         super().__init__(f"Not implemented by node {node}: {method.__name__}" + (f" ({ arg })" if arg else ""))
 
 
-class NotImplementedByNodeDriverError(NotImplementedError):
+class NotImplementedByNodeDriverError(NotImplementedByNodeOrDriverError):
     """
     This exception is raised when a Node cannot perform a certain operation because it
     has not been implemented in this subtype of Node.

@@ -2,13 +2,13 @@
 Abstractions for the WebFinger protocol
 """
 
-from typing import Any, Callable
+from typing import Any, Callable, cast
 from urllib.parse import quote, urlparse
 
 from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.web.traffic import HttpRequestResponsePair
-from feditest.utils import account_id_validate
+from feditest.utils import account_id_parse_validate
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
 
 
@@ -25,18 +25,18 @@ class WebFingerServer(WebServer):
         return: the identifier
         """
         if nickname:
-            return self.node_driver.prompt_user(
+            return cast(str, self.prompt_user(
                     f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
-                    account_id_validate )
+                    account_id_parse_validate))
 
-        return self.node_driver.prompt_user(
+        return cast(str, self.prompt_user(
                 f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                 self.parameter('existing-account-uri'),
-                account_id_validate )
+                account_id_parse_validate))
 
 
-    def obtain_non_existing_account_identifier(self, nickname: str | None = None ) ->str:
+    def obtain_non_existing_account_identifier(self, nickname: str | None = None ) -> str:
         """
         Return the identifier of an account that does not exist on this Node, but that
         nevertheless follows the rules for identifiers of this Node.
@@ -45,15 +45,15 @@ class WebFingerServer(WebServer):
         return: the identifier
         """
         if nickname:
-            return self.node_driver.prompt_user(
+            return cast(str, self.prompt_user(
                 f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                 self.parameter('nonexisting-account-uri'),
-                account_id_validate )
+                account_id_parse_validate))
 
-        return self.node_driver.prompt_user(
+        return cast(str, self.prompt_user(
             f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
             self.parameter('nonexisting-account-uri'),
-            account_id_validate )
+            account_id_parse_validate))
 
 
     def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):

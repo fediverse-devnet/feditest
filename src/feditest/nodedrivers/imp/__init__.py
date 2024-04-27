@@ -65,12 +65,9 @@ class Imp(WebFingerClient):
                             jrd = ClaimedJrd(json_string)
                             jrd.validate()
                             return WebFingerQueryResponse(pair, jrd)
-                        else:
-                            raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, "No payload")
-                    else:
-                        raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid content type: { ret_pair.response.content_type() }")
-                else:
-                    raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid HTTP status: { ret_pair.response.http_status }")
+                        raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, "No payload")
+                    raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid content type: { ret_pair.response.content_type() }")
+                raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid HTTP status: { ret_pair.response.http_status }")
 
         raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair)
 

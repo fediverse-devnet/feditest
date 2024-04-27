@@ -10,7 +10,7 @@ from typing import Any
 import msgspec
 
 from feditest import Test, all_node_drivers, all_tests
-from feditest.utils import hostname_validate
+from feditest.utils import hostname_parse_validate
 
 
 class TestPlanError(RuntimeError):
@@ -51,7 +51,7 @@ class TestPlanConstellationRole(msgspec.Struct):
         if self.parameters and 'hostname' in self.parameters:
             hostname = self.parameter('hostname')
             if isinstance(hostname, str):
-                if not hostname_validate(hostname):
+                if hostname_parse_validate(hostname) is None:
                     raise TestPlanError(context_msg + f'Invalid hostname: "{ hostname }".')
             else:
                 raise TestPlanError(context_msg + 'Invalid hostname: not a string')

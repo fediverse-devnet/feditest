@@ -53,7 +53,7 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
             sys.path = sys_path_before
 
 
-def account_id_validate(candidate: str) -> tuple[str,str] | None:
+def account_id_parse_validate(candidate: str) -> tuple[str,str] | None:
     """
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return tuple of user, host if valid, None otherwise
@@ -64,75 +64,104 @@ def account_id_validate(candidate: str) -> tuple[str,str] | None:
     return None
 
 
-def http_https_uri_validate(candidate: str) -> bool:
+def http_https_uri_parse_validate(candidate: str) -> str | None:
     """
     Validate that the provided string is a valid HTTP or HTTPS URI.
-    return: True if valid
+    return: string if valid, None otherwise
     """
     parsed = urlparse(candidate)
-    return (parsed.scheme in ['http', 'https']
-            and len(parsed.netloc) > 0)
+    if parsed.scheme in ['http', 'https'] and len(parsed.netloc) > 0:
+        return candidate
+    return None
 
 
-def http_https_root_uri_validate(uri: str) -> bool:
+def http_https_root_uri_parse_validate(candidate: str) -> str | None:
     """
     Validate that the provided string is a valid HTTP or HTTPS URI without a path, query or
     fragment component
-    return: True if valid
+    return: string if valid, None otherwise
     """
-    parsed = urlparse(uri)
+    parsed = urlparse(candidate)
     # FIXME: check that urlparse faithfully implements the relevant RFCs
-    return (parsed.scheme in ['http', 'https']
+    if (parsed.scheme in ['http', 'https']
             and len(parsed.netloc) > 0
             and (len(parsed.path) == 0 or parsed.path == '/')
             and len(parsed.params) == 0
             and len(parsed.query) == 0
-            and len(parsed.fragment) == 0)
+            and len(parsed.fragment) == 0):
+        return candidate
+    return None
 
 
-def http_https_acct_uri_validate(candidate: str) -> bool:
+def http_https_acct_uri_parse_validate(candidate: str) -> str | None:
     """
     Validate that the provided string is a valid HTTP, HTTPS or ACCT URI.
-    return: True if valid
+    return: string if valid, None otherwise
     """
     parsed = urlparse(candidate)
-    if parsed.scheme in ['http', 'https']:
-        return len(parsed.netloc) > 0
+    if parsed.scheme in ['http', 'https'] and len(parsed.netloc) > 0:
+        return candidate
     if parsed.scheme == 'acct':
         # Don't like this parser
         # FIXME: regex likely does not match the relevant RFCs
-        return len(parsed.netloc) == 0 and re.match(r"[-a-zA-Z0-9\.]+@[-a-zA-Z0-9\.]+", parsed.path) is not None and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0
-    return False
+        if len(parsed.netloc) == 0 and re.match(r"[-a-zA-Z0-9\.]+@[-a-zA-Z0-9\.]+", parsed.path) is not None and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0:
+            return candidate
+    return None
 
 
-def uri_validate(candidate: str) -> bool:
+def uri_parse_validate(candidate: str) -> str | None:
     """
     Validate that the provided string is a valid URI.
-    return: True if valid
+    return: string if valid, None otherwise
     """
     parsed = urlparse(candidate)
-    return (len(parsed.scheme) > 0
-            and len(parsed.netloc) > 0)
+    if len(parsed.scheme) > 0 and len(parsed.netloc) > 0:
+        return candidate
+    return None
 
 
-def rfc5646_language_tag_validate(candidate: str) -> bool:
+def rfc5646_language_tag_parse_validate(candidate: str) -> str | None:
     """
     Validate a language tag according to RFC 5646, see https://www.rfc-editor.org/rfc/rfc5646.html
-    return: True if valid
+    return: string if valid, None otherwise
     """
-    return Language.get(candidate).is_valid() # FIXME needs checking that this library actually does what it says it does
+    if Language.get(candidate).is_valid(): # FIXME needs checking that this library actually does what it says it does
+        return candidate
+    return None
 
 
-def hostname_validate(candidate: str) -> bool:
+def hostname_parse_validate(candidate: str) -> str | None:
     """
     Validate that the provided string is a valid hostname.
-    return: True if valid
+    return: string if valid, None otherwise
     """
     # from https://stackoverflow.com/questions/2532053/validate-a-hostname-string but we don't want trailing periods
     if len(candidate) > 255:
-        return False
+        return None
     allowed = re.compile(r"(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    return all(allowed.match(x) for x in candidate.split("."))
+    if all(allowed.match(x) for x in candidate.split(".")):
+        return candidate
+    return None
+
+
+def boolean_response_parse_validate(candidate:str) -> bool | None:
+    """
+    The provided string was entered by the user as a response a boolean question.
+    return a True or False if the provided string can be interpreted as answering the boolean question, None otherwise
+    """
+    candidate = candidate.strip().lower()
+    if not candidate:
+        # just hit CR, we take this as True
+        return True
+    if candidate.startswith('y'):
+        return True
+    if candidate.startswith('t'):
+        return True
+    if candidate.startswith('n'):
+        return False
+    if candidate.startswith('f'):
+        return False
+    return None
 
 
 def format_name_value_string(data: dict[str,str | None]) -> str:

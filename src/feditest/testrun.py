@@ -13,7 +13,7 @@ import traceback
 from typing import IO, Any, List, Protocol, Type
 
 from feditest import Test, TestStep, all_node_drivers, all_tests
-from feditest.protocols import Node, NodeDriver, NotImplementedError
+from feditest.protocols import Node, NodeDriver, NotImplementedByNodeOrDriverError
 from feditest.reporting import error, fatal, info, trace
 from feditest.testplan import (
     TestPlan,
@@ -148,7 +148,7 @@ class TestRunSession:
                     self.problems.append(problem)
                     break # no point about the remaining steps in the test
 
-                except NotImplementedError as e:
+                except NotImplementedByNodeOrDriverError as e:
                     info(f'Skipping test "{ test_spec.name }", step { test_step.name } because: { e }' )
 
                 except Exception as e:
