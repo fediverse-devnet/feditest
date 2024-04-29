@@ -177,7 +177,9 @@ def format_name_value_string(data: dict[str,str | None]) -> str:
     line = ''
     for key, value in data.items():
         line = ("{:<" + str(col1_width) + "}").format(key)
-        if value:
+        if not value:
+            line += '<no value>\n'
+        elif isinstance(value, str):
             for word in value.split():
                 if len(line)+1+len(word) <= line_width:
                     line += ' '
@@ -190,6 +192,8 @@ def format_name_value_string(data: dict[str,str | None]) -> str:
                 ret += line
                 ret += '\n'
         else:
-            line += '<no value>\n'
+            line += ' ' + str(value)
+            ret += line
+            ret += '\n'
 
     return ret
