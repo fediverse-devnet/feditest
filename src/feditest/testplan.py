@@ -46,13 +46,14 @@ class TestPlanConstellationRole(msgspec.Struct):
             raise TestPlanError(context_msg + f'Cannot find node driver "{ self.nodedriver }".')
 
         # also check well-known parameters
-        if self.parameters and 'hostname' in self.parameters:
-            hostname = self.parameter('hostname')
-            if isinstance(hostname, str):
-                if hostname_parse_validate(hostname) is None:
-                    raise TestPlanError(context_msg + f'Invalid hostname: "{ hostname }".')
-            else:
-                raise TestPlanError(context_msg + 'Invalid hostname: not a string')
+        if self.parameters:
+            hostname = self.parameters.get('hostname')
+            if hostname:
+                if isinstance(hostname, str):
+                    if hostname_parse_validate(hostname) is None:
+                        raise TestPlanError(context_msg + f'Invalid hostname: "{ hostname }".')
+                else:
+                    raise TestPlanError(context_msg + 'Invalid hostname: not a string')
 
 
 class TestPlanConstellation(msgspec.Struct):
@@ -111,7 +112,6 @@ class TestPlanTestSpec(msgspec.Struct):
     def get_test(self, context_msg : str = "" ) -> 'feditest.Test':
         ret = feditest.all_tests.get(self.name)
         if ret is None:
-            print( f'{feditest.all_tests}')
             raise TestPlanError(context_msg + f'Cannot find test "{ self.name }".')
         return ret
 
@@ -175,7 +175,7 @@ class TestPlanSession(msgspec.Struct):
             raise TestPlanError(context_msg + 'No tests have been defined.')
 
         for index, test_spec in enumerate(self.tests):
-            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}) { test_spec.name }: ')
+            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}) "{ test_spec.name }": ')
 
 
     def needed_role_names(self) -> set[str]:

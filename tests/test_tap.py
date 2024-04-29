@@ -37,16 +37,20 @@ def problem_feditest_hamcrest(test_spec: feditest.testplan.TestPlanTestSpec):
 
 
 class StubNode(Node):
-    pass
+    def __call__(self, rolename: str, parameters: dict[str,Any], node_driver: NodeDriver) -> Any:
+        return super().__call__(rolename, parameters, node_driver)
 
 
 class StubNodeDriver(NodeDriver):
+    def __init__(self, name: str):
+        super().__init__(name)
+
     def _provision_node(
         self, rolename: str, parameters: dict[str, Any]
     ) -> Node:
         return StubNode(rolename, parameters, self)
 
-    def _unprovision_node(self, instance: Node): ...
+    def _unprovision_node(self, _: Node): ...
 
 class StubTestClass:
     ...
