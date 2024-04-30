@@ -38,4 +38,3 @@ test : venv
 	$(VENV)/bin/pytest -v
 
 .PHONY: venv build lint test
-

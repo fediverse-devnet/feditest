@@ -181,7 +181,6 @@ class TestFromTestClass(Test):
                 break # no point about the remaining steps in the test
 
 
-
 # Tests are contained in all_tests and run from there
 all_tests : dict[str,Test] = {}
 
