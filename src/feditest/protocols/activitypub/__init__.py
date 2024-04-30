@@ -2,11 +2,13 @@
 Abstractions for the ActivityPub protocol
 """
 
-from typing import Any
-import httpx
+from typing import Any, cast
+
+from hamcrest import assert_that, is_not
+from feditest.protocols.activitypub.utils import is_member_of_collection_at
 
 from feditest.protocols.web import WebServer
-from feditest.utils import http_https_uri_validate
+from feditest.utils import http_https_uri_parse_validate
 
 
 class Actor:
@@ -49,7 +51,6 @@ class AnyObject:
         """
 
 
-
 class ActivityPubNode(WebServer):
     """
     A Node that can speak ActivityPub.
@@ -64,41 +65,42 @@ class ActivityPubNode(WebServer):
         return: the URI
         """
         if actor_rolename:
-            return self.node_driver.prompt_user(
+            return cast(str, self.prompt_user(
                     f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{actor_rolename}": ',
                     self.parameter('node-uri'),
-                    http_https_uri_validate )
+                    http_https_uri_parse_validate))
 
-        return self.node_driver.prompt_user(
+        return cast(str, self.prompt_user(
                 f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
                 self.parameter('node-uri'),
-                http_https_uri_validate )
+                http_https_uri_parse_validate))
 
 
-    def make_a_follow_b(self, a_uri_here: str, b_uri_there: str, node_there: 'ActivityPubNode') -> None:
+    def obtain_followers_collection_uri(self, actor_uri: str) -> str:
         """
-        Perform whatever actions are necessary so that actor with URI a_uri_here, which
-        is hosted on this ActivityPubNode, is following actor with URI b_uri_there,
-        which is hosted on ActivityPubNode node_there. Only return when the follow
-        relationship is fully established.
+        Determine the URI that points to the provided actor's followers collection.
         """
-        return self.node_driver.prompt_user(
-                f'On ActivityPub Node "{node_there.hostname()}", make actor "{a_uri_here}" follow actor "{b_uri_there}" and hit return once the relationship is fully established.' )
+        return cast(str, self.prompt_user(
+                f'Enter the URI of the followers collection of actor "{actor_uri}": ', parse_validate=http_https_uri_parse_validate))
 
 
-    class NotFoundError(RuntimeError):
+    def obtain_following_collection_uri(self, actor_uri: str) -> str:
         """
-        There was a 404 or such a the supposed URI.
+        Determine the URI that points to the provided actor's following collection.
         """
-        def __init__(self, uri: str, response: httpx.Response ):
-            self.uri : str = uri
-            self.http_response : httpx.Response = response
+        return cast(str, self.prompt_user(
+                f'Enter the URI of the following collection of actor "{actor_uri}": ', parse_validate=http_https_uri_parse_validate))
 
 
-    class NotAnActorError(RuntimeError):
+    def assert_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
         """
-        There was content at the supposed Actor URI but the content was invalid
-        for an Actor document.
+        Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
         """
-        def __init__(self, uri: str):
-            self.uri = uri
+        assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)))
+
+
+    def assert_not_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
+        """
+        Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
+        """
+        assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)))

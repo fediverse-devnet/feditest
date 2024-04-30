@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from feditest.protocols.web.traffic import HttpRequestResponsePair
-from feditest.utils import http_https_acct_uri_validate, rfc5646_language_tag_validate, uri_validate
+from feditest.utils import http_https_acct_uri_parse_validate, rfc5646_language_tag_parse_validate, uri_parse_validate
 
 
 class ClaimedJrd:
@@ -250,7 +250,7 @@ working-copy-of"""
             if not isinstance(self._json['subject'], str):
                 raise ClaimedJrd.InvalidTypeError(self, 'Member subject must be a string')
 
-            if not http_https_acct_uri_validate(self._json['subject']):
+            if http_https_acct_uri_parse_validate(self._json['subject']) is None:
                 raise ClaimedJrd.InvalidUriError(self, 'Member subject must be an absolute URI')
 
 
@@ -264,7 +264,7 @@ working-copy-of"""
                 if not isinstance(alias, str):
                     raise ClaimedJrd.InvalidTypeError(self, 'Members of the aliases array must be strings')
 
-                if not http_https_acct_uri_validate(alias):
+                if http_https_acct_uri_parse_validate(alias) is None:
                     raise ClaimedJrd.InvalidUriError(self, 'Members of aliases array must be absolute URIs')
 
         if 'properties' in self._json:
@@ -277,7 +277,7 @@ working-copy-of"""
                 if not isinstance(key, str):
                     raise ClaimedJrd.InvalidTypeError(self, 'Names in the properties object must be strings')
 
-                if not http_https_acct_uri_validate(key):
+                if http_https_acct_uri_parse_validate(key) is None:
                     raise ClaimedJrd.InvalidUriError(self, 'Names in the properties object must be absolute URIs')
 
                 if value is not None and not isinstance(value, str):
@@ -299,7 +299,7 @@ working-copy-of"""
                 if not isinstance(link['rel'], str):
                     raise ClaimedJrd.InvalidTypeError(self, 'Values for the rel member in the links array must be strings')
 
-                if not http_https_acct_uri_validate(link['rel']) and not ClaimedJrd.is_registered_relation_type(link['rel']):
+                if http_https_acct_uri_parse_validate(link['rel']) is None and not ClaimedJrd.is_registered_relation_type(link['rel']):
                     raise ClaimedJrd.InvalidRelError(self, 'All rel entries in the links array must be a URI or a registered relation type')
 
                 if 'type' in link:
@@ -317,7 +317,7 @@ working-copy-of"""
                     if not isinstance(link['href'], str):
                         raise ClaimedJrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings')
 
-                    if not uri_validate(link['href']):
+                    if uri_parse_validate(link['href']) is None:
                         raise ClaimedJrd.InvalidUriError(self, 'Values for the href member in the links array must be URIs')
 
                 if 'titles' in link:
@@ -330,7 +330,7 @@ working-copy-of"""
                         if not isinstance(key,str):
                             raise ClaimedJrd.InvalidTypeError(self, 'Names in the titles object in a links array member must be strings')
 
-                        if key != 'und' and not rfc5646_language_tag_validate(key):
+                        if key != 'und' and rfc5646_language_tag_parse_validate(key) is None:
                             raise ClaimedJrd.InvalidLanguageTagError(self, f'Names in the titles object in a links array member must be valid language tags or "und": { key }')
 
                         if not value or not isinstance(value, str):
@@ -346,7 +346,7 @@ working-copy-of"""
                         if not isinstance(key, str):
                             raise ClaimedJrd.InvalidTypeError(self, 'Names in the properties object in a links array member must be strings')
 
-                        if not http_https_acct_uri_validate(key):
+                        if http_https_acct_uri_parse_validate(key) is None:
                             raise ClaimedJrd.InvalidUriError(self, 'Names in the properties object in a links array member must be absolute URIs')
 
                         if value is not None and not isinstance(value, str):

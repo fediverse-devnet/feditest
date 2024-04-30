@@ -8,7 +8,7 @@ from typing import Any
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.fediverse import FediverseNode
-from feditest.utils import hostname_validate
+from feditest.utils import hostname_parse_validate
 
 
 class SaasFediverseNode(FediverseNode):
@@ -24,7 +24,7 @@ class SaasFediverseNodeDriver(NodeDriver):
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SaasFediverseNode:
         hostname = parameters.get('hostname')
         if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', None, hostname_validate)
+            hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', parse_validate=hostname_parse_validate)
             parameters= dict(parameters)
             parameters['hostname'] = hostname
 

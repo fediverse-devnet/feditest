@@ -27,9 +27,6 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if args.test:
         return run_info_test(args.test)
 
-    if args.testset:
-        return run_info_testset(args.testset)
-
     if args.nodedriver:
         return run_info_node_driver(args.nodedriver)
 
@@ -43,36 +40,10 @@ def run_info_test(name: str) -> int:
     """
     test = feditest.all_tests.get(name)
     if test:
-        test_metadata = {
-            'Test name:' : test.name,
-            'Description:' : test.description,
-            'Constellation size:' : str(test.constellation_size)
-        }
-        if test.test_set:
-            test_metadata['Test set:'] = test.test_set.name
-
-        print(format_name_value_string(test_metadata), end='')
+        print(format_name_value_string(test.metadata()), end='')
         return 0
 
     warning( 'Test not found:', name)
-    return 1
-
-
-def run_info_testset(name: str) -> int:
-    """
-    Provide information on a test set
-    """
-    test_set = feditest.all_test_sets.get(name)
-    if test_set:
-        test_set_metadata : dict[str, str | None]= {
-            'Test set name:' : test_set.name,
-            'Description:' : test_set.description
-        }
-
-        print(format_name_value_string(test_set_metadata), end='')
-        return 0
-
-    warning( 'Test set not found:', name)
     return 1
 
 
@@ -101,10 +72,9 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser( cmd_name, help='Provide information on a variety of objects')
-    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
+    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find drivers for nodes that can be tested')
         # Can't set a default value, because action='append' adds to the default value, instead of replacing it
     type_group = parser.add_mutually_exclusive_group(required=True)
     type_group.add_argument('--test',  help='Provide information about a test.')
-    type_group.add_argument('--testset',  help='Provide information about a test set.')
     type_group.add_argument('--nodedriver',  help='Provide information about a driver for a node to be tested.')

@@ -2,15 +2,13 @@
 Classes that represent a TestPlan and its parts.
 """
 
-# pylint: disable=missing-class-docstring
-
 import json
 from typing import Any
 
 import msgspec
 
-from feditest import Test, all_node_drivers, all_tests
-from feditest.utils import hostname_validate
+import feditest
+from feditest.utils import hostname_parse_validate
 
 
 class TestPlanError(RuntimeError):
@@ -44,17 +42,18 @@ class TestPlanConstellationRole(msgspec.Struct):
         if self.is_template():
             raise TestPlanError(context_msg + 'No NodeDriver assigned')
 
-        if self.nodedriver not in all_node_drivers:
+        if self.nodedriver not in feditest.all_node_drivers:
             raise TestPlanError(context_msg + f'Cannot find node driver "{ self.nodedriver }".')
 
         # also check well-known parameters
-        if self.parameters and 'hostname' in self.parameters:
-            hostname = self.parameter('hostname')
-            if isinstance(hostname, str):
-                if not hostname_validate(hostname):
-                    raise TestPlanError(context_msg + f'Invalid hostname: "{ hostname }".')
-            else:
-                raise TestPlanError(context_msg + 'Invalid hostname: not a string')
+        if self.parameters:
+            hostname = self.parameters.get('hostname')
+            if hostname:
+                if isinstance(hostname, str):
+                    if hostname_parse_validate(hostname) is None:
+                        raise TestPlanError(context_msg + f'Invalid hostname: "{ hostname }".')
+                else:
+                    raise TestPlanError(context_msg + 'Invalid hostname: not a string')
 
 
 class TestPlanConstellation(msgspec.Struct):
@@ -106,24 +105,34 @@ class TestPlanConstellation(msgspec.Struct):
 
 class TestPlanTestSpec(msgspec.Struct):
     name: str
+    rolemapping: dict[str,str] | None = None # maps from the Test's role names to the constellation's role names
     disabled: str | None = None # if a string is given, it's a reason message why disabled
 
 
-    def get_test(self, context_msg : str = "" ) -> Test:
-        ret = all_tests.get(self.name)
+    def get_test(self, context_msg : str = "" ) -> 'feditest.Test':
+        ret = feditest.all_tests.get(self.name)
         if ret is None:
             raise TestPlanError(context_msg + f'Cannot find test "{ self.name }".')
         return ret
 
 
-    def needed_role_names(self) -> set[str]:
-        return self.get_test().needed_role_names()
+    def needed_role_names(self, context_msg : str = "" ) -> set[str]:
+        ret = self.get_test().needed_local_role_names()
+        if self.rolemapping:
+            ret = ret.copy() # keep unchanged the ones not mapped
+            for key, value in self.rolemapping.items():
+                if key in ret:
+                    ret.add(value)
+                    ret.remove(key)
+                else:
+                    raise TestPlanError(context_msg + f'Cannot find role "{ key }" in test')
+        return ret
 
 
     def check_can_be_executed(self, constellation: TestPlanConstellation, context_msg: str = "") -> None:
         test_context_msg = context_msg + f'Test "{ self.name }": '
-        test = self.get_test(test_context_msg)
-        constellation.check_defines_all_role_names(test.needed_role_names(), test_context_msg )
+        needed_role_names = self.needed_role_names(context_msg) # may raise
+        constellation.check_defines_all_role_names(needed_role_names, test_context_msg )
 
 
 class TestPlanSession(msgspec.Struct):
@@ -166,7 +175,7 @@ class TestPlanSession(msgspec.Struct):
             raise TestPlanError(context_msg + 'No tests have been defined.')
 
         for index, test_spec in enumerate(self.tests):
-            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test "{ test_spec.name }" (index { index }: ')
+            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}) "{ test_spec.name }": ')
 
 
     def needed_role_names(self) -> set[str]:
@@ -205,8 +214,8 @@ class TestPlan(msgspec.Struct):
     A TestPlan defines one or more TestPlanSessions. TestPlanSessions can be run sequentially, or
     (in theory; no code yet) in parallel.
     """
-    name: str | None = None
     sessions : list[TestPlanSession] = []
+    name: str | None = None
 
     @staticmethod
     def load(filename: str) -> 'TestPlan':
@@ -242,4 +251,4 @@ class TestPlan(msgspec.Struct):
             raise TestPlanError('No TestPlanSessions have been defined in TestPlan')
 
         for index, session in enumerate(self.sessions):
-            session.check_can_be_executed(context_msg + f'TestPlanSession {index}:')
+            session.check_can_be_executed(context_msg + f'TestPlanSession {index}: ')
