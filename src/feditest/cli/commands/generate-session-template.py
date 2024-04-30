@@ -26,7 +26,11 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     test_plan_specs : list[TestPlanTestSpec]= []
     constellation_role_names : dict[str,Any] = {}
+<<<<<<< HEAD
     for name in sorted(feditest.all_tests.all().keys()):
+=======
+    for name in sorted(feditest.all_tests.keys()):
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
         if pattern is None or pattern.match(name):
             test = feditest.all_tests.get(name)
             if test is None: # make linter happy
@@ -35,8 +39,16 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
             test_plan_spec = TestPlanTestSpec(name)
             test_plan_specs.append(test_plan_spec)
 
+<<<<<<< HEAD
             for role_name in test.needed_role_names():
                 constellation_role_names[role_name] = 1
+=======
+            for role_name in test.needed_local_role_names():
+                constellation_role_names[role_name] = 1
+                if not test_plan_spec.rolemapping:
+                    test_plan_spec.rolemapping = {}
+                test_plan_spec.rolemapping[role_name] = role_name
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 
     constellation_roles : list[TestPlanConstellationRole] = []
     for constellation_role_name in constellation_role_names:

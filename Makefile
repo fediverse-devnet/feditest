@@ -9,6 +9,12 @@
 # make lint
 #     Run several linters on the code
 #
+<<<<<<< HEAD
+=======
+# make test
+#     Run unit tests
+#
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 # NOTE: This does not add the venv to your $PATH. You have to do that yourself if you want that.
 #
 
@@ -31,5 +37,12 @@ lint : venv
 	$(VENV)/bin/mypy src
 	$(VENV)/bin/pylint src
 
+<<<<<<< HEAD
 .PHONY: venv build lint
+=======
+test : venv
+	$(VENV)/bin/pytest -v
+
+.PHONY: venv build lint test
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 

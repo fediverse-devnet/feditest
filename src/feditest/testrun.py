@@ -4,17 +4,26 @@ Classes that represent a running TestPlan and its its parts.
 
 # pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
-import sys
-import time
+from abc import ABC
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from datetime import datetime, timezone
+<<<<<<< HEAD
 import traceback
 from typing import IO, Any, List, Protocol, Type
 
 from feditest import Test, TestStep, all_node_drivers, all_tests
 from feditest.protocols import Node, NodeDriver, NotImplementedByNodeOrDriverError
 from feditest.reporting import error, fatal, info, trace
+=======
+import sys
+import time
+from typing import Any, IO, List, Protocol, Type
+
+import feditest
+from feditest.protocols import Node, NodeDriver
+from feditest.reporting import error, fatal, info, trace, warning
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,
@@ -45,7 +54,11 @@ class TestRunConstellation:
         for plan_role in self._plan_constellation.roles:
             if plan_role.nodedriver is None:
                 raise ValueError('Unexpected null nodedriver')
+<<<<<<< HEAD
             node_driver_class : Type[Any] = all_node_drivers[plan_role.nodedriver]
+=======
+            node_driver_class : Type[Any] = feditest.all_node_drivers[plan_role.nodedriver]
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 
             trace('Setting up role', plan_role.name, f'(node driver: {plan_role.nodedriver})')
 
@@ -76,6 +89,7 @@ class TestRunConstellation:
             plan_role.name = plan_role.name
 
             if plan_role.name in self._run_constellation: # setup may never have succeeded
+<<<<<<< HEAD
                 trace('Tearing down role', plan_role.name)
                 node = self._run_constellation[plan_role.name]
                 node.node_driver.unprovision_node(node)
@@ -92,6 +106,20 @@ class TestRunConstellation:
             args[role_name] = self._run_constellation[role_name]
 
         test_step.function(**args)
+=======
+                try:
+                    trace('Tearing down role', plan_role.name)
+                    node = self._run_constellation[plan_role.name]
+                    node.node_driver.unprovision_node(node)
+                    del self._run_constellation[plan_role.name]
+
+                except Exception as e:
+                    warning(f'Problem unprovisioning node {node}', e)
+
+
+    def get_node(self, role_name: str) -> Node | None:
+        return self._run_constellation.get(role_name)
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 
 
 class TestRunSession:
@@ -103,7 +131,7 @@ class TestRunSession:
         self.name = name
         self.problems : List[TestProblem] = []
         self._plan_session = plan_session
-        self._constellation : TestRunConstellation | None = None
+        self.constellation : TestRunConstellation | None = None
 
 
     def run(self):
@@ -111,8 +139,8 @@ class TestRunSession:
             info(f'Running session "{ self.name }"')
 
             try:
-                self._constellation = TestRunConstellation(self._plan_session.constellation)
-                self._constellation.setup()
+                self.constellation = TestRunConstellation(self._plan_session.constellation)
+                self.constellation.setup()
 
                 for test_spec in self._plan_session.tests:
                     if test_spec.disabled:
@@ -120,12 +148,12 @@ class TestRunSession:
                     else:
                         self._run_test_spec(test_spec)
             finally:
-                self._constellation.teardown()
+                self.constellation.teardown()
 
-            if self._constellation._run_constellation:
-                fatal( 'Still have nodes in the constellation', self._constellation._run_constellation )
+            if self.constellation._run_constellation:
+                fatal( 'Still have nodes in the constellation', self.constellation._run_constellation )
 
-            info('End running session:', self.name)
+            info(f'End running session: "{ self.name }"')
 
         else:
             info(f'Skipping session "{ self.name }": no tests defined')
@@ -133,6 +161,7 @@ class TestRunSession:
 
     def _run_test_spec(self, test_spec: TestPlanTestSpec):
         info(f'Running test "{ test_spec.name }"')
+<<<<<<< HEAD
         test : Test | None = all_tests.get(test_spec.name)
 
         if test and self._constellation:
@@ -157,16 +186,41 @@ class TestRunSession:
                     self.problems.append(problem)
                     break # no point about the remaining steps in the test
 
+=======
+        test : feditest.Test | None = feditest.all_tests.get(test_spec.name)
+
+        if test:
+            test.run(test_spec, self)
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
         else:
-            error(f'Test not found: { test_spec.name}')
+            error(f'Test not found: { test_spec.name }')
 
 
 @dataclass
-class TestProblem:
+class TestProblem(ABC):
     """Information about test failure/problem."""
     test: TestPlanTestSpec
     test_step: TestStep
     exc: Exception
+
+    def __str__(self):
+        return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
+
+
+@dataclass
+class TestFunctionProblem(TestProblem):
+    """Information about test failure/problem of a test defined as a function."""
+
+
+    def __str__(self):
+        return f"{ self.test.name }: {self.exc}"
+
+
+@dataclass
+class TestClassTestStepProblem(TestProblem):
+    """Information about test failure/problem."""
+    test_step: 'feditest.TestStep'
+
 
     def __str__(self):
         return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
@@ -274,9 +328,9 @@ class TestRun:
     """
     Encapsulates the state of a test run while feditest is executing a TestPlan
     """
-    def __init__(self, plan: TestPlan, result_writer: TestResultWriter):
+    def __init__(self, plan: TestPlan, result_writer: TestResultWriter | None = None):
         self._plan = plan
-        self._result_writer = result_writer
+        self._result_writer = result_writer or DefaultTestResultWriter()
         self._runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
 
 

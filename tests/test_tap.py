@@ -22,7 +22,7 @@ def configure_logging():
 
 @pytest.fixture(autouse=True)
 def clear_tests():
-    all_tests.tests.clear()
+    all_tests.clear()
 
 
 def passing_feditest(test_spec: feditest.testplan.TestPlanTestSpec): ...
@@ -37,33 +37,37 @@ def problem_feditest_hamcrest(test_spec: feditest.testplan.TestPlanTestSpec):
 
 
 class StubNode(Node):
-    pass
+    def __call__(self, rolename: str, parameters: dict[str,Any], node_driver: NodeDriver) -> Any:
+        return super().__call__(rolename, parameters, node_driver)
 
 
 class StubNodeDriver(NodeDriver):
+    def __init__(self, name: str):
+        super().__init__(name)
+
     def _provision_node(
         self, rolename: str, parameters: dict[str, Any]
     ) -> Node:
-        return StubNode(rolename, self)
+        return StubNode(rolename, parameters, self)
 
-    def _unprovision_node(self, instance: Node): ...
+    def _unprovision_node(self, _: Node): ...
 
+class StubTestClass:
+    ...
 
 @pytest.mark.parametrize(
     ["test_function", "expected_exit_code"],
     [(passing_feditest, 0), (problem_feditest, 1)],
 )
 def test_result_writer_default(test_function, expected_exit_code):
-    test_set = feditest.TestSet("unittest-testset", "a test set for a unit test", None)
-    test = feditest.Test("unittest-test", "a test for unit testing", test_set, 0)
+    test = feditest.TestFromTestClass("unittest-test", "a test for unit testing", StubTestClass)
     test_step = feditest.TestStep(
         "unittest-test-step", "a test step for unit testing", test, test_function
     )
     test.steps.append(test_step)
-    all_tests.tests["unittest-test"] = test
+    all_tests["unittest-test"] = test
     all_node_drivers["unittest-node-driver"] = StubNodeDriver
     plan = feditest.testplan.TestPlan(
-        "unittest-plan",
         [
             feditest.testplan.TestPlanSession(
                 feditest.testplan.TestPlanConstellation(
@@ -76,6 +80,7 @@ def test_result_writer_default(test_function, expected_exit_code):
                 [feditest.testplan.TestPlanTestSpec("unittest-test")],
             )
         ],
+        "unittest-plan"
     )
     result_writer = DefaultTestResultWriter()
     run = _TestRun(plan, result_writer)
@@ -163,9 +168,8 @@ not ok 2 - unittest-test-other
     ],
 )
 def test_result_writer_tap(test_function, expected_exit_code, expected_trailer):
-    test_set = feditest.TestSet("unittest-testset", "a test set for a unit test", None)
-    passing_test = feditest.Test(
-        "unittest-test", "a test for unit testing", test_set, 0
+    passing_test = feditest.TestFromTestClass(
+        "unittest-test", "a test for unit testing", StubTestClass
     )
     passing_test.steps.append(
         feditest.TestStep(
@@ -175,8 +179,8 @@ def test_result_writer_tap(test_function, expected_exit_code, expected_trailer):
             passing_feditest,
         )
     )
-    all_tests.tests["unittest-test-passing"] = passing_test
-    other_test = feditest.Test("unittest-test", "a test for unit testing", test_set, 0)
+    all_tests["unittest-test-passing"] = passing_test
+    other_test = feditest.TestFromTestClass("unittest-test", "a test for unit testing", StubTestClass)
     other_test.steps.append(
         feditest.TestStep(
             "unittest-test-other",
@@ -185,10 +189,9 @@ def test_result_writer_tap(test_function, expected_exit_code, expected_trailer):
             test_function,
         )
     )
-    all_tests.tests["unittest-test-other"] = other_test
+    all_tests["unittest-test-other"] = other_test
     all_node_drivers["unittest-node-driver"] = StubNodeDriver
     plan = feditest.testplan.TestPlan(
-        "unittest-plan",
         [
             feditest.testplan.TestPlanSession(
                 feditest.testplan.TestPlanConstellation(
@@ -198,9 +201,10 @@ def test_result_writer_tap(test_function, expected_exit_code, expected_trailer):
                         )
                     ]
                 ),
-                [feditest.testplan.TestPlanTestSpec(name) for name in all_tests.tests],
+                [feditest.testplan.TestPlanTestSpec(name) for name in all_tests],
             )
         ],
+        "unittest-plan"
     )
 
     out = StringIO()

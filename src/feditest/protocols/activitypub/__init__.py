@@ -81,7 +81,11 @@ class ActivityPubNode(WebServer):
         Determine the URI that points to the provided actor's followers collection.
         """
         return cast(str, self.prompt_user(
+<<<<<<< HEAD
                 f'Enter the URI of the followers collection of actor "{actor_uri}"', parse_validate=http_https_uri_parse_validate))
+=======
+                f'Enter the URI of the followers collection of actor "{actor_uri}": ', parse_validate=http_https_uri_parse_validate))
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 
 
     def obtain_following_collection_uri(self, actor_uri: str) -> str:
@@ -89,7 +93,11 @@ class ActivityPubNode(WebServer):
         Determine the URI that points to the provided actor's following collection.
         """
         return cast(str, self.prompt_user(
+<<<<<<< HEAD
                 f'Enter the URI of the following collection of actor "{actor_uri}"', parse_validate=http_https_uri_parse_validate))
+=======
+                f'Enter the URI of the following collection of actor "{actor_uri}": ', parse_validate=http_https_uri_parse_validate))
+>>>>>>> cc174835d7893d31fb9ed08b1e70b8befed7aa9e
 
 
     def assert_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
