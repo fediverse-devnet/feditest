@@ -6,6 +6,8 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
+from feditest.reporting import warning
+
 
 class Node(ABC):
     """
@@ -136,7 +138,12 @@ class NodeDriver(ABC):
         return: the value entered by the user, parsed, or None
         """
         if value_if_known:
-            return value_if_known
+            if parse_validate is None:
+                return value_if_known
+            ret_parsed = parse_validate(value_if_known)
+            if ret_parsed is not None:
+                return ret_parsed
+            warning(f'Preconfigured value "{ value_if_known }" is invalid, ignoring.')
 
         while True:
             ret = input(f'TESTER ACTION REQUIRED: { question }')
