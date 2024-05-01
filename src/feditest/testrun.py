@@ -163,6 +163,25 @@ class TestClassTestStepProblem(TestProblem):
         return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
 
 
+@dataclass
+class TestFunctionProblem(TestProblem):
+    """Information about test failure/problem of a test defined as a function."""
+
+
+    def __str__(self):
+        return f"{ self.test.name }: {self.exc}"
+
+
+@dataclass
+class TestClassTestStepProblem(TestProblem):
+    """Information about test failure/problem."""
+    test_step: 'feditest.TestStep'
+
+
+    def __str__(self):
+        return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
+
+
 class TestResultWriter(Protocol):
     """An object that writes test results in some format."""
     def write(self, plan: TestPlan,
@@ -280,7 +299,7 @@ class TestRun:
         run_sessions: list[TestRunSession] = []
 
         for i, plan_session in enumerate(self._plan.sessions):
-            session_name = f'{self._plan.name}/{str(i)}' if self._plan.name else str(i)
+            session_name = f'{self._plan.name}/{str(i)}' if self._plan.name else f'session_{ i }'
             run_session = TestRunSession(session_name, plan_session)
             run_session.run()
             run_sessions.append(run_session)

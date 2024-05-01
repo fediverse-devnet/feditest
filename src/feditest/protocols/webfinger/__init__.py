@@ -25,15 +25,16 @@ class WebFingerServer(WebServer):
         return: the identifier
         """
         if nickname:
-            return cast(str, self.prompt_user(
+            parsed = self.prompt_user(
                     f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
-                    account_id_parse_validate))
-
-        return cast(str, self.prompt_user(
-                f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
-                self.parameter('existing-account-uri'),
-                account_id_parse_validate))
+                    account_id_parse_validate)
+        else:
+            parsed = self.prompt_user(
+                    f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
+                    self.parameter('existing-account-uri'),
+                    account_id_parse_validate)
+        return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
     def obtain_non_existing_account_identifier(self, nickname: str | None = None ) -> str:
@@ -45,15 +46,16 @@ class WebFingerServer(WebServer):
         return: the identifier
         """
         if nickname:
-            return cast(str, self.prompt_user(
-                f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
-                self.parameter('nonexisting-account-uri'),
-                account_id_parse_validate))
-
-        return cast(str, self.prompt_user(
-            f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
-            self.parameter('nonexisting-account-uri'),
-            account_id_parse_validate))
+            parsed = self.prompt_user(
+                    f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
+                    self.parameter('nonexisting-account-uri'),
+                    account_id_parse_validate)
+        else:
+            parsed = self.prompt_user(
+                    f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
+                    self.parameter('nonexisting-account-uri'),
+                    account_id_parse_validate)
+        return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
     def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
