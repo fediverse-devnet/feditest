@@ -19,7 +19,7 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         on this Node. Determine the various Note and Activity properties as per this Node's defaults.
         """
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{self.hostname()}", make actor "{actor_uri}" create a Note'
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
                 + ' and enter its URI when created.'
                 + f' Note content:"""\n{ content }\n"""' ))
 
@@ -28,7 +28,7 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         """
         """
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{self.hostname()}", wait until in actor "{actor_uri}"\'s inbox,'
+                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
                 + f' Note with URI "{ note_uri }" has appeared and enter its local URI:'))
 
 
@@ -36,7 +36,7 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         """
         """
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{self.hostname()}", make actor "{actor_uri}" boost "{ note_uri }"'
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ note_uri }"'
                 + ' and enter the boost activity\' local URI:'))
 
 
@@ -44,7 +44,7 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         """
         """
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{self.hostname()}", make actor "{actor_uri}" reply to object with "{ note_uri }"'
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" reply to object with "{ note_uri }"'
                 + ' and enter its URI when created.'
                 + f' Reply content:"""\n{ reply_content }\n"""' ))
 
@@ -57,4 +57,4 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         relationship is fully established.
         """
         self.prompt_user(
-                f'On FediverseNode "{self.hostname()}", make actor "{a_uri_here}" follow actor "{b_uri_there}" and hit return once the relationship is fully established.' )
+                f'On FediverseNode "{ self.hostname }", make actor "{ a_uri_here }" follow actor "{ b_uri_there }" and hit return once the relationship is fully established.' )

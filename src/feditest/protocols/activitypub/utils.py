@@ -25,7 +25,7 @@ class MemberOfCollectionMatcher(BaseMatcher[Any]):
 
     def _matches(self, member_candidate_uri: str) -> bool:
         ret = self._node.prompt_user(
-                f'Is "{ member_candidate_uri }" a member of the collection at URI "{ self._collection_uri }"?',
+                f'Is "{ member_candidate_uri }" a member of the collection at URI "{ self._collection_uri }"? ',
                 parse_validate=boolean_response_parse_validate)
         return cast(bool, ret)
 
