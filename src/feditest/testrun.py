@@ -4,12 +4,14 @@ Classes that represent a running TestPlan and its its parts.
 
 # pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
+import getpass
+import platform
 import sys
 import time
 from abc import ABC
 from contextlib import redirect_stdout
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from typing import IO, Any, List, Protocol, Type
 
 import feditest
@@ -227,6 +229,10 @@ class DefaultTestResultWriter:
             print("FAILED")
         summary = TestSummary.for_run(plan, run_sessions)
         print(f"Test plan: {plan.name or 'N/A'}")
+        if metadata:
+            print(f"Test metadata: {plan.name or 'N/A'}")
+            for key, value in metadata.items():
+                print(f"    {key}: {value}")
         for run_session, plan_session in zip(run_sessions, plan.sessions):
             for test in plan_session.tests:
                 if problem := _get_problem(run_session, test):
@@ -311,7 +317,14 @@ class TestRun:
             run_session.run()
             run_sessions.append(run_session)
 
-        self._result_writer.write(self._plan, run_sessions)
+        metadata = {
+            "timestamp": datetime.now(UTC),
+            "platform": platform.platform(),
+            "username": getpass.getuser(),
+            "hostname": platform.node()
+        }
+
+        self._result_writer.write(self._plan, run_sessions, metadata=metadata)
 
         all_passed = all(not s.problems for s in run_sessions)
         return 0 if all_passed else 1
