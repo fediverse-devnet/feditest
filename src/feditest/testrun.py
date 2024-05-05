@@ -4,13 +4,13 @@ Classes that represent a running TestPlan and its its parts.
 
 # pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
+import sys
+import time
 from abc import ABC
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import sys
-import time
-from typing import Any, IO, List, Protocol, Type
+from typing import IO, Any, List, Protocol, Type
 
 import feditest
 from feditest.protocols import Node, NodeDriver
@@ -226,6 +226,13 @@ class DefaultTestResultWriter:
         if any(s.problems for s in run_sessions):
             print("FAILED")
         summary = TestSummary.for_run(plan, run_sessions)
+        print(f"Test plan: {plan.name or 'N/A'}")
+        for run_session, plan_session in zip(run_sessions, plan.sessions):
+            for test in plan_session.tests:
+                if problem := _get_problem(run_session, test):
+                    print(f"Test failure: {run_session.name}/{test.name}")
+                    for line in str(problem.exc).strip().split("\n"):
+                        print(f"    {line}")
         print(f"Test summary: total={ summary.total }, passed={ summary.passed }, failed={ summary.failed }, skipped={ summary.skipped }")
 
 
@@ -241,7 +248,7 @@ class TapTestResultWriter:
     ):
         with redirect_stdout(self.out):
             print("TAP version 14")
-            print(f"# test plan: {plan.name}")
+            print(f"# test plan: {plan.name or 'N/A'}")
             if metadata:
                 for key, value in metadata.items():
                     print(f"# {key}: {value}")
