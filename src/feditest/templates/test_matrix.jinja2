@@ -1,0 +1,35 @@
+
+<table class="tests">
+    <thead>
+        <tr>
+            <th>Test</th>
+            {%- for run_session, plan_session in sessions %}
+            <th>
+                {%- if session_links -%}
+                <a href="#{{ run_session.name }}">{{ run_session.name }}</a>
+                {%- else -%}
+                {{ run_session.name }}
+                {%- endif -%}
+            </th>
+            {%- endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for test_spec in all_tests -%}
+        <tr>
+            <td class="name">{{ test_spec.name }}</td>
+            {%- for run_session, plan_session in sessions -%}
+                {% set problem = get_problem(run_session, test_spec) -%}
+                {% if test_spec.disabled -%}
+                    {% set status = "skipped" -%}
+                {% elif problem -%}
+                    {% set status = "failed" -%}
+                {% else -%}
+                    {% set status = "passed" -%}
+                {% endif %}
+            <td class="status {{ status }}">{{ status }}</td>
+            {%- endfor %}
+        </tr>   
+        {%- endfor %}
+    </tbody>
+</table>

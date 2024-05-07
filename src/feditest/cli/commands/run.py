@@ -7,7 +7,7 @@ from argparse import ArgumentParser, Namespace, _SubParsersAction
 import feditest
 from feditest.cli import default_node_drivers_dir
 from feditest.testplan import TestPlan
-from feditest.testrun import TapTestResultWriter, TestRun
+from feditest.testrun import HtmlTestResultWriter, TapTestResultWriter, TestRun
 
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
@@ -33,12 +33,24 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
             result_writer = TapTestResultWriter(out)
             test_run = TestRun(plan, result_writer)
             return test_run.run()
-    else:
-        result_writer = TapTestResultWriter() if args.tap else None
+    elif args.tap:
+        result_writer = TapTestResultWriter()
         test_run = TestRun(plan, result_writer)
         return test_run.run()
-
-
+    elif isinstance(args.html, str):
+        # TODO refactor to eliminate duplicate logic
+        with open(args.html, "w", encoding="utf8") as out:
+            result_writer = HtmlTestResultWriter(out)
+            test_run = TestRun(plan, result_writer)
+            return test_run.run()
+    elif args.html:
+        result_writer = HtmlTestResultWriter()
+        test_run = TestRun(plan, result_writer)
+        return test_run.run()
+    else:
+        test_run = TestRun(plan).run()  
+ 
+    
 def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     Add command-line options for this sub-command
@@ -52,3 +64,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
         # Can't set a default value, because action='append' adds to the default value, instead of replacing it
     parser.add_argument('--tap', nargs="?", const=True, default=False,
                         help="Use TAP test result format. Can also provide an optional filename for results. Default is standard out.")
+    parser.add_argument('--html', nargs="?", const=True, default=False,
+                        help="Use HTML test result format. Can also provide an optional filename for results. Default is standard out.")
