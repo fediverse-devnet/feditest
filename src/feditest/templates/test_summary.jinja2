@@ -1,0 +1,28 @@
+<table class="summary">
+    <thead>
+        <tr>
+            <th>Status</th>
+            <th>Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Passed</td>
+            <td>{{ summary.passed }}</td>
+        </tr>
+        <tr>
+            <td>Failed</td>
+            <td>{{ summary.failed }}</td>
+        </tr>
+        <tr>
+            <td>Skipped</td>
+            <td>{{ summary.skipped }}</td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td>Total</td>
+            <td>{{ summary.total }}</td>
+        </tr>
+    </tfoot>
+</table>

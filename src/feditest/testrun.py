@@ -5,6 +5,7 @@ Classes that represent a running TestPlan and its its parts.
 # pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
 
 import getpass
+import os
 import platform
 import sys
 import time
@@ -13,6 +14,8 @@ from contextlib import redirect_stdout
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
 from typing import IO, Any, List, Protocol, Type
+
+import jinja2
 
 import feditest
 from feditest.protocols import Node, NodeDriver
@@ -287,6 +290,38 @@ class TapTestResultWriter:
             print(f"#   passed: {summary.passed}")
             print(f"#   failed: {summary.failed}")
             print(f"#   skipped: {summary.skipped}")
+
+
+class HtmlTestResultWriter:
+    def __init__(self, out: IO = sys.stdout):
+        self.out = out
+        template_dir = os.path.join(os.path.dirname(__file__), "templates")
+        self.templates = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_dir)
+        )
+
+    def write(
+        self,
+        plan: TestPlan,
+        run_sessions: list[TestRunSession],
+        metadata: dict[str, Any] | None = None,
+    ):
+        template = self.templates.get_template("report.jinja2")
+        with redirect_stdout(self.out):
+            all_tests = sorted(
+                {test.name: test for s in plan.sessions for test in s.tests}.values(),
+                key=lambda t: t.name,
+            )
+            sessions = list(zip(run_sessions, plan.sessions))
+            summary = TestSummary.for_run(plan, run_sessions)
+            print(
+                template.render(
+                    sessions=sessions,
+                    summary=summary,
+                    all_tests=all_tests,
+                    get_problem=_get_problem,
+                )
+            )
 
 
 def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem | None:
