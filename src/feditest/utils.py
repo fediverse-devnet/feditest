@@ -58,7 +58,8 @@ def account_id_parse_validate(candidate: str) -> tuple[str,str] | None:
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return tuple of user, host if valid, None otherwise
     """
-    match = re.match(r"acct:([-a-z0-9\.]+)@([-a-z0-9\.]+)", candidate) # FIXME: should tighten this regex
+    # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
+    match = re.match(r"acct:([-a-z0-9\._~][-a-z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-z0-9\.:]+)", candidate)
     if match:
         return (match.group(1) or "", match.group(2) or "")
     return None
