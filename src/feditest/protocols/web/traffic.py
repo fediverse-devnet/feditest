@@ -117,8 +117,12 @@ class HttpResponse:
     def payload_charset(self):
         content_type = self.content_type()
         tag = 'charset='
-        if content_type and content_type.index(tag) >= 0:
-            return content_type[ content_type.index(tag)+len(tag) : ]
+        try:
+            if content_type and content_type.index(tag) >= 0:
+                return content_type[ content_type.index(tag)+len(tag) : ]
+        except ValueError:
+            # index will raise an exception if tag is not found
+            ...
         return None
 
 
