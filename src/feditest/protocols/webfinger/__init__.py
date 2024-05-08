@@ -2,7 +2,7 @@
 Abstractions for the WebFinger protocol
 """
 
-from typing import Any, Callable, cast
+from typing import Any, Callable
 from urllib.parse import quote, urlparse
 
 from feditest.protocols import NotImplementedByNodeError
@@ -34,6 +34,7 @@ class WebFingerServer(WebServer):
                     f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
                     http_https_acct_uri_parse_validate)
+        assert parsed
         return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
@@ -55,6 +56,7 @@ class WebFingerServer(WebServer):
                     f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
                     http_https_acct_uri_parse_validate)
+        assert parsed
         return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
