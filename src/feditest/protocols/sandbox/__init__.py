@@ -11,7 +11,7 @@ class SandboxLogEvent:
     """
     The structure of the data inserted into the log.
     """
-    def __init__(self, a: int, b: int, c: int):
+    def __init__(self, a: float, b: float, c: float):
         self.when = datetime.now(UTC)
         self.a = a
         self.b = b
@@ -22,7 +22,7 @@ class SandboxMultServer(Node):
     """
     This is a "Server" Node in a to-be-tested toy protocol. It is only useful to illustrate how Feditest works.
     """
-    def mult(self, a: int, b: int) -> int:
+    def mult(self, a: float, b: float) -> float:
         """
         The operation that's being tested
         """
@@ -48,7 +48,7 @@ class SandboxMultClient(Node):
     """
     This is a "Client" Node in a to-be-tested toy protocol. It is only useful to illustrate how Feditest works.
     """
-    def cause_mult(self, server: SandboxMultServer, a: int, b: int) -> int:
+    def cause_mult(self, server: SandboxMultServer, a: float, b: float) -> float:
         """
         Enable FediTest to make the client perform the mult() operation on the server.
         """
