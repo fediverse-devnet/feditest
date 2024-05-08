@@ -343,14 +343,17 @@ class TestRun:
 
         run_sessions: list[TestRunSession] = []
 
+        started = datetime.now(UTC)
         for i, plan_session in enumerate(self._plan.sessions):
             session_name = f'{self._plan.name}/{str(i)}' if self._plan.name else f'session_{ i }'
             run_session = TestRunSession(session_name, plan_session)
             run_session.run()
             run_sessions.append(run_session)
+        ended = datetime.now(UTC)
 
         metadata = {
-            "timestamp": datetime.now(UTC),
+            "started": started,
+            "ended": ended,
             "platform": platform.platform(),
             "username": getpass.getuser(),
             "hostname": platform.node()
