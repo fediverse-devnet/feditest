@@ -8,7 +8,7 @@ from urllib.parse import quote, urlparse
 from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.web.traffic import HttpRequestResponsePair
-from feditest.utils import account_id_parse_validate
+from feditest.utils import http_https_acct_uri_parse_validate
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
 
 
@@ -28,12 +28,12 @@ class WebFingerServer(WebServer):
             parsed = self.prompt_user(
                     f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
-                    account_id_parse_validate)
+                    http_https_acct_uri_parse_validate)
         else:
             parsed = self.prompt_user(
                     f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
-                    account_id_parse_validate)
+                    http_https_acct_uri_parse_validate)
         return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
@@ -49,12 +49,12 @@ class WebFingerServer(WebServer):
             parsed = self.prompt_user(
                     f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
-                    account_id_parse_validate)
+                    http_https_acct_uri_parse_validate)
         else:
             parsed = self.prompt_user(
                     f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
-                    account_id_parse_validate)
+                    http_https_acct_uri_parse_validate)
         return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
