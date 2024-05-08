@@ -13,7 +13,7 @@ from langcodes import Language
 
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
-ACCT_REGEX = re.compile("acct:([-a-z0-9\._~][-a-z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-z0-9\.:]+)")
+ACCT_REGEX = re.compile(r"acct:([-a-z0-9\._~][-a-z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-z0-9\.:]+)")
 
 
 def find_submodules(package: ModuleType) -> list[str]:
