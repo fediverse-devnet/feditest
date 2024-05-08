@@ -149,23 +149,6 @@ class TestProblem(ABC):
     exc: Exception
 
 
-@dataclass
-class TestFunctionProblem(TestProblem):
-    """Information about test failure/problem of a test defined as a function."""
-
-
-    def __str__(self):
-        return f"{ self.test.name }: {self.exc}"
-
-
-@dataclass
-class TestClassTestStepProblem(TestProblem):
-    """Information about test failure/problem."""
-    test_step: 'feditest.TestStep'
-
-
-    def __str__(self):
-        return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
 
 
 @dataclass
