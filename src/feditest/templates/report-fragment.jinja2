@@ -1,0 +1,9 @@
+    <h1>Feditest Report: {{ plan.name or "Unnamed" }}</h1>
+    <h2>Test Summary</h2>
+{%  include "test_summary.jinja2" %}
+{%  with session_links=true %}
+    <h2>Test Results</h2>
+{%      include "test_matrix.jinja2" %}
+{%   endwith %}
+    <h2>Session Details</h2>
+{%   include "session_details.jinja2" %}
