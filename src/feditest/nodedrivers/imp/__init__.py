@@ -61,7 +61,8 @@ class Imp(WebFingerClient):
                 if ret_pair.response.http_status == 200:
                     if ret_pair.response.content_type() == 'application/jrd+json' or ret_pair.response.content_type().startswith('application/jrd+json;'):
                         if ret_pair.response.payload is not None:
-                            json_string = ret_pair.response.payload.decode(encoding=ret_pair.response.payload_charset() )
+                            json_string = ret_pair.response.payload.decode(
+                                encoding=ret_pair.response.payload_charset() or "utf8" )
                             jrd = ClaimedJrd(json_string)
                             jrd.validate()
                             return WebFingerQueryResponse(pair, jrd)
