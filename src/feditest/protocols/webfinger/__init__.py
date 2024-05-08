@@ -60,6 +60,15 @@ class WebFingerServer(WebServer):
         return f'acct:{ parsed[0] }@{ parsed[1] }'
 
 
+    def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
+        """
+        Return the identifier of an existing or newly created account on this Node that contains characters
+        that require percent-encoding when provided as resource in a WebFinger query.
+        If the Node does not ever issue such identifiers, raise NotImplementedByNodeException
+        """
+        raise NotImplementedByNodeError(self, WebFingerServer.obtain_account_identifier_requiring_percent_encoding)
+
+
     def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
         """
         Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
