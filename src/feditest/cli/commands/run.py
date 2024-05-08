@@ -51,7 +51,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         test_run = TestRun(plan, result_writer)
         return test_run.run()
     else:
-        test_run = TestRun(plan).run()
+        test_run = TestRun(plan)
+        return test_run.run()
 
 
 def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
