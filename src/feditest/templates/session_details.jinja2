@@ -1,7 +1,9 @@
 
 <div class="sessions">
     {% for run_session, plan_session in sessions %}
-    <div class="session" id="{{ run_session.name }}">
+    {%- set session_id = plan_session.constellation.name %}
+    {%- if not session_id %}{%- set session_id = run_session.name %}{%- endif %}
+    <div class="session" id="{{ session_id }}">
         <div class="name">{{ run_session.name }}</div>
         <div class="constellation">
             {% set constellation = plan_session.constellation -%}
