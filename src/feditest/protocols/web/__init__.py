@@ -87,7 +87,7 @@ class WebClient(Node):
     """
     Abstract class used for Nodes that speak HTTP as client.
     """
-    def http(self, request: HttpRequest) -> HttpRequestResponsePair:
+    def http(self, request: HttpRequest, follow_redirects: bool = True) -> HttpRequestResponsePair:
         """
         Make this WebClient perform an HTTP request.
         """
@@ -95,11 +95,11 @@ class WebClient(Node):
         # Unlikely that there is a manual action the user could take, so no prompt here
 
 
-    def http_get(self, uri: str) -> HttpRequestResponsePair:
+    def http_get(self, uri: str, follow_redirects: bool = True) -> HttpRequestResponsePair:
         """
         Make this WebClientperform an HTTP get on the provided uri.
         """
-        return self.http(HttpRequest(ParsedUri.parse(uri), 'GET' ))
+        return self.http(HttpRequest(ParsedUri.parse(uri), 'GET' ), follow_redirects=follow_redirects)
 
 
     class TooManyRedirectsError(RuntimeError):

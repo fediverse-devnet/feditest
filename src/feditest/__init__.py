@@ -8,6 +8,7 @@ from inspect import getfullargspec, getmembers, getmodule, isfunction
 import traceback
 from types import FunctionType
 from typing import Any, Type
+import importlib.metadata
 
 from feditest.protocols import NotImplementedByNodeOrDriverError
 from feditest.testplan import TestPlanTestSpec
@@ -15,7 +16,14 @@ from feditest.testrun import TestRunSession, TestClassTestStepProblem, TestFunct
 from feditest.reporting import fatal, error, info, trace
 from feditest.utils import load_python_from
 
+def version():
+    try:
+        version = importlib.metadata.version("feditest")
+        return version
+    except importlib.metadata.PackageNotFoundError:
+        return "?"
 
+        
 class Test(ABC):
     """
     Captures the notion of a Test, such as "see whether a follower is told about a new post".
