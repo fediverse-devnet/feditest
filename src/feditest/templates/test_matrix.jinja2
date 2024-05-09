@@ -26,12 +26,15 @@
                 {%- set problem = get_problem(run_session, test_spec) %}
                 {%- if test_spec.disabled %}
                     {%- set status = "skipped" %}
+                    {%- set status_desc = test_spec.disabled %}
                 {%- elif problem %}
                     {%- set status = "failed" %}
+                    {%- set status_desc = format_problem(problem) %}
                 {%- else %}
                     {%- set status = "passed" %}
+                    {%- set status_desc = "Passed" %}
                 {%- endif %}
-            <td class="status {{ status }}">{{ status }}</td>
+            <td class="status {{ status }}" title="{{ status_desc }}">{{ status }}</td>
             {%- endfor %}
         </tr>   
         {%- endfor %}

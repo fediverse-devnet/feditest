@@ -297,7 +297,7 @@ class HtmlTestResultWriter:
         self.out = out
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir)
+            loader=jinja2.FileSystemLoader(template_dir),
         )
 
     def write(
@@ -320,6 +320,7 @@ class HtmlTestResultWriter:
                     summary=summary,
                     all_tests=all_tests,
                     get_problem=_get_problem,
+                    format_problem=lambda p: (lambda s: s if len(s) < 128 else s[:129]+"...")(str(p.exc).strip())
                 )
             )
 
