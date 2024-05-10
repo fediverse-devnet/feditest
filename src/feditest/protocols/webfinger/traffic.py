@@ -433,12 +433,14 @@ working-copy-of"""
         if len(a) != len(b):
             return False
 
-        for a_key, a_value in a.values():
+        for a_key, a_value in a.items():
             if a_key in b:
                 b_value = b[a_key]
                 if a_value != b_value:
                     return False
-            return False
+            else:
+                return False
+
         return True
 
 
