@@ -236,7 +236,7 @@ working-copy-of"""
         """
         return value.find('/') > 0
 
-    VALID_JRD_KEYS = { "subject", "aliases", "properies", "links" }
+    VALID_JRD_KEYS = { "subject", "aliases", "properties", "links" }
 
     def validate(self) -> None: # pylint: disable=too-many-branches,too-many-statements
         """
@@ -247,7 +247,7 @@ working-copy-of"""
 
         for key in self._json:
             if key not in self.VALID_JRD_KEYS:
-                raise ClaimedJrd.JrdError(f"Invalid key: {key}")
+                raise ClaimedJrd.JrdError(self, f"Invalid key: {key}")
 
         if 'subject' in self._json:
             # is optional
