@@ -15,8 +15,8 @@ class ClaimedJrd:
     claims to be a JRD, even if it is invalid. It won't try to hold data that isn't valid JSON.
     """
     def __init__(self, json_string: str):
-        if json_string is None or not isinstance(json_string, str):
-            raise RuntimeError()
+        if json_string is None or not isinstance(json_string, (str, bytes)):
+            raise RuntimeError(f"Invalid payload, type={type(json_string)}")
         self._json = json.loads(json_string)
 
 
