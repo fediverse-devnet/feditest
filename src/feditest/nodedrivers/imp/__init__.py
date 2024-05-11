@@ -38,9 +38,13 @@ class Imp(WebFingerClient):
             return HttpRequestResponsePair(request, request, HttpResponse(httpx_response.status_code, response_headers, httpx_response.read()))
         raise WebClient.HttpUnsuccessfulError(request)
 
-
     # @override # from WebFingerClient
-    def perform_webfinger_query(self, resource_uri: str, rels: list[str] | None = None) -> WebFingerQueryResponse:
+    def perform_webfinger_query(
+        self,
+        resource_uri: str,
+        rels: list[str] | None = None,
+        validate_jrd: bool = False,
+    ) -> WebFingerQueryResponse:
         uri = self.construct_webfinger_uri_for(resource_uri, rels)
 
         first_request = HttpRequest(ParsedUri.parse(uri))
@@ -64,7 +68,11 @@ class Imp(WebFingerClient):
                             json_string = ret_pair.response.payload.decode(
                                 encoding=ret_pair.response.payload_charset() or "utf8" )
                             jrd = ClaimedJrd(json_string)
-                            jrd.validate()
+                            if validate_jrd:
+                                try:
+                                    jrd.validate()
+                                except Exception as ex:
+                                    raise AssertionError(*ex.args[1:])
                             return WebFingerQueryResponse(pair, jrd)
                         raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, "No payload")
                     raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid content type: { ret_pair.response.content_type() }")
