@@ -117,8 +117,8 @@ class HttpResponse:
     def payload_charset(self):
         content_type = self.content_type()
         tag = 'charset='
-        if content_type and content_type.index(tag) >= 0:
-            return content_type[ content_type.index(tag)+len(tag) : ]
+        if content_type and content_type.find(tag) >= 0:
+            return content_type[ content_type.find(tag)+len(tag) : ]
         return None
 
 

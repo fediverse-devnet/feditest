@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feditest Test Report</title>
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    >
+    <style>
+        :root {
+            --pico-font-size: 100%;
+        }
+
+        body {
+            padding: 2rem;
+        }
+
+        div.session {
+            margin-bottom: 2rem;
+        }
+
+        div.session > h3 {
+            font-weight: bold;
+            color: lightblue;
+        }
+
+        div.session > h3::before {
+            content: "Session: ";
+        }
+
+        div.constellation > h4::before {
+            content: "Constellation: ";
+        }
+
+        div.roles {
+            display: flex;
+            gap: 1rem;
+            margin-left: 1rem;
+        }
+
+        div.role {
+            border: 1px solid;
+            padding: 1rem;
+            border-color: var(--pico-table-border-color);
+        }
+
+        div.role > div.name {
+            font-weight: bold;
+
+        }
+
+        div.role > div.name::before {
+            content: "Role: ";
+        }
+
+        div.role > div.driver::before {
+            content: "Driver: ";
+        }
+
+        div.tests {
+            overflow: auto;
+            position: relative;
+        }
+        div.tests div.roles dd {
+            font-weight: normal;
+        }
+
+        .role > table.parameters {
+            font-size: 0.8rem;
+        }
+
+        dl.roles {
+            display: grid;
+            grid-template-columns: auto auto;
+            font-size: 70%;
+        }
+
+        dl.roles dt::after {
+            content: ": ";
+        }
+
+        dl.roles dd {
+            margin-left: 0;
+            font-weight: normal;
+        }
+
+        table.tests {
+            overflow: scroll;
+            border-collapse: collapse;
+        }
+
+        table.tests td:first-child,
+        table.tests th:first-child {
+                position: sticky;
+            left: 0;
+        }
+
+        table.tests col.session {
+            border: 2px solid black;
+        }
+
+        td.status input {
+            display: none;
+        }
+
+        pre.details {
+            display: none;
+            padding: 0.2rem;
+        }
+
+        input:checked + pre.details {
+            display: block;
+        }
+
+        td.status.passed {
+            color: #00c000;
+        }
+
+        td.status.failed {
+            color: #c00000;
+        }
+
+        td.status label {
+            color: inherit;
+        }
+
+        td.status label::after {
+            content: " ▼";
+            color: #000;
+        }
+
+        td.status label::after {
+            content: " ▼";
+            color: #000;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Feditest Report: {{ plan.name or "Unnamed" }}</h1>
+    <h2>Test Summary</h2>
+{%  include "test_summary.jinja2" %}
+{%  with session_links=true %}
+    <h2>Test Results</h2>
+{%      include "test_matrix.jinja2" %}
+{%   endwith %}
+    <h2>Session Details</h2>
+{%   include "session_details.jinja2" %}
+</body>
+</html>

@@ -12,6 +12,10 @@ from urllib.parse import urlparse
 from langcodes import Language
 
 
+# From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
+ACCT_REGEX = re.compile("acct:([-a-z0-9\._~][-a-z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-z0-9\.:]+)")
+
+
 def find_submodules(package: ModuleType) -> list[str]:
     """
     Find all submodules in the named package
@@ -58,7 +62,7 @@ def account_id_parse_validate(candidate: str) -> tuple[str,str] | None:
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return tuple of user, host if valid, None otherwise
     """
-    match = re.match(r"acct:([-a-z0-9\.]+)@([-a-z0-9\.]+)", candidate) # FIXME: should tighten this regex
+    match = ACCT_REGEX.match(candidate)
     if match:
         return (match.group(1) or "", match.group(2) or "")
     return None
@@ -103,8 +107,7 @@ def http_https_acct_uri_parse_validate(candidate: str) -> str | None:
         return candidate
     if parsed.scheme == 'acct':
         # Don't like this parser
-        # FIXME: regex likely does not match the relevant RFCs
-        if len(parsed.netloc) == 0 and re.match(r"[-a-zA-Z0-9\.]+@[-a-zA-Z0-9\.]+", parsed.path) is not None and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0:
+        if ACCT_REGEX.match(candidate):
             return candidate
     return None
 
