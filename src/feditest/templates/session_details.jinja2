@@ -1,38 +1,39 @@
 
-<div class="sessions">
-    {% for run_session, plan_session in sessions %}
-    <div class="session" id="{{ run_session.name }}">
-        <div class="name">{{ run_session.name }}</div>
-        <div class="constellation">
-            {% set constellation = plan_session.constellation -%}
-            <div class="name">{{ constellation.name }}</div>
-            <div class="roles">
-                {% for role in constellation.roles -%}
-                <div class="role">
-                    <div class="name">{{ role.name }}</div>
-                    <div class="driver">{{ role.nodedriver }}</div>
-                    {%- if role.parameters %}
-                    <table class="parameters">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for key, value in role.parameters.items() -%}
-                            <tr>
-                                <td class="key">{{ key }}</td>
-                                <td class="key">{{ value }}</td>
-                            </tr>
-                        </tbody>
-                        {% endfor %}                    
-                    </table>
-                    {% endif %}
+    <div class="sessions">
+{%  for run_session, plan_session in sessions %}
+        <div class="session" id="{{ remove_white(run_session.name) }}">
+            <h3 class="session">{{ run_session.name }}</h3>
+            <div class="constellation">
+{%-     set constellation = plan_session.constellation %}
+{%-     if constellation.name %}
+                <h4 class="constellation">{{ constellation.name }}</h4>
+{%-     endif %}
+                <div class="roles">
+{%-     for role in constellation.roles %}
+                    <div class="role">
+                        <div class="name">{{ role.name }}</div>
+                        <div class="driver">{{ role.nodedriver }}</div>
+{%-         if role.parameters %}
+                        <table class="parameters">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">Parameters:</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+{%-             for key, value in role.parameters.items() %}
+                                <tr>
+                                    <td class="key">{{ key }}</td>
+                                    <td class="value">{{ value }}</td>
+                                </tr>
+{%-             endfor %}
+                            </tbody>
+                        </table>
+{%-         endif %}
+                    </div>
+{%-     endfor %}
                 </div>
-                {% endfor %}
             </div>
         </div>
+{%- endfor %}
     </div>
-    {% endfor %}
-</div>

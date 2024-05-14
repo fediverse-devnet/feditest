@@ -13,9 +13,11 @@ from abc import ABC
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
+import re
 from typing import IO, Any, List, Protocol, Type
 
 import jinja2
+from jinja2.exceptions import TemplateNotFound
 
 import feditest
 from feditest.protocols import Node, NodeDriver
@@ -149,23 +151,8 @@ class TestProblem(ABC):
     exc: Exception
 
 
-@dataclass
-class TestFunctionProblem(TestProblem):
-    """Information about test failure/problem of a test defined as a function."""
-
-
-    def __str__(self):
-        return f"{ self.test.name }: {self.exc}"
-
-
-@dataclass
-class TestClassTestStepProblem(TestProblem):
-    """Information about test failure/problem."""
-    test_step: 'feditest.TestStep'
-
-
-    def __str__(self):
-        return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
+    def message(self):
+        return f'{ self.exc }'
 
 
 @dataclass
@@ -293,7 +280,8 @@ class TapTestResultWriter:
 
 
 class HtmlTestResultWriter:
-    def __init__(self, out: IO = sys.stdout):
+    def __init__(self, template_name: str, out: IO = sys.stdout):
+        self.template_name = template_name
         self.out = out
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.templates = jinja2.Environment(
@@ -306,7 +294,14 @@ class HtmlTestResultWriter:
         run_sessions: list[TestRunSession],
         metadata: dict[str, Any] | None = None,
     ):
-        template = self.templates.get_template("report.jinja2")
+        try:
+            template = self.templates.get_template(self.template_name)
+        except TemplateNotFound:
+            try:
+                template = self.templates.get_template(self.template_name + '.jinja2')
+            except TemplateNotFound:
+                fatal('jinja2 template not found:', self.template_name)
+
         with redirect_stdout(self.out):
             all_tests = sorted(
                 {test.name: test for s in plan.sessions for test in s.tests}.values(),
@@ -316,10 +311,12 @@ class HtmlTestResultWriter:
             summary = TestSummary.for_run(plan, run_sessions)
             print(
                 template.render(
+                    plan=plan,
                     sessions=sessions,
                     summary=summary,
                     all_tests=all_tests,
                     get_problem=_get_problem,
+                    remove_white=lambda s: re.sub('[ \t\n\a]', '_', s)
                 )
             )
 
