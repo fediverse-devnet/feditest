@@ -5,11 +5,11 @@ from typing import Any
 import feditest
 import feditest.testplan
 import pytest
-from feditest import all_node_drivers, all_tests
+from feditest import all_node_drivers, all_tests, hard_assert_that
 from feditest.protocols import Node, NodeDriver
 from feditest.testrun import DefaultTestResultWriter, TapTestResultWriter
 from feditest.testrun import TestRun as _TestRun
-from hamcrest import assert_that, equal_to
+from hamcrest import equal_to
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -33,7 +33,7 @@ def problem_feditest(test_spec: feditest.testplan.TestPlanTestSpec):
 
 
 def problem_feditest_hamcrest(test_spec: feditest.testplan.TestPlanTestSpec):
-    assert_that(1, equal_to(2))
+    hard_assert_that(1, equal_to(2))
 
 
 class StubNode(Node):

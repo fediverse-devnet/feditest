@@ -3,6 +3,7 @@ Utility functions
 """
 
 import glob
+from importlib.metadata import version
 import importlib.util
 import pkgutil
 import re
@@ -11,6 +12,8 @@ from types import ModuleType
 from urllib.parse import urlparse
 from langcodes import Language
 
+
+FEDITEST_VERSION = version('feditest')
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
 ACCT_REGEX = re.compile(r"acct:([-a-z0-9\._~][-a-z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-z0-9\.:]+)")

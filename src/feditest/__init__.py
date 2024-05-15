@@ -2,184 +2,20 @@
 Core module.
 """
 
-from abc import ABC, abstractmethod
 from collections.abc import Callable
-from inspect import getfullargspec, getmembers, getmodule, isfunction
-import traceback
+from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
-from typing import Any, Type
+from typing import Any, Optional, Type, TypeVar, cast
 
-from feditest.protocols import NotImplementedByNodeOrDriverError
-from feditest.testplan import TestPlanTestSpec
-from feditest.testrun import TestRunSession, TestClassTestStepProblem, TestFunctionProblem
-from feditest.reporting import fatal, error, info, trace
+from hamcrest.core.matcher import Matcher
+from hamcrest.core.string_description import StringDescription
+
+from feditest.tests import Test, TestFromTestClass, TestFromTestFunction, TestStepInTestClass
+from feditest.reporting import fatal, warning
 from feditest.utils import load_python_from
 
 
-class Test(ABC):
-    """
-    Captures the notion of a Test, such as "see whether a follower is told about a new post".
-    """
-    def __init__(self, name: str, description: str | None ) -> None:
-        self.name: str = name
-        self.description: str | None = description
-
-    @abstractmethod
-    def metadata(self) -> dict[str, Any]:
-        ...
-
-
-    @abstractmethod
-    def needed_local_role_names(self) -> set[str]:
-        """
-        Determines the local names of the constellation roles this test needs. These may be mapped to
-        constellation roles in the test definition.
-        """
-        ...
-
-    @abstractmethod
-    def run(self, test_spec: TestPlanTestSpec, session: TestRunSession):
-        """
-        Run this test in the provided constellation.
-        """
-        ...
-
-
-class TestFromTestFunction(Test):
-    """
-    A test that is defined as a single function.
-    """
-    def __init__(self, name: str, description: str | None, test_function: Callable[..., None]) -> None:
-        super().__init__(name, description)
-
-        self.test_function = test_function
-
-
-    def metadata(self) -> dict[str, Any]:
-        return {
-            'Test name:' : self.name,
-            'Description:' : self.description
-        }
-
-
-    def needed_local_role_names(self) -> set[str]:
-        ret = {}
-        function_spec = getfullargspec(self.test_function)
-        for arg in function_spec.args:
-            ret[arg] = 1
-        return set(ret)
-
-
-    def run(self, test_spec: TestPlanTestSpec, session: TestRunSession):
-        """
-        Run this test in the provided constellation.
-        """
-        trace(f'Running test { test_spec }, function "{ self.name }"')
-
-        constellation = session.constellation
-        if constellation is None: # cannot really happen
-            raise ValueError('Null constellation')
-
-        args = {}
-        for local_role_name in self.needed_local_role_names():
-            constellation_role_name = local_role_name
-            if test_spec.rolemapping and local_role_name in test_spec.rolemapping:
-                constellation_role_name = test_spec.rolemapping[local_role_name]
-            args[local_role_name] = constellation.get_node(constellation_role_name)
-
-        try:
-            self.test_function(**args)
-
-        except AssertionError as e:
-            problem = TestFunctionProblem(test_spec, e)
-            error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
-            session.problems.append(problem)
-
-        except NotImplementedByNodeOrDriverError as e:
-            info(f'Skipping test "{ test_spec.name }" because: { e }' )
-
-        except Exception as e:
-            problem = TestFunctionProblem(test_spec, e)
-            error('FAILED test (other reason):', problem, "\n".join(traceback.format_exception(problem.exc)))
-            session.problems.append(problem)
-
-
-class TestStep:
-    """
-    A step in a TestByTestClass. TestSteps for the same Test are all declared with @step in the same class,
-    and will be executed in sequence unless specified otherwise.
-    """
-    def __init__(self, name: str, description: str | None, test: 'TestFromTestClass', test_step_function: Callable[[Any],None]) -> None:
-        self.name: str = name
-        self.description: str | None = description
-        self.test = test
-        self.test_step_function: Callable[[Any], None] = test_step_function
-
-
-class TestFromTestClass(Test):
-    def __init__(self, name: str, description: str | None, clazz: type) -> None:
-        super().__init__(name, description)
-
-        self.clazz = clazz
-        self.steps : list[TestStep] = []
-
-
-    def metadata(self) -> dict[str, Any]:
-        return {
-            'Test name:' : self.name,
-            'Description:' : self.description,
-            'Steps:' : len(self.steps)
-        }
-
-    def needed_local_role_names(self) -> set[str]:
-        """
-        Determines the names of the constellation roles this test step needs.
-        It determines that by creating the union of the parameter names of all the TestSteps in the Test
-        """
-        ret = {}
-        function_spec = getfullargspec(self.clazz.__init__) # type: ignore [misc]
-        for arg in function_spec.args[1:]: # first is self
-            ret[arg] = 1
-        return set(ret)
-
-
-    def run(self, test_spec: TestPlanTestSpec, session: TestRunSession):
-        trace(f'Running test { test_spec }, instantiating class "{ self.name }"')
-
-        constellation = session.constellation
-        if constellation is None: # cannot really happen
-            raise ValueError('Null constellation')
-
-        args = {}
-        for local_role_name in self.needed_local_role_names():
-            constellation_role_name = local_role_name
-            if test_spec.rolemapping and local_role_name in test_spec.rolemapping:
-                constellation_role_name = test_spec.rolemapping[local_role_name]
-            args[local_role_name] = constellation.get_node(constellation_role_name)
-
-        test_instance = self.clazz(**args)
-
-        for test_step in self.steps:
-            trace(f'Running test { test_spec }, step "{ test_step.name }"')
-
-            try:
-                test_step.test_step_function(test_instance) # what an object-oriented language this is
-
-            except AssertionError as e:
-                problem = TestClassTestStepProblem(test_spec, e, test_step)
-                error('FAILED test assertion:', problem, "\n".join(traceback.format_exception(problem.exc)))
-                session.problems.append(problem)
-                break # no point about the remaining steps in the test
-
-            except NotImplementedByNodeOrDriverError as e:
-                info(f'Skipping test "{ test_spec.name }", step { test_step.name } because: { e }' )
-
-            except Exception as e:
-                problem = TestClassTestStepProblem(test_spec, e, test_step)
-                error('FAILED test (other reason):', problem, "\n".join(traceback.format_exception(problem.exc)))
-                session.problems.append(problem)
-                break # no point about the remaining steps in the test
-
+T = TypeVar("T")
 
 # Tests are contained in all_tests and run from there
 all_tests : dict[str,Test] = {}
@@ -224,7 +60,7 @@ def load_tests_from(dirs: list[str]) -> None:
             for _, candidate_step_function in getmembers(value,isfunction):
                 candidate_step_name = _full_name_of_function(candidate_step_function)
                 if candidate_step_name in _registered_as_test_step:
-                    test_step = TestStep(candidate_step_name, candidate_step_function.__doc__, test, candidate_step_function)
+                    test_step = TestStepInTestClass(candidate_step_name, candidate_step_function.__doc__, test, candidate_step_function)
                     test.steps.append(test_step)
                     del _registered_as_test_step[candidate_step_name]
                 # else ignore, some other function
@@ -327,3 +163,76 @@ def nodedriver(to_register: Type[Any]):
         if full_name in all_node_drivers:
             fatal('Cannot re-register NodeDriver', full_name )
         all_node_drivers[full_name] = to_register
+
+
+def feditest_assert_that(actual_or_assertion, exception_factory: Callable[[Any],BaseException], matcher, reason: str):
+    """
+    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
+    """
+    if isinstance(matcher, Matcher):
+        _feditest_assert_match(actual=actual_or_assertion, exception_factory=exception_factory, matcher=matcher, reason=reason)
+    else:
+        if isinstance(actual_or_assertion, Matcher):
+            warning("arg1 should be boolean, but was {}".format(type(actual_or_assertion)))
+        _feditest_assert_bool(assertion=cast(bool, actual_or_assertion), exception_factory=exception_factory, reason=cast(str, matcher))
+
+
+def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],BaseException], matcher: Matcher[T], reason: str) -> None:
+    if not matcher.matches(actual):
+        description = StringDescription()
+        description.append_text(reason).append_text("\nExpected: ").append_description_of(
+            matcher
+        ).append_text("\n     but: ")
+        matcher.describe_mismatch(actual, description)
+        description.append_text("\n")
+        raise exception_factory(description)
+
+
+def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],BaseException], reason: Optional[str] = None) -> None:
+    if not assertion:
+        if not reason:
+            reason = "Assertion failed"
+        raise exception_factory(reason)
+
+
+class HardAssertionFailure(BaseException):
+    """
+    Indicates an unacceptable failure in the system under test.
+    """
+    pass
+
+
+class SoftAssertionFailure(BaseException):
+    """
+    Indicates a failure in the system under test that violates the specification but likely does
+    not cause interoperability problems.
+    """
+    pass
+
+
+class DegradeAssertionFailure(BaseException):
+    """
+    Indicates that data or content is degraded. For example, use this is a Fediverse application
+    turns all ActivityStreams object types into Nodes or strips important formatting.
+    """
+    pass
+
+
+class SkipTestException(BaseException):
+    """
+    Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
+    the circumstances in which it should be run are not currently present.
+    """
+    pass
+
+
+def hard_assert_that(actual_or_assertion: T, matcher=None, reason="" ) -> None:
+    feditest_assert_that(actual_or_assertion, HardAssertionFailure, matcher, reason)
+
+
+def soft_assert_that(actual_or_assertion: T, matcher=None, reason="" ) -> None:
+    feditest_assert_that(actual_or_assertion, SoftAssertionFailure, matcher, reason)
+
+
+def degrade_assert_that(actual_or_assertion: T, matcher=None, reason="" ) -> None:
+    feditest_assert_that(actual_or_assertion, DegradeAssertionFailure, matcher, reason)
