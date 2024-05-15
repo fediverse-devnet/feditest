@@ -314,6 +314,7 @@ class HtmlTestResultWriter:
                     plan=plan,
                     sessions=sessions,
                     summary=summary,
+                    metadata=metadata,
                     all_tests=all_tests,
                     get_problem=_get_problem,
                     remove_white=lambda s: re.sub('[ \t\n\a]', '_', s)
@@ -350,10 +351,11 @@ class TestRun:
             run_sessions.append(run_session)
 
         metadata = {
+            "feditest": feditest.version(),
             "timestamp": datetime.now(UTC),
             "platform": platform.platform(),
             "username": getpass.getuser(),
-            "hostname": platform.node()
+            "hostname": platform.node(),
         }
 
         self._result_writer.write(self._plan, run_sessions, metadata=metadata)
