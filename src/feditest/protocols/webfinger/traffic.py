@@ -16,7 +16,7 @@ class ClaimedJrd:
     """
     def __init__(self, json_string: str):
         if json_string is None or not isinstance(json_string, (str, bytes)):
-            raise RuntimeError()
+            raise RuntimeError(f"Invalid payload type: {type(json_string)}")
         self._json = json.loads(json_string)
 
 
@@ -433,12 +433,14 @@ working-copy-of"""
         if len(a) != len(b):
             return False
 
-        for a_key, a_value in a.values():
+        for a_key, a_value in a.items():
             if a_key in b:
                 b_value = b[a_key]
                 if a_value != b_value:
                     return False
-            return False
+            else:
+                return False
+
         return True
 
 

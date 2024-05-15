@@ -336,8 +336,6 @@ class TestRun(HasStartEndResults):
     def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
         """
         Run a TestPlan.
-
-        return: the number of sessions run, or a negative number to signal that not all sessions were run or completed
         """
         self.started = datetime.now(UTC)
         info(f'Started TestRun { self }')

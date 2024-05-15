@@ -3,17 +3,26 @@ An in-process Node implementation for now.
 """
 
 from typing import Any
+
 import httpx
 from multidict import MultiDict
 
 from feditest import nodedriver
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInvalidError
 from feditest.protocols.web import ParsedUri, WebClient
-from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, HttpResponse
+from feditest.protocols.web.traffic import (
+    HttpRequest,
+    HttpRequestResponsePair,
+    HttpResponse,
+)
 from feditest.protocols.webfinger import WebFingerClient
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 from feditest.reporting import trace
+from feditest.utils import FEDITEST_VERSION
 
+_HEADERS = {
+    "User-Agent": f"feditest/{ FEDITEST_VERSION }",
+}
 
 class Imp(WebFingerClient):
     """
@@ -22,13 +31,13 @@ class Imp(WebFingerClient):
     # use superclass constructor
 
     # @override # from WebClient
-    def http(self, request: HttpRequest) -> HttpRequestResponsePair:
+    def http(self, request: HttpRequest, follow_redirects: bool = True) -> HttpRequestResponsePair:
         trace( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
 
         httpx_response = None
         # Do not follow redirects automatically, we need to know whether there are any
-        with httpx.Client(verify=False, follow_redirects=False) as httpx_client:  # FIXME disable TLS cert verification for now
-            httpx_request = httpx.Request(request.method, request.uri.get_uri()) # FIXME more arguments
+        with httpx.Client(verify=False, follow_redirects=follow_redirects) as httpx_client:  # FIXME disable TLS cert verification for now
+            httpx_request = httpx.Request(request.method, request.uri.get_uri(), headers=_HEADERS) # FIXME more arguments
             httpx_response = httpx_client.send(httpx_request)
 
         if httpx_response:
@@ -63,7 +72,14 @@ class Imp(WebFingerClient):
             ret_pair = HttpRequestResponsePair(first_request, current_request, pair.response)
             if ret_pair.response is not None:
                 if ret_pair.response.http_status == 200:
-                    if ret_pair.response.content_type() == 'application/jrd+json' or ret_pair.response.content_type().startswith('application/jrd+json;'):
+                    if (
+                        # not check_content_type FIXME?
+                        # or
+                        ret_pair.response.content_type() == "application/jrd+json"
+                        or ret_pair.response.content_type().startswith(
+                            "application/jrd+json;"
+                        )
+                    ):
                         if ret_pair.response.payload is not None:
                             json_string = ret_pair.response.payload.decode(
                                 encoding=ret_pair.response.payload_charset() or "utf8" )
@@ -74,7 +90,9 @@ class Imp(WebFingerClient):
                                 except Exception as ex:
                                     raise AssertionError(*ex.args[1:])
                             return WebFingerQueryResponse(pair, jrd)
-                        raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, "No payload")
+                        raise WebFingerClient.WebfingerQueryFailedError(
+                            uri, ret_pair, "No payload"
+                        )
                     raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid content type: { ret_pair.response.content_type() }")
                 raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid HTTP status: { ret_pair.response.http_status }")
 
