@@ -15,7 +15,7 @@ class ClaimedJrd:
     claims to be a JRD, even if it is invalid. It won't try to hold data that isn't valid JSON.
     """
     def __init__(self, json_string: str):
-        if json_string is None or not isinstance(json_string, str):
+        if json_string is None or not isinstance(json_string, (str, bytes)):
             raise RuntimeError()
         self._json = json.loads(json_string)
 
@@ -236,6 +236,7 @@ working-copy-of"""
         """
         return value.find('/') > 0
 
+    VALID_JRD_KEYS = { "subject", "aliases", "properties", "links" }
 
     def validate(self) -> None: # pylint: disable=too-many-branches,too-many-statements
         """
@@ -243,6 +244,10 @@ working-copy-of"""
         """
         if not isinstance(self._json, dict):
             raise ClaimedJrd.InvalidTypeError(self, 'Must be a JSON object')
+
+        for key in self._json:
+            if key not in self.VALID_JRD_KEYS:
+                raise ClaimedJrd.JrdError(self, f"Invalid key: {key}")
 
         if 'subject' in self._json:
             # is optional
@@ -300,7 +305,7 @@ working-copy-of"""
                     raise ClaimedJrd.InvalidTypeError(self, 'Values for the rel member in the links array must be strings')
 
                 if http_https_acct_uri_parse_validate(link['rel']) is None and not ClaimedJrd.is_registered_relation_type(link['rel']):
-                    raise ClaimedJrd.InvalidRelError(self, 'All rel entries in the links array must be a URI or a registered relation type')
+                    raise ClaimedJrd.InvalidRelError(self, f'All rel entries in the links array must be a URI or a registered relation type: {link["rel"]}')
 
                 if 'type' in link:
                     # is optional
