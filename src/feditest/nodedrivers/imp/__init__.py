@@ -52,6 +52,7 @@ class Imp(WebFingerClient):
         self,
         resource_uri: str,
         rels: list[str] | None = None,
+        check_content_type: bool = False,
         validate_jrd: bool = False,
     ) -> WebFingerQueryResponse:
         uri = self.construct_webfinger_uri_for(resource_uri, rels)
