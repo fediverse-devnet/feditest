@@ -14,7 +14,7 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
     """
     A client implementation in the Sandbox protocol that can be tested. It's trivially simple.
     """
-    def cause_mult(self, server: SandboxMultServer, a: int, b: int) -> int:
+    def cause_mult(self, server: SandboxMultServer, a: float, b: float) -> float:
         c = server.mult(a, b)
         return c
 
@@ -39,8 +39,9 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
         self._log : List[SandboxLogEvent] | None = None
 
 
-    def mult(self, a: int, b: int) -> int:
-        c = a*b # << here's the key 'mult' functionality
+    def mult(self, a: float, b: float) -> float:
+        # Here's the key 'mult' functionality:
+        c = a*b
         if self._log is not None:
             self._log.append(SandboxLogEvent(a, b, c))
         return c
@@ -69,18 +70,18 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
 class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
     """
     Second server implementation in the Sandbox protocol with some test instrumentation.
-    This server calculates a*b through a for loop
+    This server calculates a*b through a for loop using integers rather than floats
     """
     def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
         super().__init__(rolename, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
 
 
-    def mult(self, a: int, b: int) -> int:
-        c = 0
-        # << here's the key 'mult' functionality, but
-        # << it only works for positive a's!
-        for i in range(0, a): # pylint: disable=unused-variable
+    def mult(self, a: float, b: float) -> float:
+        c = 0.0
+        # Here's the key 'mult' functionality, but it only works for positive a's that are integers!
+        a_int = int(a)
+        for _ in range(0, a_int) :
             c += b
         if self._log is not None:
             self._log.append(SandboxLogEvent(a, b, c))

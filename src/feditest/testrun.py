@@ -2,32 +2,21 @@
 Classes that represent a running TestPlan and its its parts.
 """
 
-# pylint: disable=broad-exception-raised,broad-exception-caught,protected-access
-
 import getpass
-import os
 import platform
-import sys
 import time
 from abc import ABC
-from contextlib import redirect_stdout
-from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
-import re
-from typing import IO, Any, List, Protocol, Type
+import traceback
+from typing import Any, Type, cast
 
-import jinja2
-from jinja2.exceptions import TemplateNotFound
-
-import feditest
+import feditest.testruntranscript
+import feditest.tests
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import error, fatal, info, trace, warning
-from feditest.testplan import (
-    TestPlan,
-    TestPlanConstellation,
-    TestPlanSession,
-    TestPlanTestSpec,
-)
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+import feditest.testruncontroller
+from feditest.testruntranscript import TestRunTranscript, TestRunSessionTranscript, TestRunTestTranscript, TestRunTestStepTranscript, TestRunResultTranscript
 
 
 class TestRunConstellation:
@@ -73,7 +62,7 @@ class TestRunConstellation:
                                   # after deployment before they are ready to communicate.
 
 
-    def teardown(self):
+    def teardown(self) -> None:
         if self._plan_constellation.name:
             trace('Tearing down constellation:', self._plan_constellation.name)
         else:
@@ -97,268 +86,321 @@ class TestRunConstellation:
         return self._run_constellation.get(role_name)
 
 
-class TestRunSession:
-    """
-    A TestRun consists of one or more TestRunSessions, each of which spins up a constallation, the runs
-    some tests and then tears itself down again. Then the next TestRunSession can run.
-    """
-    def __init__(self, name: str, plan_session: TestPlanSession):
-        self.name = name
-        self.problems : List[TestProblem] = []
-        self._plan_session = plan_session
-        self.constellation : TestRunConstellation | None = None
+class HasStartEndResults(ABC):
+    def __init__(self) -> None:
+        self.started : datetime | None = None
+        self.ended : datetime | None = None
+        self.exception : BaseException | None = None # If the item ended with a exception, here it is. None if no exception
 
 
-    def run(self):
-        if len(self._plan_session.tests ):
-            info(f'Running session "{ self.name }"')
-
-            try:
-                self.constellation = TestRunConstellation(self._plan_session.constellation)
-                self.constellation.setup()
-
-                for test_spec in self._plan_session.tests:
-                    if test_spec.disabled:
-                        info(f'Skipping test "{ test_spec.name }" because: {test_spec.disabled}' )
-                    else:
-                        self._run_test_spec(test_spec)
-            finally:
-                self.constellation.teardown()
-
-            if self.constellation._run_constellation:
-                fatal( 'Still have nodes in the constellation', self.constellation._run_constellation )
-
-            info(f'End running session: "{ self.name }"')
-
-        else:
-            info(f'Skipping session "{ self.name }": no tests defined')
+class TestRunTest(HasStartEndResults):
+    def __init__(self, run_session: 'TestRunSession', plan_test_index: int):
+        super().__init__()
+        self.run_session = run_session
+        self.plan_test_index = plan_test_index
 
 
-    def _run_test_spec(self, test_spec: TestPlanTestSpec):
-        info(f'Running test "{ test_spec.name }"')
-        test : feditest.Test | None = feditest.all_tests.get(test_spec.name)
-
-        if test:
-            test.run(test_spec, self)
-        else:
-            error(f'Test not found: { test_spec.name }')
+    @property
+    def plan_testspec(self) -> TestPlanTestSpec:
+        return self.run_session.plan_session.tests[self.plan_test_index]
 
 
-@dataclass
-class TestProblem(ABC):
-    """Information about test failure/problem."""
-    test: TestPlanTestSpec
-    exc: Exception
-
-
-    def message(self):
-        return f'{ self.exc }'
-
-
-@dataclass
-class TestFunctionProblem(TestProblem):
-    """Information about test failure/problem of a test defined as a function."""
-
-
-    def __str__(self):
-        return f"{ self.test.name }: {self.exc}"
-
-
-@dataclass
-class TestClassTestStepProblem(TestProblem):
-    """Information about test failure/problem."""
-    test_step: 'feditest.TestStep'
-
-
-    def __str__(self):
-        return f"{ self.test.name } / { self.test_step.name }: {self.exc}"
-
-
-class TestResultWriter(Protocol):
-    """An object that writes test results in some format."""
-    def write(self, plan: TestPlan,
-              run_sessions: list[TestRunSession],
-              metadata: dict[str, Any]|None = None):
-        """Write test results."""
+    def outcome(self) -> BaseException | None:
+        """
+        Returns the exception that stopped the test, or None if all passed.
+        """
         ...
 
 
-@dataclass
-class TestSummary:
-    total: int
-    passed: int
-    failed: int
-    skipped: int
-
-    @staticmethod
-    def for_run(plan: TestPlan, run_sessions: list[TestRunSession]) -> "TestSummary":
-        count = 0
-        passed = 0
-        failed = 0
-        skipped = 0
-        for run_session, plan_session in zip(run_sessions, plan.sessions):
-            for test in plan_session.tests:
-                count += 1
-                if _get_problem(run_session, test):
-                    failed += 1
-                elif test.disabled:
-                    skipped += 1
-                else:
-                    passed += 1
-        return TestSummary(count, passed, failed, skipped)
+class TestRunFunction(TestRunTest):
+    def __init__(self, run_session: 'TestRunSession', test_from_test_function: feditest.TestFromTestFunction, plan_test_index: int):
+        super().__init__(run_session, plan_test_index)
+        self.test_from_test_function = test_from_test_function
 
 
-class DefaultTestResultWriter:
-    def write(
-        self,
-        plan: TestPlan,
-        run_sessions: list[TestRunSession],
-        metadata: dict[str, Any] | None = None,
-    ):
-        if any(s.problems for s in run_sessions):
-            print("FAILED")
-        summary = TestSummary.for_run(plan, run_sessions)
-        print(f"Test plan: {plan.name or 'N/A'}")
-        if metadata:
-            print(f"Test metadata: {plan.name or 'N/A'}")
-            for key, value in metadata.items():
-                print(f"    {key}: {value}")
-        for run_session, plan_session in zip(run_sessions, plan.sessions):
-            for test in plan_session.tests:
-                if problem := _get_problem(run_session, test):
-                    print(f"Test failure: {run_session.name}/{test.name}")
-                    for line in str(problem.exc).strip().split("\n"):
-                        print(f"    {line}")
-        print(f"Test summary: total={ summary.total }, passed={ summary.passed }, failed={ summary.failed }, skipped={ summary.skipped }")
+    def __str__(self):
+        return str(self.test_from_test_function)
 
 
-class TapTestResultWriter:
-    def __init__(self, out: IO = sys.stdout):
-        self.out = out
+    def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
+        self.started = datetime.now(UTC)
+        info(f'Started TestRunFunction { self }')
 
-    def write(
-        self,
-        plan: TestPlan,
-        run_sessions: list[TestRunSession],
-        metadata: dict[str, Any] | None = None,
-    ):
-        with redirect_stdout(self.out):
-            print("TAP version 14")
-            print(f"# test plan: {plan.name or 'N/A'}")
-            if metadata:
-                for key, value in metadata.items():
-                    print(f"# {key}: {value}")
-            # date, etc.
-            test_id = 0
-            for run_session, plan_session in zip(run_sessions, plan.sessions):
-                print(f"# session: {run_session.name}")
-                print(f"# constellation: {plan_session.constellation.name}")
-                print(f"#   name: {plan_session.constellation.name}")
-                print("#   roles:")
-                for role in plan_session.constellation.roles:
-                    print(f"#     - name: {role.name}")
-                    print(f"#       driver: {role.nodedriver}")
-                for test in plan_session.tests:
-                    test_id += 1
-                    if problem := _get_problem(run_session, test):
-                        print(f"not ok {test_id} - {test.name}")
-                        print("  ---")
-                        print("  problem: |")
-                        for line in str(problem.exc).strip().split("\n"):
-                            print(f"    {line}")
-                        print("  ...")
-                    else:
-                        directives = f" # SKIP {test.disabled}" if test.disabled else ""
-                        print(f"ok {test_id} - {test.name}{directives}")
-            print(f"1..{test_id}")
-            summary = TestSummary.for_run(plan, run_sessions)
-            print("# test run summary:")
-            print(f"#   total: {summary.total}")
-            print(f"#   passed: {summary.passed}")
-            print(f"#   failed: {summary.failed}")
-            print(f"#   skipped: {summary.skipped}")
+        args = {}
+        for local_role_name in self.test_from_test_function.needed_local_role_names():
+            constellation_role_name = local_role_name
+            if self.plan_testspec.rolemapping and local_role_name in self.plan_testspec.rolemapping:
+                constellation_role_name = self.plan_testspec.rolemapping[local_role_name]
+            args[local_role_name] = self.run_session.run_constellation.get_node(constellation_role_name) # type: ignore[union-attr]
 
-
-class HtmlTestResultWriter:
-    def __init__(self, template_name: str, out: IO = sys.stdout):
-        self.template_name = template_name
-        self.out = out
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        self.templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir)
-        )
-
-    def write(
-        self,
-        plan: TestPlan,
-        run_sessions: list[TestRunSession],
-        metadata: dict[str, Any] | None = None,
-    ):
         try:
-            template = self.templates.get_template(self.template_name)
-        except TemplateNotFound:
-            try:
-                template = self.templates.get_template(self.template_name + '.jinja2')
-            except TemplateNotFound:
-                fatal('jinja2 template not found:', self.template_name)
+            self.test_from_test_function.test_function(**args)
 
-        with redirect_stdout(self.out):
-            all_tests = sorted(
-                {test.name: test for s in plan.sessions for test in s.tests}.values(),
-                key=lambda t: t.name,
-            )
-            sessions = list(zip(run_sessions, plan.sessions))
-            summary = TestSummary.for_run(plan, run_sessions)
-            print(
-                template.render(
-                    plan=plan,
-                    sessions=sessions,
-                    summary=summary,
-                    metadata=metadata,
-                    all_tests=all_tests,
-                    get_problem=_get_problem,
-                    remove_white=lambda s: re.sub('[ \t\n\a]', '_', s)
-                )
-            )
+        except BaseException as e: # This should not happen
+            self.exception = e
+        finally:
+            self.ended = datetime.now(UTC)
+            if self.exception:
+                error(f'Ended TestRunFunction { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+            else:
+                info(f'Ended TestRunFunction { self }')
 
 
-def _get_problem(run_session, test: TestPlanTestSpec) -> TestProblem | None:
-    return next((p for p in run_session.problems if p.test.name == test.name), None)
+class TestRunStepInClass(HasStartEndResults):
+    def __init__(self, run_test: 'TestRunClass', test_step: feditest.TestStepInTestClass, plan_step_index: int):
+        super().__init__()
+        self.run_test = run_test
+        self.test_step = test_step
+        self.plan_step_index = plan_step_index
 
 
-class TestRun:
+    def __str__(self):
+        return str(self.test_step)
+
+
+    def run(self, test_instance: object, controller: feditest.testruncontroller.TestRunController) -> None:
+        self.started = datetime.now(UTC)
+        info(f'Started TestRunStepInClass { self }')
+
+        try:
+            self.test_step.test_step_function(test_instance) # what an object-oriented language this is
+
+        except BaseException as e:
+            self.exception = e
+        finally:
+            self.ended = datetime.now(UTC)
+            if self.exception:
+                error(f'Ended TestRunStepInClass { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+            else:
+                info(f'Ended TestRunStepInClass { self }')
+
+
+class TestRunClass(TestRunTest):
+    def __init__(self, run_session: 'TestRunSession', test_from_test_class: feditest.TestFromTestClass, plan_test_index: int):
+        super().__init__(run_session, plan_test_index)
+        self.run_steps : list[TestRunStepInClass] = []
+        self.test_from_test_class = test_from_test_class
+
+
+    def __str__(self):
+        return str(self.test_from_test_class)
+
+
+    def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
+        self.started = datetime.now(UTC)
+        info(f'Started TestRunClass { self }')
+
+        args = {}
+        for local_role_name in self.plan_testspec.needed_role_names():
+            constellation_role_name = local_role_name
+            if self.plan_testspec.rolemapping and local_role_name in self.plan_testspec.rolemapping:
+                constellation_role_name = self.plan_testspec.rolemapping[local_role_name]
+            args[local_role_name] = self.run_session.run_constellation.get_node(constellation_role_name) # type: ignore[union-attr]
+
+        try:
+            test_instance = self.test_from_test_class.clazz(**args)
+
+            plan_step_index = controller.determine_next_test_step_index()
+            while plan_step_index>=0 and plan_step_index<len(self.test_from_test_class.steps):
+                plan_step : feditest.tests.TestStepInTestClass = self.test_from_test_class.steps[plan_step_index]
+                run_step = TestRunStepInClass(self, plan_step, plan_step_index)
+                self.run_steps.append(run_step)
+
+                run_step.run(test_instance, controller)
+
+                plan_step_index = controller.determine_next_session_index(plan_step_index)
+
+        except feditest.testruncontroller.AbortTestException as e: # User input
+            self.exception = e
+            # we are done here
+        except feditest.testruncontroller.AbortTestRunSessionException as e: # User input
+            self.exception = e
+            raise
+        except feditest.testruncontroller.AbortTestRunException as e: # User input
+            self.exception = e
+            raise
+        except BaseException as e: # This should not happen
+            self.exception = e
+        finally:
+            self.ended = datetime.now(UTC)
+            if self.exception:
+                error(f'Ended TestRunClass { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+            else:
+                info(f'Ended TestRunClass { self }')
+
+
+class TestRunSession(HasStartEndResults):
+    def __init__(self, the_run: 'TestRun', plan_session_index: int):
+        super().__init__()
+        self.the_run = the_run
+        self.plan_session_index = plan_session_index
+        self.run_tests : list[TestRunTest] = []
+        self.run_constellation : TestRunConstellation | None = None
+
+
+    @property
+    def plan_session(self) -> TestPlanSession:
+        return self.the_run.plan.sessions[self.plan_session_index]
+
+
+    def __str__(self):
+        return f'{ self.plan_session }'
+
+
+    def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
+        """
+        Run a TestSession.
+
+        return: the number of tests run, or a negative number to signal that not all tests were run or completed
+        """
+        self.started = datetime.now(UTC)
+        info(f'Started TestRunSession for TestPlanSession { self }')
+
+        try:
+            plan_test_index = controller.determine_next_test_index()
+            while plan_test_index>=0 and plan_test_index<len(self.plan_session.tests):
+                try:
+                    test_spec = self.plan_session.tests[plan_test_index]
+
+                    if test_spec.disabled:
+                        info('Skipping Test:', test_spec.disabled)
+                    else:
+                        test = test_spec.get_test()
+                        run_test : TestRunTest | None = None
+                        if isinstance(test, feditest.TestFromTestFunction):
+                            run_test = TestRunFunction(self, test, plan_test_index)
+                        elif isinstance(test, feditest.TestFromTestClass):
+                            run_test = TestRunClass(self, test, plan_test_index)
+                        else:
+                            fatal('What is this?', test)
+                            return # does not actually return, but makes lint happy
+
+                        self.run_tests.append(run_test)
+
+                        if not self.run_constellation:
+                            # only allocate the constellation if we actually want to run a test
+                            self.run_constellation = TestRunConstellation(self.plan_session.constellation)
+                            self.run_constellation.setup()
+
+                        run_test.run(controller)
+
+                    plan_test_index = controller.determine_next_test_index(plan_test_index)
+
+                except feditest.testruncontroller.AbortTestException as e:
+                    self.exception = e
+                    break
+
+        except feditest.testruncontroller.AbortTestRunSessionException as e: # User input
+            self.exception = e
+            # we are done here
+        except feditest.testruncontroller.AbortTestRunException as e: # User input
+            self.exception = e
+            raise
+        except BaseException as e: # This should not happen
+            self.exception = e
+        finally:
+            if self.run_constellation:
+                self.run_constellation.teardown()
+                if self.run_constellation._run_constellation:
+                    fatal( 'Still have nodes in the constellation', self.run_constellation._run_constellation )
+            else:
+                info(f'Skipping TestRunSession { self }: no tests')
+
+            self.ended = datetime.now(UTC)
+            if self.exception:
+                error(f'Ended TestRunSession { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+            else:
+                info(f'Ended TestRunSession { self }')
+
+
+class TestRun(HasStartEndResults):
     """
     Encapsulates the state of a test run while feditest is executing a TestPlan
     """
-    def __init__(self, plan: TestPlan, result_writer: TestResultWriter | None = None):
-        self._plan = plan
-        self._result_writer = result_writer or DefaultTestResultWriter()
-        self._runid : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%f")
+    def __init__(self, plan: TestPlan):
+        super().__init__()
+        self.plan = plan
+        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.platform : str = platform.platform()
+        self.username : str = getpass.getuser()
+        self.hostname : str = platform.node()
+        self.run_sessions : list[TestRunSession] = []
 
 
-    def run(self) -> int:
-        if self._plan.name:
-            info( f'Running test plan: "{ self._plan.name }" (id: "{ self._runid }")' )
-        else:
-            info( f'Running test plan (id: "{ self._runid }")' )
+    def __str__(self):
+        if self.plan.name:
+            return f'{ self.id } ({ self.plan.name })'
+        return self.id
 
-        run_sessions: list[TestRunSession] = []
 
-        for i, plan_session in enumerate(self._plan.sessions):
-            session_name = f'{self._plan.name}/{str(i)}' if self._plan.name else f'session_{ i }'
-            run_session = TestRunSession(session_name, plan_session)
-            run_session.run()
-            run_sessions.append(run_session)
+    def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
+        """
+        Run a TestPlan.
+        """
+        self.started = datetime.now(UTC)
+        info(f'Started TestRun { self }')
 
-        metadata = {
-            "feditest": feditest.version(),
-            "timestamp": datetime.now(UTC),
-            "platform": platform.platform(),
-            "username": getpass.getuser(),
-            "hostname": platform.node(),
-        }
+        try:
+            plan_session_index = controller.determine_next_session_index()
+            while plan_session_index >=0 and plan_session_index<len(self.plan.sessions):
+                run_session = TestRunSession(self, plan_session_index)
+                self.run_sessions.append(run_session) # always append, even if we run the session plan session again
 
-        self._result_writer.write(self._plan, run_sessions, metadata=metadata)
+                run_session.run(controller)
 
-        all_passed = all(not s.problems for s in run_sessions)
-        return 0 if all_passed else 1
+                plan_session_index = controller.determine_next_session_index(plan_session_index)
+
+            return
+
+        except feditest.testruncontroller.AbortTestRunException as e: # User input
+            self.exception = e
+            # we are done here
+        except BaseException as e: # This should not happen
+            self.exception = e
+        finally:
+            self.ended = datetime.now(UTC)
+            if self.exception:
+                error(f'Ended TestRun { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+            else:
+                info(f'Ended TestRun { self }')
+
+
+    def transcribe(self) -> TestRunTranscript:
+        trans_sessions = []
+        for run_session in self.run_sessions:
+            trans_tests : list[TestRunTestTranscript] = []
+            for run_test in run_session.run_tests:
+                if isinstance(run_test, TestRunClass):
+                    trans_steps = []
+                    for run_step in run_test.run_steps:
+                        trans_steps.append(TestRunTestStepTranscript(
+                                run_step.plan_step_index,
+                                cast(datetime, run_step.started),
+                                cast(datetime, run_step.ended),
+                                TestRunResultTranscript.create_if_present(run_step.exception)))
+                else:
+                    trans_steps = None
+                trans_tests.append(TestRunTestTranscript(
+                        run_test.plan_test_index,
+                        cast(datetime, run_test.started),
+                        cast(datetime, run_test.ended),
+                        TestRunResultTranscript.create_if_present(run_test.exception),
+                        trans_steps))
+            trans_sessions.append(TestRunSessionTranscript(
+                    run_session.plan_session_index,
+                    cast(datetime, run_session.started),
+                    cast(datetime, run_session.ended),
+                    trans_tests,
+                    TestRunResultTranscript.create_if_present(run_session.exception)))
+
+        ret = TestRunTranscript(
+                self.plan,
+                self.id,
+                cast(datetime, self.started),
+                cast(datetime, self.ended),
+                self.platform,
+                self.username,
+                self.hostname,
+                trans_sessions,
+                TestRunResultTranscript.create_if_present(self.exception))
+        return ret

@@ -25,6 +25,10 @@ class TestPlanConstellationRole(msgspec.Struct):
     parameters: dict[str,Any] | None = None
 
 
+    def __str__(self):
+        return self.name
+
+
     def is_template(self):
         """
         Returns true if the roles in the constellation have not all been bound to NodeDrivers.
@@ -40,10 +44,10 @@ class TestPlanConstellationRole(msgspec.Struct):
 
     def check_can_be_executed(self, context_msg: str = "") -> None:
         if self.is_template():
-            raise TestPlanError(context_msg + 'No NodeDriver assigned')
+            raise TestPlanError(context_msg + 'Is a template; no NodeDrivers assigned')
 
         if self.nodedriver not in feditest.all_node_drivers:
-            raise TestPlanError(context_msg + f'Cannot find node driver "{ self.nodedriver }".')
+            raise TestPlanError(context_msg + f'Cannot find NodeDriver "{ self.nodedriver }".')
 
         # also check well-known parameters
         if self.parameters:
@@ -72,6 +76,10 @@ class TestPlanConstellation(msgspec.Struct):
         return msgspec.convert(testplanconstellation_json, type=TestPlanConstellation)
 
 
+    def __str__(self):
+        return self.name if self.name else 'Unnamed'
+
+
     def is_template(self):
         """
         Returns true if the roles in the constellation have not all been bound to NodeDrivers.
@@ -90,7 +98,7 @@ class TestPlanConstellation(msgspec.Struct):
         for role in self.roles:
             role_context_msg = context_msg + "Role {role.name}: "
             if role.name in all_roles:
-                raise TestPlanError(role_context_msg + 'Role names must be unique.')
+                raise TestPlanError(role_context_msg + 'Role names must be unique: ' + role.name)
             all_roles[role.name] = True
 
             role.check_can_be_executed(role_context_msg)
@@ -100,13 +108,17 @@ class TestPlanConstellation(msgspec.Struct):
         have_role_names = { role.name for role in self.roles }
         for want_role_name in want_role_names:
             if want_role_name not in have_role_names:
-                raise TestPlanError(context_msg + f' Constellation does not define role "{ want_role_name }".')
+                raise TestPlanError(context_msg + f'Constellation does not define role "{ want_role_name }".')
 
 
 class TestPlanTestSpec(msgspec.Struct):
     name: str
     rolemapping: dict[str,str] | None = None # maps from the Test's role names to the constellation's role names
     disabled: str | None = None # if a string is given, it's a reason message why disabled
+
+
+    def __str__(self):
+        return self.name
 
 
     def get_test(self, context_msg : str = "" ) -> 'feditest.Test':
@@ -117,6 +129,10 @@ class TestPlanTestSpec(msgspec.Struct):
 
 
     def needed_role_names(self, context_msg : str = "" ) -> set[str]:
+        """
+        Return the names of the constellation roles needed after translation from whatever the test itself
+        might call them locally.
+        """
         ret = self.get_test().needed_local_role_names()
         if self.rolemapping:
             ret = ret.copy() # keep unchanged the ones not mapped
@@ -127,7 +143,6 @@ class TestPlanTestSpec(msgspec.Struct):
                 else:
                     raise TestPlanError(context_msg + f'Cannot find role "{ key }" in test')
         return ret
-
 
     def check_can_be_executed(self, constellation: TestPlanConstellation, context_msg: str = "") -> None:
         test_context_msg = context_msg + f'Test "{ self.name }": '
@@ -148,6 +163,7 @@ class TestPlanSession(msgspec.Struct):
     """
     constellation : TestPlanConstellation
     tests : list[TestPlanTestSpec]
+    name: str | None = None
 
 
     @staticmethod
@@ -159,6 +175,10 @@ class TestPlanSession(msgspec.Struct):
             testplansession_json = json.load(f)
 
         return msgspec.convert(testplansession_json, type=TestPlanSession)
+
+
+    def __str__(self):
+        return self.name if self.name else 'Unnamed'
 
 
     def is_template(self):
@@ -175,7 +195,7 @@ class TestPlanSession(msgspec.Struct):
             raise TestPlanError(context_msg + 'No tests have been defined.')
 
         for index, test_spec in enumerate(self.tests):
-            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}) "{ test_spec.name }": ')
+            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}): ')
 
 
     def needed_role_names(self) -> set[str]:
@@ -226,6 +246,10 @@ class TestPlan(msgspec.Struct):
             testplan_json = json.load(f)
 
         return msgspec.convert(testplan_json, type=TestPlan)
+
+
+    def __str__(self):
+        return self.name if self.name else 'Unnamed'
 
 
     def as_json(self) -> bytes:

@@ -2,13 +2,12 @@
 An in-process Node implementation for now.
 """
 
-import importlib.metadata
 from typing import Any
 
 import httpx
 from multidict import MultiDict
 
-from feditest import nodedriver, version
+from feditest import nodedriver
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInvalidError
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
@@ -19,9 +18,10 @@ from feditest.protocols.web.traffic import (
 from feditest.protocols.webfinger import WebFingerClient
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 from feditest.reporting import trace
+from feditest.utils import FEDITEST_VERSION
 
 _HEADERS = {
-    "User-Agent": f"feditest/{version()}",
+    "User-Agent": f"feditest/{ FEDITEST_VERSION }",
 }
 
 class Imp(WebFingerClient):
@@ -74,8 +74,9 @@ class Imp(WebFingerClient):
             if ret_pair.response is not None:
                 if ret_pair.response.http_status == 200:
                     if (
-                        not check_content_type
-                        or ret_pair.response.content_type() == "application/jrd+json"
+                        # not check_content_type FIXME?
+                        # or
+                        ret_pair.response.content_type() == "application/jrd+json"
                         or ret_pair.response.content_type().startswith(
                             "application/jrd+json;"
                         )

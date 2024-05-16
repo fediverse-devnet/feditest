@@ -8,21 +8,25 @@
         <tbody>
             <tr>
                 <td>Passed</td>
-                <td>{{ summary.passed }}</td>
+                <td>{{ summary.n_passed }}</td>
             </tr>
             <tr>
                 <td>Failed</td>
-                <td>{{ summary.failed }}</td>
+                <td>{{ summary.n_failed }}</td>
             </tr>
             <tr>
                 <td>Skipped</td>
-                <td>{{ summary.skipped }}</td>
+                <td>{{ summary.n_skipped }}</td>
+            </tr>
+            <tr>
+                <td>Errors</td>
+                <td>{{ summary.n_errored }}</td>
             </tr>
         </tbody>
         <tfoot>
             <tr>
                 <td>Total</td>
-                <td>{{ summary.total }}</td>
+                <td>{{ summary.n_total }}</td>
             </tr>
         </tfoot>
     </table>
