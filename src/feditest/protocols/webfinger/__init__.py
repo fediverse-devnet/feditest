@@ -8,8 +8,8 @@ from urllib.parse import quote, urlparse
 from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.web.traffic import HttpRequestResponsePair
-from feditest.utils import http_https_acct_uri_parse_validate
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
+from feditest.utils import http_https_acct_uri_parse_validate
 
 
 class WebFingerServer(WebServer):
@@ -35,7 +35,7 @@ class WebFingerServer(WebServer):
                     self.parameter('existing-account-uri'),
                     http_https_acct_uri_parse_validate)
         assert parsed
-        return f'acct:{ parsed[0] }@{ parsed[1] }'
+        return parsed
 
 
     def obtain_non_existing_account_identifier(self, nickname: str | None = None ) -> str:
@@ -57,7 +57,7 @@ class WebFingerServer(WebServer):
                     self.parameter('nonexisting-account-uri'),
                     http_https_acct_uri_parse_validate)
         assert parsed
-        return f'acct:{ parsed[0] }@{ parsed[1] }'
+        return parsed
 
 
     def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
