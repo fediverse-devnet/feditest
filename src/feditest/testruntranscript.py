@@ -5,7 +5,7 @@ import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 import jinja2
 import msgspec
