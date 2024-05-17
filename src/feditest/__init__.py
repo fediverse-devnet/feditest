@@ -10,10 +10,14 @@ from typing import Any, Optional, Type, TypeVar, cast
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
 
-from feditest.tests import Test, TestFromTestClass, TestFromTestFunction, TestStepInTestClass
 from feditest.reporting import fatal, warning
+from feditest.tests import (
+    Test,
+    TestFromTestClass,
+    TestFromTestFunction,
+    TestStepInTestClass,
+)
 from feditest.utils import load_python_from
-
 
 T = TypeVar("T")
 
@@ -165,7 +169,7 @@ def nodedriver(to_register: Type[Any]):
         all_node_drivers[full_name] = to_register
 
 
-def feditest_assert_that(actual_or_assertion, exception_factory: Callable[[Any],BaseException], matcher, reason: str):
+def feditest_assert_that(actual_or_assertion, exception_factory: Callable[[Any],Exception], matcher, reason: str):
     """
     Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
     """
@@ -177,7 +181,7 @@ def feditest_assert_that(actual_or_assertion, exception_factory: Callable[[Any],
         _feditest_assert_bool(assertion=cast(bool, actual_or_assertion), exception_factory=exception_factory, reason=cast(str, matcher))
 
 
-def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],BaseException], matcher: Matcher[T], reason: str) -> None:
+def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],Exception], matcher: Matcher[T], reason: str) -> None:
     if not matcher.matches(actual):
         description = StringDescription()
         description.append_text(reason).append_text("\nExpected: ").append_description_of(
@@ -188,21 +192,21 @@ def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],BaseExce
         raise exception_factory(description)
 
 
-def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],BaseException], reason: Optional[str] = None) -> None:
+def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],Exception], reason: Optional[str] = None) -> None:
     if not assertion:
         if not reason:
             reason = "Assertion failed"
         raise exception_factory(reason)
 
 
-class HardAssertionFailure(BaseException):
+class HardAssertionFailure(Exception):
     """
     Indicates an unacceptable failure in the system under test.
     """
     pass
 
 
-class SoftAssertionFailure(BaseException):
+class SoftAssertionFailure(Exception):
     """
     Indicates a failure in the system under test that violates the specification but likely does
     not cause interoperability problems.
@@ -210,7 +214,7 @@ class SoftAssertionFailure(BaseException):
     pass
 
 
-class DegradeAssertionFailure(BaseException):
+class DegradeAssertionFailure(Exception):
     """
     Indicates that data or content is degraded. For example, use this is a Fediverse application
     turns all ActivityStreams object types into Nodes or strips important formatting.
@@ -218,7 +222,7 @@ class DegradeAssertionFailure(BaseException):
     pass
 
 
-class SkipTestException(BaseException):
+class SkipTestException(Exception):
     """
     Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
     the circumstances in which it should be run are not currently present.
