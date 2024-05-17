@@ -1,18 +1,16 @@
-<div class="metadata">
+<div class="feditest metadata">
     <table>
-        {# <thead>
-            <tr>
-                <th>Name</th>
-                <th>Value</th>
-            </tr>
-        </thead> #}
         <tbody>
-            {% for key, value in metadata.items() -%}
+            {% for key in ['started', 'ended', 'username', 'hostname', 'platform'] -%}
             <tr>
-                <td>{{ key }}</td>
-                <td>{{ value }}</td>
+                <th>{{ key.capitalize() }}</th>
+                <td>{{ getattr(run, key) }}</td>
             </tr>
             {%- endfor %}
+            <tr>
+                <th>Feditest&nbsp;version</th>
+                <td>{{ getattr(run, 'feditest_version') }}</td>
+            </tr>
         </tbody>
     </table>
 </div>

@@ -5,7 +5,7 @@ import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 import jinja2
 import msgspec
@@ -230,7 +230,9 @@ class TestRunTranscript(msgspec.Struct):
 
 
     def __str__(self):
-        return f"TestRun {self.plan}"
+        if self.plan.name:
+            return f'{ self.id } ({ self.plan.name })'
+        return self.id
 
 
 class TestRunTranscriptSerializer(ABC):
@@ -342,8 +344,10 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                     {test.name: test for s in self.transcript.plan.sessions for test in s.tests}.values(),
                     key=lambda t: t.name,
                 ),
+                getattr=getattr,
                 get_problem=_get_problem,
-                remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s))))
+                remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
+                local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>'))
 
 
 def _get_problem(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test: TestPlanTestSpec) -> TestRunResultTranscript | None:
