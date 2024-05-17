@@ -3,20 +3,20 @@ Utility functions
 """
 
 import glob
-from importlib.metadata import version
 import importlib.util
 import pkgutil
 import re
 import sys
+from importlib.metadata import version
 from types import ModuleType
 from urllib.parse import urlparse
-from langcodes import Language
 
+from langcodes import Language
 
 FEDITEST_VERSION = version('feditest')
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
-ACCT_REGEX = re.compile(r"acct:([-a-z0-9\._~][-a-z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-z0-9\.:]+)")
+ACCT_REGEX = re.compile(r"acct:([-a-zA-Z0-9\._~][-a-zA-Z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-zA-Z0-9\.:]+)")
 
 
 def find_submodules(package: ModuleType) -> list[str]:
