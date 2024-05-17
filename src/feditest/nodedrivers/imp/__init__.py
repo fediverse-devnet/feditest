@@ -74,9 +74,8 @@ class Imp(WebFingerClient):
             if ret_pair.response is not None:
                 if ret_pair.response.http_status == 200:
                     if (
-                        # not check_content_type FIXME?
-                        # or
-                        ret_pair.response.content_type() == "application/jrd+json"
+                        not check_content_type
+                        or ret_pair.response.content_type() == "application/jrd+json"
                         or ret_pair.response.content_type().startswith(
                             "application/jrd+json;"
                         )
