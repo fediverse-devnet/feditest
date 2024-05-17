@@ -1,10 +1,10 @@
-from abc import abstractmethod, ABC
-from contextlib import redirect_stdout
-from datetime import datetime
 import json
 import os.path
 import re
 import traceback
+from abc import ABC, abstractmethod
+from contextlib import redirect_stdout
+from datetime import datetime
 from typing import Optional
 
 import jinja2
@@ -21,7 +21,7 @@ class TestRunResultTranscript(msgspec.Struct):
     msg: str | None
 
     @staticmethod
-    def create_if_present(exc: BaseException | None):
+    def create_if_present(exc: Exception | None):
         if exc is None:
             return None
 

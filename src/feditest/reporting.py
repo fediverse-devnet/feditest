@@ -182,7 +182,7 @@ def _construct_msg(with_loc, with_tb, *args):
 
     if with_tb and len(*args) > 0:
         *_, last = iter(*args)
-        if isinstance(last, BaseException):
+        if isinstance(last, Exception):
             ret += ''.join(traceback.format_exception(type(last), last, last.__traceback__))
 
     return ret

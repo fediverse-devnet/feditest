@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import feditest.testrun
 
 
-class TestRunControlException(BaseException,ABC):
+class TestRunControlException(Exception,ABC):
     """
     Superclass of all exceptions we use to control test run execution.
     """

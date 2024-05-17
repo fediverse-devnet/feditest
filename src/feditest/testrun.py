@@ -5,18 +5,29 @@ Classes that represent a running TestPlan and its its parts.
 import getpass
 import platform
 import time
+import traceback
 from abc import ABC
 from datetime import UTC, datetime, timezone
-import traceback
 from typing import Any, Type, cast
 
+import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import error, fatal, info, trace, warning
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
-import feditest.testruncontroller
-from feditest.testruntranscript import TestRunTranscript, TestRunSessionTranscript, TestRunTestTranscript, TestRunTestStepTranscript, TestRunResultTranscript
+from feditest.testplan import (
+    TestPlan,
+    TestPlanConstellation,
+    TestPlanSession,
+    TestPlanTestSpec,
+)
+from feditest.testruntranscript import (
+    TestRunResultTranscript,
+    TestRunSessionTranscript,
+    TestRunTestStepTranscript,
+    TestRunTestTranscript,
+    TestRunTranscript,
+)
 
 
 class TestRunConstellation:
@@ -90,7 +101,7 @@ class HasStartEndResults(ABC):
     def __init__(self) -> None:
         self.started : datetime | None = None
         self.ended : datetime | None = None
-        self.exception : BaseException | None = None # If the item ended with a exception, here it is. None if no exception
+        self.exception : Exception | None = None # If the item ended with a exception, here it is. None if no exception
 
 
 class TestRunTest(HasStartEndResults):
@@ -105,7 +116,7 @@ class TestRunTest(HasStartEndResults):
         return self.run_session.plan_session.tests[self.plan_test_index]
 
 
-    def outcome(self) -> BaseException | None:
+    def outcome(self) -> Exception | None:
         """
         Returns the exception that stopped the test, or None if all passed.
         """
@@ -136,7 +147,7 @@ class TestRunFunction(TestRunTest):
         try:
             self.test_from_test_function.test_function(**args)
 
-        except BaseException as e: # This should not happen
+        except Exception as e: # This should not happen
             self.exception = e
         finally:
             self.ended = datetime.now(UTC)
@@ -165,7 +176,7 @@ class TestRunStepInClass(HasStartEndResults):
         try:
             self.test_step.test_step_function(test_instance) # what an object-oriented language this is
 
-        except BaseException as e:
+        except Exception as e:
             self.exception = e
         finally:
             self.ended = datetime.now(UTC)
@@ -219,7 +230,7 @@ class TestRunClass(TestRunTest):
         except feditest.testruncontroller.AbortTestRunException as e: # User input
             self.exception = e
             raise
-        except BaseException as e: # This should not happen
+        except Exception as e: # This should not happen
             self.exception = e
         finally:
             self.ended = datetime.now(UTC)
@@ -296,7 +307,7 @@ class TestRunSession(HasStartEndResults):
         except feditest.testruncontroller.AbortTestRunException as e: # User input
             self.exception = e
             raise
-        except BaseException as e: # This should not happen
+        except Exception as e: # This should not happen
             self.exception = e
         finally:
             if self.run_constellation:
@@ -355,7 +366,7 @@ class TestRun(HasStartEndResults):
         except feditest.testruncontroller.AbortTestRunException as e: # User input
             self.exception = e
             # we are done here
-        except BaseException as e: # This should not happen
+        except Exception as e: # This should not happen
             self.exception = e
         finally:
             self.ended = datetime.now(UTC)
