@@ -9,7 +9,7 @@ from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.web.traffic import HttpRequestResponsePair
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
-from feditest.utils import http_https_acct_uri_parse_validate
+from feditest.utils import http_https_acct_uri_validate
 
 
 class WebFingerServer(WebServer):
@@ -25,17 +25,17 @@ class WebFingerServer(WebServer):
         return: the identifier
         """
         if nickname:
-            parsed = self.prompt_user(
+            ret = self.prompt_user(
                     f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
-                    http_https_acct_uri_parse_validate)
+                    http_https_acct_uri_validate)
         else:
-            parsed = self.prompt_user(
+            ret = self.prompt_user(
                     f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
-                    http_https_acct_uri_parse_validate)
-        assert parsed
-        return parsed
+                    http_https_acct_uri_validate)
+        assert ret
+        return ret
 
 
     def obtain_non_existing_account_identifier(self, nickname: str | None = None ) -> str:
@@ -47,17 +47,17 @@ class WebFingerServer(WebServer):
         return: the identifier
         """
         if nickname:
-            parsed = self.prompt_user(
+            ret = self.prompt_user(
                     f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
-                    http_https_acct_uri_parse_validate)
+                    http_https_acct_uri_validate)
         else:
-            parsed = self.prompt_user(
+            ret = self.prompt_user(
                     f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
-                    http_https_acct_uri_parse_validate)
-        assert parsed
-        return parsed
+                    http_https_acct_uri_validate)
+        assert ret
+        return ret
 
 
     def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:

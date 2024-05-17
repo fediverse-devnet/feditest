@@ -7,7 +7,7 @@ from typing import Any
 from feditest import nodedriver
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.fediverse import FediverseNode
-from feditest.utils import hostname_parse_validate
+from feditest.utils import hostname_validate
 
 
 class ManualFediverseNode(FediverseNode):
@@ -27,7 +27,7 @@ class ManualFediverseNodeDriver(NodeDriver):
         else:
             hostname = self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
                                         + ' and enter the hostname when done: ',
-                                        parse_validate=hostname_parse_validate)
+                                        parse_validate=hostname_validate)
             parameters = dict(parameters)
             parameters['hostname'] = hostname
 

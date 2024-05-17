@@ -4,11 +4,12 @@ Abstractions for the ActivityPub protocol
 
 from typing import Any, cast
 
-from hamcrest import assert_that, is_not
+from hamcrest import is_not
 from feditest.protocols.activitypub.utils import is_member_of_collection_at
 
+from feditest import hard_assert_that
 from feditest.protocols.web import WebServer
-from feditest.utils import http_https_uri_parse_validate
+from feditest.utils import http_https_uri_validate
 
 
 class Actor:
@@ -68,12 +69,12 @@ class ActivityPubNode(WebServer):
             return cast(str, self.prompt_user(
                     f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{actor_rolename}": ',
                     self.parameter('node-uri'),
-                    http_https_uri_parse_validate))
+                    http_https_uri_validate))
 
         return cast(str, self.prompt_user(
                 f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
                 self.parameter('node-uri'),
-                http_https_uri_parse_validate))
+                http_https_uri_validate))
 
 
     def obtain_followers_collection_uri(self, actor_uri: str) -> str:
@@ -81,7 +82,8 @@ class ActivityPubNode(WebServer):
         Determine the URI that points to the provided actor's followers collection.
         """
         return cast(str, self.prompt_user(
-                f'Enter the URI of the followers collection of actor "{actor_uri}": ', parse_validate=http_https_uri_parse_validate))
+                f'Enter the URI of the followers collection of actor "{actor_uri}": ',
+                http_https_uri_validate))
 
 
     def obtain_following_collection_uri(self, actor_uri: str) -> str:
@@ -89,7 +91,8 @@ class ActivityPubNode(WebServer):
         Determine the URI that points to the provided actor's following collection.
         """
         return cast(str, self.prompt_user(
-                f'Enter the URI of the following collection of actor "{actor_uri}": ', parse_validate=http_https_uri_parse_validate))
+                f'Enter the URI of the following collection of actor "{actor_uri}": ',
+                http_https_uri_validate))
 
 
     def assert_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):

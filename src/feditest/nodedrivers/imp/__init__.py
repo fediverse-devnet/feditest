@@ -44,8 +44,11 @@ class Imp(WebFingerClient):
             response_headers : MultiDict = MultiDict()
             for key, value in httpx_response.headers.items():
                 response_headers.add(key.lower(), value)
-            return HttpRequestResponsePair(request, request, HttpResponse(httpx_response.status_code, response_headers, httpx_response.read()))
+            ret = HttpRequestResponsePair(request, request, HttpResponse(httpx_response.status_code, response_headers, httpx_response.read()))
+            trace( f'HTTP query returns { ret }')
+            return ret
         raise WebClient.HttpUnsuccessfulError(request)
+
 
     # @override # from WebFingerClient
     def perform_webfinger_query(
@@ -56,8 +59,10 @@ class Imp(WebFingerClient):
         validate_jrd: bool = False,
     ) -> WebFingerQueryResponse:
         uri = self.construct_webfinger_uri_for(resource_uri, rels)
-
-        first_request = HttpRequest(ParsedUri.parse(uri))
+        parsed_uri = ParsedUri.parse(uri)
+        if not parsed_uri:
+            raise ValueError('Not a valid URI:', uri)
+        first_request = HttpRequest(parsed_uri)
         current_request = first_request
         pair : HttpRequestResponsePair | None = None
         for redirect_count in range(10, 0, -1):
@@ -65,7 +70,10 @@ class Imp(WebFingerClient):
             if pair.response and pair.response.is_redirect():
                 if redirect_count <= 0:
                     raise WebClient.TooManyRedirectsError(current_request)
-                current_request = HttpRequest(ParsedUri.parse(pair.response.location()))
+                parsed_location_uri = ParsedUri.parse(pair.response.location())
+                if not parsed_location_uri:
+                    raise ValueError('Location header is not a valid URI:', uri, '(from', resource_uri, ')')
+                current_request = HttpRequest(parsed_location_uri)
             break
 
         # I guess we always have a non-null responses here, but mypy complains without the if

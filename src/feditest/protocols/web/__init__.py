@@ -99,7 +99,10 @@ class WebClient(Node):
         """
         Make this WebClientperform an HTTP get on the provided uri.
         """
-        return self.http(HttpRequest(ParsedUri.parse(uri), 'GET' ), follow_redirects=follow_redirects)
+        parsed = ParsedUri.parse(uri)
+        if not parsed:
+            raise ValueError('Invalid URI:', uri)
+        return self.http(HttpRequest(parsed, 'GET' ), follow_redirects=follow_redirects)
 
 
     class TooManyRedirectsError(RuntimeError):
