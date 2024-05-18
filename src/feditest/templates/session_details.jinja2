@@ -1,5 +1,5 @@
 
-    <div class="sessions">
+    <div class="feditest sessions">
 {%- for run_session in run.sessions %}
         <div class="session" id="{{ remove_white(run_session) }}">
             <h3 class="session">{{ run_session }}</h3>
@@ -13,7 +13,7 @@
 {%-     for role in constellation.roles %}
                     <div class="role">
                         <div class="name">{{ role.name }}</div>
-                        <div class="driver">{{ role.nodedriver }}</div>
+                        <div class="driver">{{ local_name_with_tooltip(role.nodedriver) }}</div>
 {%-         if role.parameters %}
                         <table class="parameters">
                             <thead>

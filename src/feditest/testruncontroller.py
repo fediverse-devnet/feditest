@@ -100,7 +100,7 @@ class InteractiveTestRunController(TestRunController):
                 parsed = int(answer)
                 if parsed >= 0:
                     return parsed
-            except ValueError as e:
+            except ValueError:
                 pass
             print('Command not recognized, try again.')
 
@@ -128,7 +128,7 @@ class InteractiveTestRunController(TestRunController):
                 parsed = int(answer)
                 if parsed >= 0:
                     return parsed
-            except ValueError as e:
+            except ValueError:
                 pass
             print('Command not recognized, try again.')
 
@@ -158,7 +158,7 @@ class InteractiveTestRunController(TestRunController):
                 parsed = int(answer)
                 if parsed >= 0:
                     return parsed
-            except ValueError as e:
+            except ValueError:
                 pass
             print('Command not recognized, try again.')
 
