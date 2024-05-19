@@ -22,6 +22,7 @@ from feditest.utils import FEDITEST_VERSION
 
 _HEADERS = {
     "User-Agent": f"feditest/{ FEDITEST_VERSION }",
+    "Origin": "test.example" # to trigger CORS headers in response
 }
 
 class Imp(WebFingerClient):
