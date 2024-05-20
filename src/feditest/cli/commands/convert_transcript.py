@@ -5,8 +5,16 @@ Convert a TestRunTranscript to a different format
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 from feditest.reporting import warning
-from feditest.testruntranscript import TestRunTranscript, TestRunTranscriptSerializer, TapTestRunTranscriptSerializer, HtmlTestRunTranscriptSerializer, JsonTestRunTranscriptSerializer, SummaryTestRunTranscriptSerializer
+from feditest.testruntranscript import (
+    HtmlTestRunTranscriptSerializer,
+    JsonTestRunTranscriptSerializer,
+    SummaryTestRunTranscriptSerializer,
+    TapTestRunTranscriptSerializer,
+    TestRunTranscript,
+    TestRunTranscriptSerializer,
+)
 from feditest.utils import FEDITEST_VERSION
+
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -23,7 +31,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         serializer.write(args.tap)
 
     if isinstance(args.html, str) or args.html:
-        serializer = HtmlTestRunTranscriptSerializer(transcript)
+        serializer = HtmlTestRunTranscriptSerializer(transcript, args.template)
         serializer.write(args.html)
 
     if isinstance(args.json, str) or args.json:
