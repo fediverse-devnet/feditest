@@ -13,6 +13,8 @@
             --pico-font-size: 100%;
             --feditest-color-passed: #00c000;
             --feditest-color-failed: #c00000;
+            --feditest-color-skipped: var(--pico-color);
+            --feditest-color-errored: #c08000;
         }
 
         body {
@@ -26,6 +28,22 @@
 
         h1 {
             text-align: center;
+        }
+
+        .feditest .passed {
+            color: var(--feditest-color-passed);
+        }
+
+        .feditest .failed {
+                color: var(--feditest-color-failed);
+        }
+
+        .feditest .skipped {
+            color: var(--feditest-color-skipped);
+        }
+
+        .feditest .errored {
+            color: var(--feditest-color-errored);
         }
 
         div.feditest.module {
@@ -95,12 +113,19 @@
             content: "App version: ";
         }
 
-        div.tests.feditest {
+        div.feditest.tests {
             overflow: auto;
             position: relative;
         }
-        div.tests.feditest div.roles dd {
+        div.feditest.tests div.roles dd {
             font-weight: normal;
+        }
+
+        div.feditest.tests .namedesc > span {
+            display: block;
+        }
+        div.feditest.tests .namedesc > span.name {
+            font-weight: bold;
         }
 
         .feditest .role > table.parameters {
@@ -137,6 +162,20 @@
             border: 2px solid var(--pico-contast);
         }
 
+        .feditest td.status  { /* catch-all for everything else */
+            color: var(--feditest-color-errored);
+        }
+
+        .feditest td.status.passed {
+            color: var(--feditest-color-passed);
+        }
+
+        .feditest td.status.HardAssertionFailure,
+        .feditest td.status.SoftAssertionFailure,
+        .feditest td.status.DegradeAssertionFailure {
+            color: var(--feditest-color-failed);
+        }
+
         .feditest td.status input {
             display: none;
         }
@@ -148,14 +187,6 @@
 
         .feditest input:checked + pre.details {
             display: block;
-        }
-
-        .feditest td.status.passed {
-            color: var(--feditest-color-passed);
-        }
-
-        .feditest td.status.failed {
-            color: var(--feditest-color-failed);
         }
 
         .feditest td.status label {

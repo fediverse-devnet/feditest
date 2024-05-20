@@ -8,19 +8,35 @@
         <tbody>
             <tr>
                 <th>Passed</th>
-                <td>{{ summary.n_passed }}</td>
+{%- if summary.n_passed > 0 %}
+                <td class="passed">{{ summary.n_passed }}</td>
+{%- else %}
+                <td>0</td>
+{%- endif %}
             </tr>
             <tr>
                 <th>Failed</th>
-                <td>{{ summary.n_failed }} (hard: {{ summary.n_hard_failed }}, soft: {{ summary.n_soft_failed }}, degrade: {{ summary.n_degrade_failed }})</td>
+{%- if summary.n_failed > 0 %}
+                <td><span class="failed">{{ summary.n_failed }}</span> (hard: {{ summary.n_hard_failed }}, soft: {{ summary.n_soft_failed }}, degrade: {{ summary.n_degrade_failed }})</td>
+                {%- else %}
+                <td>0</td>
+{%- endif %}
             </tr>
             <tr>
                 <th>Skipped</th>
-                <td>{{ summary.n_skipped }}</td>
+{%- if summary.n_skipped > 0 %}
+                <td class="skipped">{{ summary.n_skipped }}</td>
+{%- else %}
+                <td>0</td>
+{%- endif %}
             </tr>
             <tr>
                 <th>Errors</th>
-                <td>{{ summary.n_errored }}</td>
+{%- if summary.n_errored > 0 %}
+                <td class="errored">{{ summary.n_errored }}</td>
+{%- else %}
+                <td>0</td>
+{%- endif %}
             </tr>
         </tbody>
         <tfoot>

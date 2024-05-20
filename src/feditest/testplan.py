@@ -91,9 +91,6 @@ class TestPlanConstellation(msgspec.Struct):
 
 
     def check_can_be_executed(self, context_msg: str = "") -> None:
-        if not self.roles:
-            raise TestPlanError(context_msg + 'No roles have been defined.')
-
         all_roles = {}
         for role in self.roles:
             role_context_msg = context_msg + "Role {role.name}: "

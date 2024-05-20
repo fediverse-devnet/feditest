@@ -195,7 +195,7 @@ def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],Exceptio
 def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],Exception], reason: Optional[str] = None) -> None:
     if not assertion:
         if not reason:
-            reason = "Assertion failed"
+            reason = "Test failed."
         raise exception_factory(reason)
 
 
