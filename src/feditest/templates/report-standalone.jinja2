@@ -34,10 +34,6 @@
             max-width: 600px;
         }
 
-        div.feditest.about {
-            float: right;
-        }
-
         div.feditest.module.metadata {
             float: right;
             max-width: 450px;
@@ -173,10 +169,7 @@
     </style>
 </head>
 <body>
-    <div class="feditest about">
-        <p>More about <a href="https://feditest.org/">FediTest</a>.</p>
-    </div>
-    <h1>Feditest Report: {{ run }}</h1>
+    <h1><a href="https://feditest.org/">Feditest</a> Report: {{ run }}</h1>
     <div class="feditest module metadata">
         <h2>Test Run Metadata</h2>
 {%  include "metadata.jinja2" %}
