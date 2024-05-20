@@ -124,13 +124,6 @@ class TestRunTestStepTranscript(msgspec.Struct):
     result : TestRunResultTranscript | None
 
 
-    def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
-        ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
-
-        return ret
-
-
     def __str__(self):
         return f"TestStep {self.plan_step_index}"
 
@@ -145,11 +138,25 @@ class TestRunTestTranscript(msgspec.Struct):
 
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
 
-        if self.run_steps:
-            for run_step in self.run_steps:
-                run_step.build_summary(ret)
+        # We treat the steps differently. They don't get their extra entry in the summary, but are abstracted into it.
+        if self.result:
+            ret.add_result(self.result) # non-success result on the level of the Test overrides
+        else:
+            worst_result : TestRunResultTranscript | None = None
+            # if no other issues occurred than SoftAssertionFailures or DegradeAssertionFailures,
+            #    the first one of those is the result
+            # else
+            #    the last exception is the result
+            if self.run_steps:
+                for run_step in self.run_steps:
+                    if worst_result is None:
+                        worst_result = run_step.result # may be None assignment
+                    elif run_step.result is not None and run_step.result.type not in ['SoftAssertionFailure', 'DegradeAssertionFailure']:
+                        worst_result = run_step.result
+
+                self.result = worst_result
+                ret.add_result(self.result)
 
         return ret
 
