@@ -17,31 +17,31 @@
 
         body {
             padding: 2rem;
+            background: #f8f8f8;
         }
 
         footer {
             font-size: smaller;
         }
 
+        h1 {
+            text-align: center;
+        }
+
         div.feditest.module {
+            background: #fff;
             border-radius: 5px;
-            box-shadow: 0px 0px 5px #808080;
+            border: 1px solid #e0e0e0;
             margin: 0 0 2rem 0;
             padding: 2rem;
         }
 
         div.feditest.module.summary {
-            max-width: 600px;
+            box-shadow: 0px 0px 5px #808080;
         }
 
-        div.feditest.module.metadata {
-            float: right;
-            max-width: 450px;
-            font-size: small;
-        }
-
-        div.feditest.module.metadata td {
-                color: var(--pico-muted-color);
+        div.feditest.module.results {
+            box-shadow: 0px 0px 5px #808080;
         }
 
         div.feditest.session {
@@ -170,10 +170,6 @@
 </head>
 <body>
     <h1><a href="https://feditest.org/">Feditest</a> Report: {{ run }}</h1>
-    <div class="feditest module metadata">
-        <h2>Test Run Metadata</h2>
-{%  include "metadata.jinja2" %}
-    </div>
     <div class="feditest module summary">
         <h2>Test Run Summary</h2>
 {%  include "test_summary.jinja2" %}
@@ -187,6 +183,10 @@
     <div class="feditest module session-details">
         <h2>Session Details</h2>
 {%   include "session_details.jinja2" %}
+    </div>
+    <div class="feditest module metadata">
+        <h2>Test Run Metadata</h2>
+{%  include "metadata.jinja2" %}
     </div>
 {%   include "footer.jinja2" %}
 </body>
