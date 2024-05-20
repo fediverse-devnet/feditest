@@ -8,7 +8,7 @@ import httpx
 from multidict import MultiDict
 
 from feditest import nodedriver
-from feditest.protocols import Node, NodeDriver, NodeSpecificationInvalidError
+from feditest.protocols import Node, NodeDriver
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,
@@ -30,6 +30,16 @@ class Imp(WebFingerClient):
     Our placeholder test client. Its future is to ~~tbd~~ be factored out of here.
     """
     # use superclass constructor
+
+    @property
+    def app_name(self):
+        return 'Imp'
+
+
+    @property
+    def app_version(self):
+        return FEDITEST_VERSION
+
 
     # @override # from WebClient
     def http(self, request: HttpRequest, follow_redirects: bool = True) -> HttpRequestResponsePair:
@@ -117,9 +127,6 @@ class ImpInProcessNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> Imp:
-        if parameters:
-            raise NodeSpecificationInvalidError(self, 'any', 'No parameters can be specified')
-
         node = Imp(rolename, parameters, self)
         return node
 

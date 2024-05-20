@@ -15,6 +15,14 @@ from feditest.testplan import TestPlan, TestPlanTestSpec
 from feditest.utils import FEDITEST_VERSION
 
 
+class TestRunNodeTranscript(msgspec.Struct):
+    appdata: dict[str,str | None]
+
+
+class TestRunConstellationTranscript(msgspec.Struct):
+    nodes: dict[str,TestRunNodeTranscript]
+
+
 class TestRunResultTranscript(msgspec.Struct):
     type: str
     stacktrace: list[tuple[str,int]]
@@ -154,6 +162,7 @@ class TestRunSessionTranscript(msgspec.Struct):
     plan_session_index: int
     started : datetime
     ended : datetime
+    constellation: TestRunConstellationTranscript
     run_tests : list[TestRunTestTranscript]
     result : TestRunResultTranscript | None
 
@@ -290,8 +299,11 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             print(f"# constellation: { constellation }")
             print("#   roles:")
             for role in plan_session.constellation.roles:
+                transcript_role = session_transcript.constellation.nodes[role.name]
                 print(f"#     - name: {role.name}")
                 print(f"#       driver: {role.nodedriver}")
+                print(f"#       app: {transcript_role.appdata['app']}")
+                print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
 
             for test in plan_session.tests:
                 test_id += 1

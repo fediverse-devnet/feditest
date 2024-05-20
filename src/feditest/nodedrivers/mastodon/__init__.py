@@ -4,7 +4,7 @@
 from typing import Any
 
 from feditest import nodedriver
-from feditest.protocols import Node, NodeSpecificationInsufficientError
+from feditest.protocols import Node
 from feditest.protocols.fediverse import FediverseNode
 from feditest.ubos import UbosNodeDriver
 
@@ -17,16 +17,17 @@ class MastodonUbosNode(FediverseNode):
         return f"https://{self.hostname}/users/{self.parameter('adminid') }"
 
 
+    @property
+    def app_name(self):
+        return "Mastodon"
+
+
 @nodedriver
 class MastodonUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate Mastodon via UBOS.
     """
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> MastodonUbosNode:
-        if 'siteid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'no siteid given')
-        if 'adminid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'no adminid given')
         return MastodonUbosNode(rolename, parameters, self)
 
 

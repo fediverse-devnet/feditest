@@ -27,7 +27,7 @@
                         <dl class="roles">
 {%-     for role in constellation.roles %}
                             <dt>{{ role.name }}</dt>
-                            <dd>{{ local_name_with_tooltip(role.nodedriver) }}</dd>
+                            <dd>{{ role.app_name }}</dd>
 {%-     endfor %}
                         </dl>
                     </th>

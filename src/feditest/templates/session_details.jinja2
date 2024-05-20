@@ -11,9 +11,12 @@
 {%-     endif %}
                 <div class="roles">
 {%-     for role in constellation.roles %}
+{%-         set session_transcript = run_session.constellation.nodes[role.name] %}
                     <div class="role">
                         <div class="name">{{ role.name }}</div>
                         <div class="driver">{{ local_name_with_tooltip(role.nodedriver) }}</div>
+                        <div class="app">{{ session_transcript.appdata['app'] }}</div>
+                        <div class="appversion">{{ session_transcript.appdata['app_version'] or '?'}}</div>
 {%-         if role.parameters %}
                         <table class="parameters">
                             <thead>
