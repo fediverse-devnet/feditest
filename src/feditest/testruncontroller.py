@@ -83,8 +83,12 @@ class InteractiveTestRunController(TestRunController):
         """
         A TestRunSession has just completed. Which TestRunSession should we run next?
         """
+        if last_session_index >= 0:
+            prompt = 'Which TestSession to run next? n(ext session), r(repeat just completed session), (session number), q(uit): '
+        else:
+            prompt = 'Which TestSession to run first? n(ext/first session), (session number), q(uit): '
         while True:
-            answer = self._prompt_user('Which TestSession to run next? n(ext session), r(repeat just completed session), q(uit): ')
+            answer = self._prompt_user(prompt)
             match answer:
                 case 'n':
                     return last_session_index+1
@@ -92,6 +96,12 @@ class InteractiveTestRunController(TestRunController):
                     return last_session_index
                 case 'q':
                     raise AbortTestRunException()
+            try:
+                parsed = int(answer)
+                if parsed >= 0:
+                    return parsed
+            except ValueError:
+                pass
             print('Command not recognized, try again.')
 
 
@@ -99,8 +109,12 @@ class InteractiveTestRunController(TestRunController):
         """
         A Test has just completed. Which Test should we run next?
         """
+        if last_test_index >= 0:
+            prompt = 'Which Test to run next? n(ext test), r(repeat just completed test), a(bort current session), q(uit): '
+        else:
+            prompt = 'Which Test to run first? n(ext/first test), (test number), a(bort current session), q(uit): '
         while True:
-            answer = self._prompt_user('Which Test to run next? n(ext test), r(repeat just completed test), a(bort current session), q(uit): ')
+            answer = self._prompt_user(prompt)
             match answer:
                 case 'n':
                     return last_test_index+1
@@ -110,15 +124,25 @@ class InteractiveTestRunController(TestRunController):
                     raise AbortTestRunSessionException()
                 case 'q':
                     raise AbortTestRunException()
+            try:
+                parsed = int(answer)
+                if parsed >= 0:
+                    return parsed
+            except ValueError:
+                pass
             print('Command not recognized, try again.')
 
 
     def determine_next_test_step_index(self, last_test_step_index: int = -1) -> int:
         """
-        A Test Step as just completed. Which Test mStep should we run next?
+        A Test Step as just completed. Which Test Step should we run next?
         """
+        if last_test_step_index >= 0:
+            prompt = 'Which Test Step to run next? n(ext test step), r(repeat just completed test test), c(ancel current test), a(bort current session), q(uit): '
+        else:
+            prompt = 'Which Test Step to run first? n(ext/first test step), (test step number), c(ancel current test), a(bort current session), q(uit): '
         while True:
-            answer = self._prompt_user('Which Test Step to run next? n(ext test step), r(repeat just completed test test), c(ancel current test), a(bort current session), q(uit): ')
+            answer = self._prompt_user(prompt)
             match answer:
                 case 'n':
                     return last_test_step_index+1
@@ -130,6 +154,12 @@ class InteractiveTestRunController(TestRunController):
                     raise AbortTestRunSessionException()
                 case 'q':
                     raise AbortTestRunException()
+            try:
+                parsed = int(answer)
+                if parsed >= 0:
+                    return parsed
+            except ValueError:
+                pass
             print('Command not recognized, try again.')
 
 

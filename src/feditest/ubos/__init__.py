@@ -8,7 +8,7 @@ from typing import Any
 
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInsufficientError, NodeSpecificationInvalidError
 from feditest.reporting import info
-from feditest.utils import hostname_parse_validate
+from feditest.utils import hostname_validate
 
 
 class UbosNodeDriver(NodeDriver):
@@ -34,7 +34,7 @@ class UbosNodeDriver(NodeDriver):
             raise NodeSpecificationInsufficientError(self, 'Need parameter adminid for now') # FIXME: should get it from the JSON file
         if 'hostname' not in parameters:
             raise NodeSpecificationInsufficientError(self, 'Needs parameter hostname for now') # FIXME: should get it from the JSON file
-        if not hostname_parse_validate(parameters['hostname']):
+        if not hostname_validate(parameters['hostname']):
             raise NodeSpecificationInvalidError(self, 'hostname', parameters['hostname'])
         if 'sitejsonfile' in parameters:
             cmd = f"sudo ubos-admin deploy --file {parameters['sitejsonfile']}"

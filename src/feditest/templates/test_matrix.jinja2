@@ -1,5 +1,5 @@
 
-    <div class="tests">
+    <div class="feditest tests">
         <table class="tests">
             <colgroup>
                 <col>
@@ -27,7 +27,7 @@
                         <dl class="roles">
 {%-     for role in constellation.roles %}
                             <dt>{{ role.name }}</dt>
-                            <dd>{{ role.nodedriver }}</dd>
+                            <dd>{{ local_name_with_tooltip(role.nodedriver) }}</dd>
 {%-     endfor %}
                         </dl>
                     </th>
