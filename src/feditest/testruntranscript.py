@@ -16,14 +16,29 @@ from feditest.utils import FEDITEST_VERSION
 
 
 class TestRunNodeTranscript(msgspec.Struct):
-    appdata: dict[str,str | None]
+    """
+    Information about a node in a constellation in a transcript.
+    """
+    appdata: dict[str, str | None]
+    """
+    So far, contains:
+    app: name of the app running at the node (required)
+    app_version: version of the app running at the node (optional)
+    """
 
 
 class TestRunConstellationTranscript(msgspec.Struct):
+    """
+    Information about a constellation in a trranscript
+    """
     nodes: dict[str,TestRunNodeTranscript]
 
 
 class TestRunResultTranscript(msgspec.Struct):
+    """
+    Captures the result of running a step, test, session, or plan if it ended with
+    an Exception. The properties of this class are derived from that exception.
+    """
     type: str
     stacktrace: list[tuple[str,int]]
     msg: str | None
@@ -43,7 +58,21 @@ class TestRunResultTranscript(msgspec.Struct):
         return self.msg
 
 
+class TestMetaTranscript(msgspec.Struct):
+    """
+    Captures information about a test in a transcript.
+    """
+    name: str
+    roles: set[str]
+    description: str | None
+
+
 class TestRunTranscriptSummary:
+    """
+    Summary information derived from a transcript.
+    This class is here in the middle of the file because other XXXTranscript classes need
+    to reference it.
+    """
     def __init__(self) -> None:
         self.hard_failures : list[TestRunResultTranscript] = []
         self.soft_failures : list[TestRunResultTranscript] = []
@@ -129,6 +158,9 @@ class TestRunTestStepTranscript(msgspec.Struct):
 
 
 class TestRunTestTranscript(msgspec.Struct):
+    """
+    Captures information about the run of a single test in a transcript.
+    """
     plan_test_index : int
     started : datetime
     ended : datetime
@@ -166,6 +198,9 @@ class TestRunTestTranscript(msgspec.Struct):
 
 
 class TestRunSessionTranscript(msgspec.Struct):
+    """
+    Captures information about the run of a single session in a transcript.
+    """
     plan_session_index: int
     started : datetime
     ended : datetime
@@ -190,6 +225,9 @@ class TestRunSessionTranscript(msgspec.Struct):
 
 
 class TestRunTranscript(msgspec.Struct):
+    """
+    Captures all information about a single test run in a transcript.
+    """
     plan : TestPlan
     id: str
     started: datetime
@@ -198,6 +236,7 @@ class TestRunTranscript(msgspec.Struct):
     username: str
     hostname: str
     sessions: list[TestRunSessionTranscript]
+    test_meta: dict[str,TestMetaTranscript] # key: name of the test
     result : TestRunResultTranscript | None
     type: str = 'feditest-testrun-transcript'
     feditest_version: str = FEDITEST_VERSION
@@ -277,6 +316,9 @@ class TestRunTranscriptSerializer(ABC):
 
 
 class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
+    """
+    Knows how to serialize a TestRunTranscript into a single-line summary.
+    """
     def _write(self):
         summary = self.transcript.build_summary()
 
@@ -286,6 +328,9 @@ class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
 
 class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
+    """
+    Knows how to serialize a TestRunTranscript into a report in TAP format.
+    """
     def _write(self):
         plan = self.transcript.plan
         summary = self.transcript.build_summary()
@@ -339,6 +384,9 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
 
 class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
+    """
+    Knows how to serialize a TestRunTrascript into HTML using any Jinja2 template.
+    """
     def __init__(self, transcript: TestRunTranscript, template_name: str | None = None ):
         super().__init__(transcript)
         self.template_name = template_name or 'report-standalone.jinja2'

@@ -10,6 +10,7 @@ from abc import ABC
 from datetime import UTC, datetime, timezone
 from typing import Any, Type, cast
 
+from feditest.tests import Test
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
@@ -22,6 +23,7 @@ from feditest.testplan import (
     TestPlanTestSpec,
 )
 from feditest.testruntranscript import (
+    TestMetaTranscript,
     TestRunConstellationTranscript,
     TestRunNodeTranscript,
     TestRunResultTranscript,
@@ -385,6 +387,7 @@ class TestRun(HasStartEndResults):
 
     def transcribe(self) -> TestRunTranscript:
         trans_sessions = []
+        trans_test_metas = {}
         for run_session in self.run_sessions:
             nodes_transcript: dict[str, TestRunNodeTranscript] = {}
             for node_role, appdata in cast(TestRunConstellation, run_session.run_constellation)._appdata.items():
@@ -408,6 +411,10 @@ class TestRun(HasStartEndResults):
                         cast(datetime, run_test.ended),
                         TestRunResultTranscript.create_if_present(run_test.exception),
                         trans_steps))
+                test : Test = run_test.plan_testspec.get_test()
+                if not test.name in trans_test_metas: # If we have it already, it's the same
+                    trans_test_metas[test.name] = TestMetaTranscript(test.name, test.needed_local_role_names(), test.description)
+
             trans_sessions.append(TestRunSessionTranscript(
                     run_session.plan_session_index,
                     cast(datetime, run_session.started),
@@ -425,5 +432,6 @@ class TestRun(HasStartEndResults):
                 self.username,
                 self.hostname,
                 trans_sessions,
+                trans_test_metas,
                 TestRunResultTranscript.create_if_present(self.exception))
         return ret
