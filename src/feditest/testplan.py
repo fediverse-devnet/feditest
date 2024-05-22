@@ -19,8 +19,7 @@ class TestPlanError(RuntimeError):
         super().__init__(f"TestPlan defined insufficiently: {details}" )
 
 
-class TestPlanConstellationRole(msgspec.Struct):
-    name: str
+class TestPlanConstellationNode(msgspec.Struct):
     nodedriver: str | None = None
     parameters: dict[str,Any] | None = None
 
@@ -61,7 +60,7 @@ class TestPlanConstellationRole(msgspec.Struct):
 
 
 class TestPlanConstellation(msgspec.Struct):
-    roles : list[TestPlanConstellationRole]
+    roles : dict[str,TestPlanConstellationNode]
     name: str | None = None
 
 
