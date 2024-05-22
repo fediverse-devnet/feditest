@@ -95,15 +95,15 @@ class ActivityPubNode(WebServer):
                 http_https_uri_validate))
 
 
-    def assert_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
+    def hard_assert_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
         """
         Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
         """
-        assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self))
+        hard_assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self))
 
 
-    def assert_not_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
+    def hard_assert_not_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
         """
         Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
         """
-        assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)))
+        hard_assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)))
