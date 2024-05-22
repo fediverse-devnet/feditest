@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Feditest Test Report</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        >
+        <style>
+{%  include "standalone-report-css-common.jinja2" %}
+.feditest div.description {
+    margin: 1rem;
+    padding: 1rem;
+    border-left: 3px solid var(--pico-blockquote-border-color);
+}
+
+.feditest p.when {
+    font-size: smaller;
+}
+
+.feditest div.status {
+    margin-bottom: 1rem;
+}
+
+.feditest div.test h4 {
+    margin-top: 2rem;
+    padding: 0.5ex;
+    background: #e8e8e8;
+}
+
+.feditest div.step {
+    margin-left: 3rem;
+}
+
+.feditest div.step h5 {
+    font-size: 100%;
+}
+        </style>
+    </head>
+    <body>
+        <h1><a href="https://feditest.org/">Feditest</a> Report: {{ run }}</h1>
+        <div class="feditest module summary">
+            <h2>Test Run Summary</h2>
+{%  include "testrun-transcript-summary.jinja2" %}
+        </div>
+        <div class="feditest module results">
+            <h2>Test Results</h2>
+{%  include "testrun-transcript-sequential.jinja2" %}
+        </div>
+{%   include "standalone-report-footer.jinja2" %}
+    </body>
+</html>

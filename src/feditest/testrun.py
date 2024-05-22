@@ -10,7 +10,7 @@ from abc import ABC
 from datetime import UTC, datetime, timezone
 from typing import Any, Type, cast
 
-from feditest.tests import Test
+from feditest.tests import Test, TestFromTestClass
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
@@ -24,6 +24,7 @@ from feditest.testplan import (
 )
 from feditest.testruntranscript import (
     TestMetaTranscript,
+    TestStepMetaTranscript,
     TestRunConstellationTranscript,
     TestRunNodeTranscript,
     TestRunResultTranscript,
@@ -412,8 +413,14 @@ class TestRun(HasStartEndResults):
                         TestRunResultTranscript.create_if_present(run_test.exception),
                         trans_steps))
                 test : Test = run_test.plan_testspec.get_test()
-                if not test.name in trans_test_metas: # If we have it already, it's the same
-                    trans_test_metas[test.name] = TestMetaTranscript(test.name, test.needed_local_role_names(), test.description)
+                if test.name not in trans_test_metas: # If we have it already, it's the same
+                    if isinstance(test, TestFromTestClass):
+                        meta_steps = []
+                        for test_step in test.steps:
+                            meta_steps.append(TestStepMetaTranscript(test_step.name, test_step.description))
+                    else:
+                        meta_steps = None
+                    trans_test_metas[test.name] = TestMetaTranscript(test.name, test.needed_local_role_names(), meta_steps, test.description)
 
             trans_sessions.append(TestRunSessionTranscript(
                     run_session.plan_session_index,

@@ -1,0 +1,9 @@
+<div class="status {{ resultobj['statuscssclass'] }}">
+{%- if resultobj['haspassed'] %}
+    {{ resultobj['statusmessage'] }}
+{%- else %}
+    <label for="details-{{ resultobj['id'] }}">{{ resultobj['statusmessage'] }}</label>
+    <input id="details-{{ resultobj['id'] }}" type="checkbox">
+    <pre class="details">{{ resultobj['problem'] }}</pre>
+{%- endif %}
+</div>

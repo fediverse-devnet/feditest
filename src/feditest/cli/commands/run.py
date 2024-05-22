@@ -76,7 +76,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     html_group = parser.add_argument_group('html', 'HTML options')
     html_group.add_argument('--html', nargs="?", const=True, default=False,
                         help="Write results in HTML format to stdout, or to the provided file (if given).")
-    html_group.add_argument('--template',
+    html_group.add_argument('--template', default='testrun-report-testmatrix-standalone.jinja2',
                         help="When specifying --html, use this HTML template (jinja2 format).")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")

@@ -5,13 +5,13 @@ import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Optional
+from typing import Any, Iterator, Optional
 
 import jinja2
 import msgspec
 
 from feditest.reporting import fatal
-from feditest.testplan import TestPlan, TestPlanTestSpec
+from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
 
 
@@ -58,12 +58,21 @@ class TestRunResultTranscript(msgspec.Struct):
         return self.msg
 
 
+class TestStepMetaTranscript(msgspec.Struct):
+    """
+    Captures information about a step in a test in a transcript.
+    """
+    name: str
+    description: str | None
+
+
 class TestMetaTranscript(msgspec.Struct):
     """
     Captures information about a test in a transcript.
     """
     name: str
     roles: set[str]
+    steps: list[TestStepMetaTranscript] | None
     description: str | None
 
 
@@ -168,28 +177,31 @@ class TestRunTestTranscript(msgspec.Struct):
     run_steps : list[TestRunTestStepTranscript] | None = None # This is None if it's a function rather than a class
 
 
+    @property
+    def worst_result(self) -> TestRunResultTranscript | None:
+        if self.result:
+            return self.result
+
+        # The steps don't get their extra entry in the summary, but are abstracted into it.
+        ret : TestRunResultTranscript | None = None
+        # if no other issues occurred than SoftAssertionFailures or DegradeAssertionFailures,
+        #    the first one of those is the result
+        # else
+        #    the last exception is the result
+        if self.run_steps:
+            for run_step in self.run_steps:
+                if ret is None:
+                    ret = run_step.result # may be None assignment
+                elif run_step.result is not None and run_step.result.type not in ['SoftAssertionFailure', 'DegradeAssertionFailure']:
+                    ret = run_step.result
+
+        return ret
+
+
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
 
-        # We treat the steps differently. They don't get their extra entry in the summary, but are abstracted into it.
-        if self.result:
-            ret.add_result(self.result) # non-success result on the level of the Test overrides
-        else:
-            worst_result : TestRunResultTranscript | None = None
-            # if no other issues occurred than SoftAssertionFailures or DegradeAssertionFailures,
-            #    the first one of those is the result
-            # else
-            #    the last exception is the result
-            if self.run_steps:
-                for run_step in self.run_steps:
-                    if worst_result is None:
-                        worst_result = run_step.result # may be None assignment
-                    elif run_step.result is not None and run_step.result.type not in ['SoftAssertionFailure', 'DegradeAssertionFailure']:
-                        worst_result = run_step.result
-
-                self.result = worst_result
-                ret.add_result(self.result)
-
+        ret.add_result(self.worst_result)
         return ret
 
 
@@ -357,23 +369,30 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 print(f"#       app: {transcript_role.appdata['app']}")
                 print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
 
-            for test in plan_session.tests:
+
+            for test_index, run_test in enumerate(session_transcript.run_tests):
                 test_id += 1
-                if problem := _get_problem(self.transcript, session_transcript, test):
-                    print(f"not ok {test_id} - {test.name}")
+
+                plan_test_spec = plan_session.tests[run_test.plan_test_index]
+                test_meta = self.transcript.test_meta[plan_test_spec.name]
+
+                resultobj = _get_result_for_test(self.transcript, session_transcript, test_index, run_test)
+                if resultobj['haspassed']:
+                    directives = "" # FIXME f" # SKIP {test.disabled}" if test.disabled else ""
+                    print(f"ok {test_id} - {test_meta.name}{directives}")
+                else:
+                    problem = resultobj['problem']
+                    print(f"not ok {test_id} - {test_meta.name}")
                     print("  ---")
                     print(f"  problem: {problem.type}")
-                    if problem.msg:
+                    if resultobj['statusmessage']:
                         print("  message:")
-                        print("\n".join( [ f"    { p }" for p in problem.msg.strip().split("\n") ] ))
+                        print("\n".join( [ f"    { p }" for p in resultobj['statusmessage'].strip().split("\n") ] ))
                     print("  where:")
                     for loc in problem.stacktrace:
                         print(f"    {loc[0]} {loc[1]}")
                     print("  ...")
 
-                else:
-                    directives = f" # SKIP {test.disabled}" if test.disabled else ""
-                    print(f"ok {test_id} - {test.name}{directives}")
         print(f"1..{test_id}")
         print("# test run summary:")
         print(f"#   total: {summary.n_total}")
@@ -389,7 +408,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     def __init__(self, transcript: TestRunTranscript, template_name: str | None = None ):
         super().__init__(transcript)
-        self.template_name = template_name or 'report-standalone.jinja2'
+        self.template_name = template_name or 'testrun-report-testmatrix-standalone.jinja2'
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.templates = jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_dir)
@@ -404,26 +423,80 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             except jinja2.TemplateNotFound:
                 fatal('jinja2 template not found:', self.template_name)
 
-        print(template.render(
+        print(  template.render(
                 run=self.transcript,
                 summary=self.transcript.build_summary(),
-                all_tests = sorted(
-                    {test.name: test for s in self.transcript.plan.sessions for test in s.tests}.values(),
-                    key=lambda t: t.name,
-                ),
                 getattr=getattr,
-                get_problem=_get_problem,
+                sorted=sorted,
+                enumerate=enumerate,
+                get_results_for=_get_results_for,
+                get_result_for_test=_get_result_for_test,
+                get_result_for_test_step=_get_result_for_test_step,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>'))
 
 
-def _get_problem(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test: TestPlanTestSpec) -> TestRunResultTranscript | None:
-    plan_session = run_transcript.plan.sessions[session_transcript.plan_session_index
-                                                ]
-    for test_transcript in session_transcript.run_tests:
-        plan_test = plan_session.tests[test_transcript.plan_test_index]
-        if plan_test.name == test.name and test_transcript.result:
-            return test_transcript.result
+def _get_result_for_test(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_transcript: TestRunTestTranscript) -> dict[str,Any]:
+    if test_transcript.result:
+        ret = {
+            'statuscssclass' : f'failed { test_transcript.result.type }',
+            'haspassed' : False,
+            'statusmessage' : 'Failed',
+            'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }',
+            'problem' : test_transcript.worst_result
+        }
+    else:
+        ret = {
+            'statuscssclass' : 'passed',
+            'haspassed' : True,
+            'statusmessage' : 'Passed'
+        }
+    return ret
+
+
+def _get_result_for_test_step(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_step_index: int, test_step_transcript: TestRunTestStepTranscript) -> dict[str,Any]:
+    if test_step_transcript.result:
+        ret = {
+            'statuscssclass' : f'failed { test_step_transcript.result.type }',
+            'haspassed' : False,
+            'statusmessage' : 'Failed',
+            'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }-{ test_step_index }',
+            'problem' : test_step_transcript.result
+        }
+    else:
+        ret = {
+            'statuscssclass' : 'passed',
+            'haspassed' : True,
+            'statusmessage' : 'Passed'
+        }
+    return ret
+
+
+def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[dict[str,Any]]:
+    """
+    Determine the set of test results running test_meta within session_transcript, and return it as an Iterator.
+    This is a set, not a single value, because we might run the same test multiple times (perhaps with differing role
+    assignments) in the same session. The run_transcript is passed in because session_transcript does not have a pointer "up".
+    """
+    plan_session = run_transcript.plan.sessions[session_transcript.plan_session_index]
+    for test_index, test_transcript in enumerate(session_transcript.run_tests):
+        plan_testspec = plan_session.tests[test_transcript.plan_test_index]
+        if plan_testspec.name == test_meta.name:
+            if test_transcript.result:
+                ret = {
+                    'statuscssclass' : f'failed { test_transcript.result.type }',
+                    'haspassed' : False,
+                    'statusmessage' : 'Failed',
+                    'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }',
+                    'problem' : test_transcript.worst_result
+                }
+            else:
+                ret = {
+                    'statuscssclass' : 'passed',
+                    'haspassed' : True,
+                    'statusmessage' : 'Passed'
+                }
+            yield ret
     return None
 
 

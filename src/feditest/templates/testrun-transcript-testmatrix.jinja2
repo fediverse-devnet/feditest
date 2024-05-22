@@ -1,4 +1,3 @@
-
     <div class="feditest tests">
         <table class="tests">
             <colgroup>
@@ -9,7 +8,7 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>Test</th>
+                    <th>Test (alphabetical order)</th>
 {%- for run_session in run.sessions %}
 {%-     set plan_session = run.plan.sessions[run_session.plan_session_index] %}
 {%-     set constellation = plan_session.constellation %}
@@ -35,33 +34,20 @@
                 </tr>
             </thead>
             <tbody>
-{%- for test_spec in all_tests %}
+{%- for _, test_meta in sorted(run.test_meta.items()) %}
                 <tr>
                     <td class="namedesc">
-                        <span class="name">{{ test_spec.name }}</span>
-{%-     if test_spec.get_test().description %}
-                        <span class="description">{{ test_spec.get_test().description }}</span>
+                        <span class="name">{{ test_meta.name }}</span>
+{%-     if test_meta.description %}
+                        <span class="description">{{ test_meta.description }}</span>
 {%-     endif %}
                     </td>
 {%-     for run_session in run.sessions %}
-{%-         set plan_session = run.plan.sessions[run_session.plan_session_index] %}
-{%          set problem = get_problem(run, run_session, test_spec) -%}
-{%          if test_spec.disabled -%}
-{%              set status = "disabled" -%}
-{%          elif problem -%}
-{%              set status = problem.type -%}
-{%          else -%}
-{%              set status = "passed" -%}
-{%          endif %}
-{%-         if problem %}
-                    <td class="status {{ status }}">
-                        <label for="details-{{ remove_white(test_spec.name) }}-{{ remove_white(run_session) }}">{{ status }}</label>
-                        <input id="details-{{ remove_white(test_spec.name) }}-{{ remove_white(run_session) }}" type="checkbox">
-                        <pre class="details">{{ problem | e }}</pre>
+                    <td class="status">
+{%-         for resultobj in get_results_for(run, run_session, test_meta) %}
+{%              include "testresult-single.jinja2" %}
+{%-         endfor %}
                     </td>
-{%-         else %}
-                    <td class="status {{ status }}">{{ status | capitalize }}</td>
-{%-         endif %}
 {%-     endfor %}
                 </tr>
 {%- endfor %}
