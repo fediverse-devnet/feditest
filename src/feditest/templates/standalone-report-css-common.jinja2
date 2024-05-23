@@ -1,14 +1,28 @@
-:root {
-    --pico-font-size: 100%;
+:root:not([data-theme="dark"]), [data-theme="light"] {
+	--feditest-background-color: #f8f8f8;
     --feditest-color-passed: #00c000;
     --feditest-color-failed: #c00000;
     --feditest-color-skipped: var(--pico-color);
     --feditest-color-errored: #c08000;
 }
 
+@media only screen and (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--feditest-background-color: #000;
+		--feditest-color-passed: #00c000;
+		--feditest-color-failed: #c00000;
+		--feditest-color-skipped: var(--pico-color);
+		--feditest-color-errored: #c08000;
+	}
+}
+
+:root {
+    --pico-font-size: 100%;
+}
+
 body {
     padding: 2rem;
-    background: #f8f8f8;
+	background: var(--feditest-background-color);
 }
 
 footer {
@@ -20,19 +34,19 @@ h1 {
 }
 
 div.feditest.module {
-    background: #fff;
+    background: var(--pico-background-color);
     border-radius: 5px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--pico-table-border-color);
     margin: 0 0 2rem 0;
     padding: 2rem;
 }
 
 div.feditest.module.summary {
-    box-shadow: 0px 0px 5px #808080;
+    box-shadow: 0px 0px 5px var(--pico-table-border-color);
 }
 
 div.feditest.module.results {
-    box-shadow: 0px 0px 5px #808080;
+    box-shadow: 0px 0px 5px var(--pico-table-border-color);
 }
 
 div.feditest.session {
@@ -41,7 +55,6 @@ div.feditest.session {
 
 div.feditest.session > h3 {
     font-weight: bold;
-    color: lightblue;
 }
 
 div.feditest.session > h3::before {
