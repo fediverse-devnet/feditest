@@ -25,7 +25,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     for session_file in args.session:
         session_templates.append(TestPlanSession.load(session_file))
 
-    test_plan = TestPlan()
+    test_plan = TestPlan([], args.name)
     for session_template in session_templates:
         # Let's make this the outer loop: we pick a feature domain and make
         # sure it works in all constellations, before moving to the next
@@ -50,6 +50,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser(cmd_name, help='Generate a test plan by running all provided test sessions in all provided constellations')
+    parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
     parser.add_argument('--constellation', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a constellation')
     parser.add_argument('--session', '--session-template', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a test session')
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test plan')

@@ -8,7 +8,7 @@ import re
 from typing import Any
 
 import feditest
-from feditest.testplan import TestPlanTestSpec, TestPlanSession, TestPlanConstellation, TestPlanConstellationRole
+from feditest.testplan import TestPlanTestSpec, TestPlanSession, TestPlanConstellation, TestPlanConstellationNode
 
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
@@ -41,11 +41,11 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
                     test_plan_spec.rolemapping = {}
                 test_plan_spec.rolemapping[role_name] = role_name
 
-    constellation_roles : list[TestPlanConstellationRole] = []
+    constellation_roles: dict[str,TestPlanConstellationNode | None] = {}
     for constellation_role_name in constellation_role_names:
-        constellation_roles.append(TestPlanConstellationRole(constellation_role_name))
+        constellation_roles[constellation_role_name] = None
 
-    session = TestPlanSession(TestPlanConstellation(constellation_roles), test_plan_specs)
+    session = TestPlanSession(TestPlanConstellation(constellation_roles), test_plan_specs, args.name)
     if args.out:
         session.save(args.out)
     else:
@@ -61,6 +61,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser(cmd_name, help='Generate a template for a test session')
+    parser.add_argument('--name', default=None, required=False, help='Name of the generated session')
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test session template')
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')

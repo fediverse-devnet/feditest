@@ -7,14 +7,14 @@
             <h3 class="session">{{ run_session}}: {{ constellation.name or "unnamed" }}</h3>
             <div class="constellation">
                 <div class="roles">
-{%-     for role in constellation.roles %}
-{%-         set session_transcript = run_session.constellation.nodes[role.name] %}
+{%-     for role_name, node in constellation.roles.items() %}
+{%-         set session_transcript = run_session.constellation.nodes[role_name] %}
                     <div class="role">
-                        <div class="name">{{ role.name }}</div>
-                        <div class="driver">{{ local_name_with_tooltip(role.nodedriver) }}</div>
+                        <div class="name">{{ role_name }}</div>
+                        <div class="driver">{{ local_name_with_tooltip(node.nodedriver) }}</div>
                         <div class="app">{{ session_transcript.appdata['app'] }}</div>
                         <div class="appversion">{{ session_transcript.appdata['app_version'] or '?'}}</div>
-{%-         if role.parameters %}
+{%-         if node.parameters %}
                         <table class="parameters">
                             <thead>
                                 <tr>
@@ -22,7 +22,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-{%-             for key, value in role.parameters.items() %}
+{%-             for key, value in node.parameters.items() %}
                                 <tr>
                                     <td class="key">{{ key }}</td>
                                     <td class="value">{{ value }}</td>

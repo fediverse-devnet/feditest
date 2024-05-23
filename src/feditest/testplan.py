@@ -24,15 +24,19 @@ class TestPlanConstellationNode(msgspec.Struct):
     parameters: dict[str,Any] | None = None
 
 
+    @staticmethod
+    def load(filename: str) -> 'TestPlanConstellationNode':
+        """
+        Read a file, and instantiate a TestPlanConstellationNode from what we find.
+        """
+        with open(filename, 'r', encoding='utf-8') as f:
+            testplanconstellationnode_json = json.load(f)
+
+        return msgspec.convert(testplanconstellationnode_json, type=TestPlanConstellationNode)
+
+
     def __str__(self):
         return self.name
-
-
-    def is_template(self):
-        """
-        Returns true if the roles in the constellation have not all been bound to NodeDrivers.
-        """
-        return self.nodedriver is None
 
 
     def parameter(self, name: str) -> Any | None:
@@ -42,9 +46,8 @@ class TestPlanConstellationNode(msgspec.Struct):
 
 
     def check_can_be_executed(self, context_msg: str = "") -> None:
-        if self.is_template():
-            raise TestPlanError(context_msg + 'Is a template; no NodeDrivers assigned')
-
+        if not self.nodedriver:
+            raise TestPlanError(context_msg + 'No NodeDriver')
         if self.nodedriver not in feditest.all_node_drivers:
             raise TestPlanError(context_msg + f'Cannot find NodeDriver "{ self.nodedriver }".')
 
@@ -60,7 +63,7 @@ class TestPlanConstellationNode(msgspec.Struct):
 
 
 class TestPlanConstellation(msgspec.Struct):
-    roles : dict[str,TestPlanConstellationNode]
+    roles : dict[str,TestPlanConstellationNode | None] # can be None if used as template
     name: str | None = None
 
 
@@ -83,28 +86,39 @@ class TestPlanConstellation(msgspec.Struct):
         """
         Returns true if the roles in the constellation have not all been bound to NodeDrivers.
         """
-        for role in self.roles:
-            if role.is_template() :
+        for node in self.roles.values():
+            if node is None:
                 return True
         return False
 
 
     def check_can_be_executed(self, context_msg: str = "") -> None:
-        all_roles = {}
-        for role in self.roles:
-            role_context_msg = context_msg + "Role {role.name}: "
-            if role.name in all_roles:
-                raise TestPlanError(role_context_msg + 'Role names must be unique: ' + role.name)
-            all_roles[role.name] = True
-
-            role.check_can_be_executed(role_context_msg)
+        for role_name, node in self.roles.items():
+            role_context_msg = context_msg + f"Role {role_name}: "
+            if node is None:
+                raise TestPlanError(context_msg + f'No node assigned to role {role_name}.')
+            node.check_can_be_executed(role_context_msg)
 
 
     def check_defines_all_role_names(self, want_role_names: set[str], context_msg: str = ""):
-        have_role_names = { role.name for role in self.roles }
         for want_role_name in want_role_names:
-            if want_role_name not in have_role_names:
+            if want_role_name not in self.roles:
                 raise TestPlanError(context_msg + f'Constellation does not define role "{ want_role_name }".')
+
+
+    def as_json(self) -> bytes:
+        ret = msgspec.json.encode(self)
+        ret = msgspec.json.format(ret, indent=4)
+        return ret
+
+
+    def save(self, filename: str) -> None:
+        with open(filename, 'wb') as f:
+            f.write(self.as_json())
+
+
+    def print(self) -> None:
+        print(self.as_json().decode('utf-8'))
 
 
 class TestPlanTestSpec(msgspec.Struct):

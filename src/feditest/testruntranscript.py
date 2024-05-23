@@ -362,10 +362,10 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             print(f"# session: { plan_session }")
             print(f"# constellation: { constellation }")
             print("#   roles:")
-            for role in plan_session.constellation.roles:
-                transcript_role = session_transcript.constellation.nodes[role.name]
-                print(f"#     - name: {role.name}")
-                print(f"#       driver: {role.nodedriver}")
+            for role_name, node in plan_session.constellation.roles.items():
+                transcript_role = session_transcript.constellation.nodes[role_name]
+                print(f"#     - name: {role_name}")
+                print(f"#       driver: {node.nodedriver}")
                 print(f"#       app: {transcript_role.appdata['app']}")
                 print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
 

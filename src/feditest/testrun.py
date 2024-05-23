@@ -55,19 +55,21 @@ class TestRunConstellation:
             trace('Setting up constellation')
 
         wait_time = 0
-        for plan_role in self._plan_constellation.roles:
-            if plan_role.nodedriver is None:
+        for plan_role_name, plan_node in self._plan_constellation.roles.items():
+            if plan_node is None:
+                raise ValueError('Unexpected null node')
+            if plan_node.nodedriver is None:
                 raise ValueError('Unexpected null nodedriver')
-            node_driver_class : Type[Any] = feditest.all_node_drivers[plan_role.nodedriver]
+            node_driver_class : Type[Any] = feditest.all_node_drivers[plan_node.nodedriver]
 
-            trace('Setting up role', plan_role.name, f'(node driver: {plan_role.nodedriver})')
+            trace('Setting up role', plan_role_name, f'(node driver: {plan_node.nodedriver})')
 
-            node_driver : NodeDriver = node_driver_class(plan_role.name)
-            parameters = plan_role.parameters if plan_role.parameters else {}
-            node : Node = node_driver.provision_node(plan_role.name, parameters)
+            node_driver : NodeDriver = node_driver_class(plan_role_name)
+            parameters = plan_node.parameters if plan_node.parameters else {}
+            node : Node = node_driver.provision_node(plan_role_name, parameters)
             if node:
-                self._nodes[plan_role.name] = node
-                self._appdata[plan_role.name] = {
+                self._nodes[plan_role_name] = node
+                self._appdata[plan_role_name] = {
                     'app' : node.app_name,
                     'app_version' : node.app_version
                 }
@@ -89,15 +91,13 @@ class TestRunConstellation:
         else:
             trace('Tearing down constellation')
 
-        for plan_role in reversed(self._plan_constellation.roles):
-            plan_role.name = plan_role.name
-
-            if plan_role.name in self._nodes: # setup may never have succeeded
+        for plan_role_name in self._plan_constellation.roles:
+            if plan_role_name in self._nodes: # setup may never have succeeded
                 try:
-                    trace('Tearing down role', plan_role.name)
-                    node = self._nodes[plan_role.name]
+                    trace('Tearing down role', plan_role_name)
+                    node = self._nodes[plan_role_name]
                     node.node_driver.unprovision_node(node)
-                    del self._nodes[plan_role.name]
+                    del self._nodes[plan_role_name]
 
                 except Exception as e:
                     warning(f'Problem unprovisioning node {node}', e)
