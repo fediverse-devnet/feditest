@@ -10,6 +10,7 @@ from typing import Any, Iterator, Optional
 import jinja2
 import msgspec
 
+import feditest
 from feditest.reporting import fatal
 from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
@@ -34,14 +35,22 @@ class TestRunConstellationTranscript(msgspec.Struct):
     nodes: dict[str,TestRunNodeTranscript]
 
 
+_result_transcript_tracker : list['TestRunResultTranscript'] = []
+"""
+Helps with assigning unique instance identifiers without adding it to the instance itself.
+"""
+
+
 class TestRunResultTranscript(msgspec.Struct):
     """
     Captures the result of running a step, test, session, or plan if it ended with
     an Exception. The properties of this class are derived from that exception.
     """
     type: str
+    problem_category: str
     stacktrace: list[tuple[str,int]]
     msg: str | None
+
 
     @staticmethod
     def create_if_present(exc: Exception | None):
@@ -51,7 +60,44 @@ class TestRunResultTranscript(msgspec.Struct):
         stacktrace: list[tuple[str,int]] = []
         for filename, line, _, _ in traceback.extract_tb(exc.__traceback__):
             stacktrace.append((filename, line))
-        return TestRunResultTranscript(str(exc.__class__.__name__), stacktrace, str(exc), )
+        if isinstance(exc, feditest.HardAssertionFailure):
+            category = 'hard'
+        elif isinstance(exc, feditest.SoftAssertionFailure):
+            category = 'soft'
+        elif isinstance(exc, feditest.DegradeAssertionFailure):
+            category = 'degrade'
+        elif isinstance(exc, feditest.SkipTestException):
+            category = 'skip'
+        else:
+            category = 'error'
+        return TestRunResultTranscript(str(exc.__class__.__name__), category, stacktrace, str(exc))
+
+
+    def status(self):
+        """
+        Construct a status message
+        """
+        ret = self.type
+        if self.msg:
+            ret += f': { self.msg.strip() }'
+        return ret
+
+
+    def details(self):
+        return str(self)
+
+
+    def id(self):
+        """
+        Construct a stable id for this result. This is used, for example, for HTML cross-referencing.
+        """
+        global _result_transcript_tracker
+        for i, result in enumerate(_result_transcript_tracker):
+            if result is self:
+                return i
+        ret = len(_result_transcript_tracker)
+        _result_transcript_tracker.append(self)
+        return ret
 
 
     def __str__(self):
@@ -61,6 +107,7 @@ class TestRunResultTranscript(msgspec.Struct):
         for frame in self.stacktrace:
             ret += f'\n    {frame[0]}:{frame[1]}'
         return ret
+
 
 
 class TestStepMetaTranscript(msgspec.Struct):
@@ -381,22 +428,20 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 plan_test_spec = plan_session.tests[run_test.plan_test_index]
                 test_meta = self.transcript.test_meta[plan_test_spec.name]
 
-                resultobj = _get_result_for_test(self.transcript, session_transcript, test_index, run_test)
-                if resultobj['haspassed']:
-                    directives = "" # FIXME f" # SKIP {test.disabled}" if test.disabled else ""
-                    print(f"ok {test_id} - {test_meta.name}{directives}")
-                else:
-                    problem = resultobj['problem']
+                result = _get_result_for_test(self.transcript, session_transcript, test_index, run_test)
+                if result:
                     print(f"not ok {test_id} - {test_meta.name}")
                     print("  ---")
-                    print(f"  problem: {problem.type}")
-                    if resultobj['statusmessage']:
-                        print("  message:")
-                        print("\n".join( [ f"    { p }" for p in resultobj['statusmessage'].strip().split("\n") ] ))
+                    print(f"  problem: {result.type} ({result.problem_category})")
+                    print("  message:")
+                    print("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ))
                     print("  where:")
-                    for loc in problem.stacktrace:
+                    for loc in result.stacktrace:
                         print(f"    {loc[0]} {loc[1]}")
                     print("  ...")
+                else:
+                    directives = "" # FIXME f" # SKIP {test.disabled}" if test.disabled else ""
+                    print(f"ok {test_id} - {test_meta.name}{directives}")
 
         print(f"1..{test_id}")
         print("# test run summary:")
@@ -443,40 +488,11 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
 
 def _get_result_for_test(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_transcript: TestRunTestTranscript) -> dict[str,Any]:
-    worst = test_transcript.worst_result
-    if worst:
-        ret = {
-            'statuscssclass' : f'failed { worst.type }',
-            'haspassed' : False,
-            'statusmessage' : 'Failed',
-            'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }',
-            'problem' : worst
-        }
-    else:
-        ret = {
-            'statuscssclass' : 'passed',
-            'haspassed' : True,
-            'statusmessage' : 'Passed'
-        }
-    return ret
+    return test_transcript.worst_result
 
 
 def _get_result_for_test_step(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_step_index: int, test_step_transcript: TestRunTestStepTranscript) -> dict[str,Any]:
-    if test_step_transcript.result:
-        ret = {
-            'statuscssclass' : f'failed { test_step_transcript.result.type }',
-            'haspassed' : False,
-            'statusmessage' : 'Failed',
-            'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }-{ test_step_index }',
-            'problem' : test_step_transcript.result
-        }
-    else:
-        ret = {
-            'statuscssclass' : 'passed',
-            'haspassed' : True,
-            'statusmessage' : 'Passed'
-        }
-    return ret
+    return test_step_transcript.result
 
 
 def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[dict[str,Any]]:
@@ -489,22 +505,7 @@ def _get_results_for(run_transcript: TestRunTranscript, session_transcript: Test
     for test_index, test_transcript in enumerate(session_transcript.run_tests):
         plan_testspec = plan_session.tests[test_transcript.plan_test_index]
         if plan_testspec.name == test_meta.name:
-            worst = test_transcript.worst_result
-            if worst:
-                ret = {
-                    'statuscssclass' : f'failed { worst.type }',
-                    'haspassed' : False,
-                    'statusmessage' : 'Failed',
-                    'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }',
-                    'problem' : worst
-                }
-            else:
-                ret = {
-                    'statuscssclass' : 'passed',
-                    'haspassed' : True,
-                    'statusmessage' : 'Passed'
-                }
-            yield ret
+            yield test_transcript.worst_result
     return None
 
 

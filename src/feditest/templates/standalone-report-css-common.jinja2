@@ -123,8 +123,11 @@ div.feditest.session > h3::before {
     color: var(--feditest-color-passed);
 }
 
-.feditest .status.failed {
-        color: var(--feditest-color-failed);
+.feditest .status.failed,
+.feditest .status.hard,
+.feditest .status.soft,
+.feditest .status.degraded {
+	color: var(--feditest-color-failed);
 }
 
 .feditest .status.skipped {
@@ -133,12 +136,6 @@ div.feditest.session > h3::before {
 
 .feditest .status.errored {
     color: var(--feditest-color-errored);
-}
-
-.feditest .status.failed.HardAssertionFailure,
-.feditest .status.failed.SoftAssertionFailure,
-.feditest .status.failed.DegradeAssertionFailure {
-    color: var(--feditest-color-failed);
 }
 
 .feditest .status input {

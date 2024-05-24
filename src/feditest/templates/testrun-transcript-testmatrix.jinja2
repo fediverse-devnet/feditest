@@ -38,7 +38,7 @@
                     </td>
 {%-     for run_session in run.sessions %}
                     <td class="status">
-{%-         for resultobj in get_results_for(run, run_session, test_meta) %}
+{%-         for result in get_results_for(run, run_session, test_meta) %}
 {%              include "testresult-single.jinja2" %}
 {%-         endfor %}
                     </td>

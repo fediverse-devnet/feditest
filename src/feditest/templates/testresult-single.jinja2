@@ -1,9 +1,9 @@
-<div class="status {{ resultobj['statuscssclass'] }}">
-{%- if resultobj['haspassed'] %}
-    {{ resultobj['statusmessage'] }}
-{%- else %}
-    <label for="details-{{ resultobj['id'] }}">{{ resultobj['statusmessage'] }}</label>
-    <input id="details-{{ resultobj['id'] }}" type="checkbox">
-    <pre class="details">{{ resultobj['problem'] }}</pre>
-{%- endif %}
+{%- if result %}
+<div class="status {{ result.problem_category }}">
+	<label for="details-{{ result.id() }}">Failed: {{ result.status() }} ({{ result.problem_category }})</label>
+    <input id="details-{{ result.id() }}" type="checkbox">
+    <pre class="details">{{ result.details() }}</pre>
 </div>
+{%- else %}
+<div class="status passed">Passed</div>
+{%- endif %}
