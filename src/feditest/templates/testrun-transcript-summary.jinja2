@@ -1,0 +1,48 @@
+    <table class="feditest summary">
+       <thead>
+            <tr>
+                <th>Status</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>Passed</th>
+{%- if summary.n_passed != 0 %}
+                <td class="status passed">{{ summary.n_passed }}</td>
+{%- else %}
+                <td>0</td>
+{%- endif %}
+            </tr>
+            <tr>
+                <th>Failed</th>
+{%- if summary.n_failed != 0 %}
+                <td><span class="status failed">{{ summary.n_failed }}</span> (hard: {{ summary.n_hard_failed }}, soft: {{ summary.n_soft_failed }}, degrade: {{ summary.n_degrade_failed }})</td>
+                {%- else %}
+                <td>0</td>
+{%- endif %}
+            </tr>
+            <tr>
+                <th>Skipped</th>
+{%- if summary.n_skipped != 0 %}
+                <td class="status skipped">{{ summary.n_skipped }}</td>
+{%- else %}
+                <td>0</td>
+{%- endif %}
+            </tr>
+            <tr>
+                <th>Errors</th>
+{%- if summary.n_errored != 0 %}
+                <td class="status errored">{{ summary.n_errored }}</td>
+{%- else %}
+                <td>0</td>
+{%- endif %}
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <th>Total</th>
+                <td>{{ summary.n_total }}</td>
+            </tr>
+        </tfoot>
+    </table>

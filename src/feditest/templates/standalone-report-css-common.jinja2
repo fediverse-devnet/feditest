@@ -1,0 +1,161 @@
+:root:not([data-theme="dark"]), [data-theme="light"] {
+	--feditest-background-color: #f8f8f8;
+    --feditest-color-passed: #00c000;
+    --feditest-color-failed: #c00000;
+    --feditest-color-skipped: var(--pico-color);
+    --feditest-color-errored: #c08000;
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--feditest-background-color: #000;
+		--feditest-color-passed: #00c000;
+		--feditest-color-failed: #c00000;
+		--feditest-color-skipped: var(--pico-color);
+		--feditest-color-errored: #c08000;
+	}
+}
+
+:root {
+    --pico-font-size: 100%;
+}
+
+body {
+    padding: 2rem;
+	background: var(--feditest-background-color);
+}
+
+footer {
+    font-size: smaller;
+}
+
+div.feditest.title {
+    text-align: center;
+}
+div.feditest span.prefix,
+div.feditest span.prefix a {
+		color: var(--pico-muted-color);
+}
+
+div.feditest.title .id::before {
+	content: "TestRun ID: "
+}
+
+div.feditest.module {
+    background: var(--pico-background-color);
+    border-radius: 5px;
+    border: 1px solid var(--pico-table-border-color);
+    margin: 0 0 2rem 0;
+    padding: 2rem;
+}
+
+div.feditest.module.summary {
+    box-shadow: 0px 0px 5px var(--pico-table-border-color);
+}
+
+div.feditest.module.results {
+    box-shadow: 0px 0px 5px var(--pico-table-border-color);
+}
+
+div.feditest.session {
+    margin-bottom: 2rem;
+}
+
+div.feditest.session > h3 {
+    font-weight: bold;
+}
+
+div.feditest.session > h3::before {
+    content: "Session: ";
+	color: var(--pico-muted-color);
+}
+
+.feditest div.session + div.session {
+	padding-top: 2em;
+	margin-top: 2em;
+	border-top: 1px solid var(--pico-table-border-color);
+}
+
+.feditest div.constellation > h4::before {
+    content: "Constellation: ";
+	color: var(--pico-muted-color);
+}
+
+.feditest div.roles {
+    display: flex;
+    gap: 1rem;
+    margin-left: 1rem;
+}
+
+.feditest div.role {
+    width: 30rem;
+    border: 1px solid;
+    padding: 1rem;
+    border-color: var(--pico-table-border-color);
+}
+
+.feditest div.role > div.name {
+    font-weight: bold;
+
+}
+
+.feditest div.role > div.name::before {
+    content: "Role: ";
+}
+
+.feditest div.role > div.driver::before {
+    content: "Node Driver: ";
+}
+
+.feditest div.role > div.app::before {
+    content: "App: ";
+}
+
+.feditest div.role > div.appversion::before {
+    content: "App version: ";
+}
+
+.feditest .status  { /* catch-all for everything else */
+    color: var(--feditest-color-errored);
+}
+
+.feditest .status.passed {
+    color: var(--feditest-color-passed);
+}
+
+.feditest .status.failed,
+.feditest .status.hard,
+.feditest .status.soft,
+.feditest .status.degraded {
+	color: var(--feditest-color-failed);
+}
+
+.feditest .status.skipped {
+    color: var(--feditest-color-skipped);
+}
+
+.feditest .status.errored {
+    color: var(--feditest-color-errored);
+}
+
+.feditest .status input {
+    display: none;
+}
+
+.feditest pre.details {
+    display: none;
+    padding: 0.2rem;
+}
+
+.feditest input:checked + pre.details {
+    display: block;
+}
+
+.feditest .status label {
+    color: inherit;
+}
+
+.feditest .status label::after {
+    content: " ▼";
+    color: inherit;
+}

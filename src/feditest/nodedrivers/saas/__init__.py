@@ -8,11 +8,13 @@ from typing import Any
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.fediverse import FediverseNode
-from feditest.utils import hostname_validate
+from feditest.utils import appname_validate, hostname_validate
 
 
 class SaasFediverseNode(FediverseNode):
-    pass
+    @property
+    def app_name(self):
+        return self._parameters.get('app')
 
 
 @nodedriver
@@ -28,4 +30,9 @@ class SaasFediverseNodeDriver(NodeDriver):
             parameters= dict(parameters)
             parameters['hostname'] = hostname
 
+        app = parameters.get('app')
+        if not app:
+            parameters['app'] = self.prompt_user('Enter the name of the app you just provisioned'
+                                                 + f' at hostname { parameters["hostname"] }: ',
+                                                 parse_validate=appname_validate)
         return SaasFediverseNode(rolename, parameters, self)

@@ -10,6 +10,7 @@ from abc import ABC
 from datetime import UTC, datetime, timezone
 from typing import Any, Type, cast
 
+from feditest.tests import Test, TestFromTestClass
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
@@ -22,6 +23,10 @@ from feditest.testplan import (
     TestPlanTestSpec,
 )
 from feditest.testruntranscript import (
+    TestMetaTranscript,
+    TestStepMetaTranscript,
+    TestRunConstellationTranscript,
+    TestRunNodeTranscript,
     TestRunResultTranscript,
     TestRunSessionTranscript,
     TestRunTestStepTranscript,
@@ -36,7 +41,8 @@ class TestRunConstellation:
     """
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self._plan_constellation = plan_constellation
-        self._run_constellation : dict[str, Node] = {}
+        self._nodes : dict[str, Node] = {}
+        self._appdata : dict[str,dict[str,str | None]] = {} # Record what apps and versions are running here. Preserved beyond teardown.
 
 
     def setup(self) -> None:
@@ -49,18 +55,24 @@ class TestRunConstellation:
             trace('Setting up constellation')
 
         wait_time = 0
-        for plan_role in self._plan_constellation.roles:
-            if plan_role.nodedriver is None:
+        for plan_role_name, plan_node in self._plan_constellation.roles.items():
+            if plan_node is None:
+                raise ValueError('Unexpected null node')
+            if plan_node.nodedriver is None:
                 raise ValueError('Unexpected null nodedriver')
-            node_driver_class : Type[Any] = feditest.all_node_drivers[plan_role.nodedriver]
+            node_driver_class : Type[Any] = feditest.all_node_drivers[plan_node.nodedriver]
 
-            trace('Setting up role', plan_role.name, f'(node driver: {plan_role.nodedriver})')
+            trace('Setting up role', plan_role_name, f'(node driver: {plan_node.nodedriver})')
 
-            node_driver : NodeDriver = node_driver_class(plan_role.name)
-            parameters = plan_role.parameters if plan_role.parameters else {}
-            node : Node = node_driver.provision_node(plan_role.name, parameters)
+            node_driver : NodeDriver = node_driver_class(plan_role_name)
+            parameters = plan_node.parameters if plan_node.parameters else {}
+            node : Node = node_driver.provision_node(plan_role_name, parameters)
             if node:
-                self._run_constellation[plan_role.name] = node
+                self._nodes[plan_role_name] = node
+                self._appdata[plan_role_name] = {
+                    'app' : node.app_name,
+                    'app_version' : node.app_version
+                }
             else:
                 raise Exception(f'NodeDriver {node_driver} returned null Node from provision_node()')
 
@@ -79,22 +91,20 @@ class TestRunConstellation:
         else:
             trace('Tearing down constellation')
 
-        for plan_role in reversed(self._plan_constellation.roles):
-            plan_role.name = plan_role.name
-
-            if plan_role.name in self._run_constellation: # setup may never have succeeded
+        for plan_role_name in self._plan_constellation.roles:
+            if plan_role_name in self._nodes: # setup may never have succeeded
                 try:
-                    trace('Tearing down role', plan_role.name)
-                    node = self._run_constellation[plan_role.name]
+                    trace('Tearing down role', plan_role_name)
+                    node = self._nodes[plan_role_name]
                     node.node_driver.unprovision_node(node)
-                    del self._run_constellation[plan_role.name]
+                    del self._nodes[plan_role_name]
 
                 except Exception as e:
                     warning(f'Problem unprovisioning node {node}', e)
 
 
     def get_node(self, role_name: str) -> Node | None:
-        return self._run_constellation.get(role_name)
+        return self._nodes.get(role_name)
 
 
 class HasStartEndResults(ABC):
@@ -312,8 +322,8 @@ class TestRunSession(HasStartEndResults):
         finally:
             if self.run_constellation:
                 self.run_constellation.teardown()
-                if self.run_constellation._run_constellation:
-                    fatal( 'Still have nodes in the constellation', self.run_constellation._run_constellation )
+                if self.run_constellation._nodes:
+                    fatal( 'Still have nodes in the constellation', self.run_constellation._nodes )
             else:
                 info(f'Skipping TestRunSession { self }: no tests')
 
@@ -328,14 +338,17 @@ class TestRun(HasStartEndResults):
     """
     Encapsulates the state of a test run while feditest is executing a TestPlan
     """
-    def __init__(self, plan: TestPlan):
+    def __init__(self, plan: TestPlan, record_who: bool = False):
         super().__init__()
         self.plan = plan
-        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S.%fZ")
         self.platform : str = platform.platform()
-        self.username : str = getpass.getuser()
-        self.hostname : str = platform.node()
         self.run_sessions : list[TestRunSession] = []
+        self.username : str | None = None
+        self.hostname : str | None = None
+        if record_who:
+            self.username = getpass.getuser()
+            self.hostname = platform.node()
 
 
     def __str__(self):
@@ -378,7 +391,12 @@ class TestRun(HasStartEndResults):
 
     def transcribe(self) -> TestRunTranscript:
         trans_sessions = []
+        trans_test_metas = {}
         for run_session in self.run_sessions:
+            nodes_transcript: dict[str, TestRunNodeTranscript] = {}
+            for node_role, appdata in cast(TestRunConstellation, run_session.run_constellation)._appdata.items():
+                nodes_transcript[node_role] = TestRunNodeTranscript(appdata)
+            trans_constellation = TestRunConstellationTranscript(nodes_transcript)
             trans_tests : list[TestRunTestTranscript] = []
             for run_test in run_session.run_tests:
                 if isinstance(run_test, TestRunClass):
@@ -397,10 +415,21 @@ class TestRun(HasStartEndResults):
                         cast(datetime, run_test.ended),
                         TestRunResultTranscript.create_if_present(run_test.exception),
                         trans_steps))
+                test : Test = run_test.plan_testspec.get_test()
+                if test.name not in trans_test_metas: # If we have it already, it's the same
+                    if isinstance(test, TestFromTestClass):
+                        meta_steps = []
+                        for test_step in test.steps:
+                            meta_steps.append(TestStepMetaTranscript(test_step.name, test_step.description))
+                    else:
+                        meta_steps = None
+                    trans_test_metas[test.name] = TestMetaTranscript(test.name, test.needed_local_role_names(), meta_steps, test.description)
+
             trans_sessions.append(TestRunSessionTranscript(
                     run_session.plan_session_index,
                     cast(datetime, run_session.started),
                     cast(datetime, run_session.ended),
+                    trans_constellation,
                     trans_tests,
                     TestRunResultTranscript.create_if_present(run_session.exception)))
 
@@ -409,9 +438,10 @@ class TestRun(HasStartEndResults):
                 self.id,
                 cast(datetime, self.started),
                 cast(datetime, self.ended),
+                trans_sessions,
+                trans_test_metas,
+                TestRunResultTranscript.create_if_present(self.exception),
                 self.platform,
                 self.username,
-                self.hostname,
-                trans_sessions,
-                TestRunResultTranscript.create_if_present(self.exception))
+                self.hostname)
         return ret

@@ -1,0 +1,46 @@
+<div class="feditest tests">
+{%- for run_session in run.sessions %}
+{%-     set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+{%-     set constellation = plan_session.constellation %}
+    <div class="session">
+        <h3 id="{{ remove_white(run_session) }}">
+            <span class="prefix">{{ run_session }}</span>
+{%-     if constellation.name -%}
+            : {{ constellation.name }}
+{%-     endif -%}
+        </h3>
+        <dl class="roles">
+{%-     for role in constellation.roles %}
+            <dt>{{ role.name }}</dt>
+            <dd>{{ role.app_name }}</dd>
+{%-     endfor %}
+        </dl>
+{%-     for test_index, run_test in enumerate(run_session.run_tests) %}
+{%-         set plan_test_spec = plan_session.tests[run_test.plan_test_index] %}
+{%-         set test_meta = run.test_meta[plan_test_spec.name] %}
+        <div class="test">
+            <h4><span class="prefix">Test:</span> {{ test_meta.name }}</h4>
+{%-         if test_meta.description %}
+                <div class="description">{{ test_meta.description}}</div>
+{%-         endif %}
+            <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }}</p>
+{%          set result = get_result_for_test(run, run_session, test_index, run_test) %}
+{%          include "testresult-single.jinja2" %}
+{%-         for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
+            <div class="step">
+{%              set test_step_meta = test_meta.steps[run_step.plan_step_index] %}
+                <h5><span class="prefix">Test step:</span> {{ test_step_meta.name }}</h5>
+{%-             if test_step_meta.description %}
+                    <div class="description">{{ test_step_meta.description}}</div>
+{%-             endif %}
+                <p class="when">Started {{ format_timestamp(run_step.started) }}, ended {{ format_timestamp(run_step.ended) }}</p>
+
+{%              set result = get_result_for_test_step(run, run_session, test_index, test_step_index, run_step) %}
+{%              include "testresult-single.jinja2" %}
+            </div>
+{%-         endfor %}
+        </div>
+{%-     endfor %}
+    </div>
+{%- endfor %}
+</div>

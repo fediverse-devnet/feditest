@@ -1,0 +1,15 @@
+{%  include "testrun-transcript-title.jinja2" %}
+    <div class="feditest module summary">
+    <h2>Test Run Summary</h2>
+{%  include "testrun-transcript-summary.jinja2" %}
+    </div>
+    <div class="feditest module results">
+{%  with session_links=true %}
+        <h2>Test Results</h2>
+{%      include "testrun-transcript-sequential.jinja2" %}
+{%   endwith %}
+    </div>
+    <div class="feditest module metadata">
+        <h2>Test Run Metadata</h2>
+{%  include "testrun-transcript-metadata.jinja2" %}
+    </div>

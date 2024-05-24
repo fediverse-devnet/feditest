@@ -50,6 +50,16 @@ class Node(ABC):
         return self._node_driver
 
 
+    @property
+    def app_name(self):
+        ...
+
+
+    @property
+    def app_version(self):
+        return None # by default we don't know
+
+
     def parameter(self, name:str) -> str | None:
         return self._parameters.get(name)
 

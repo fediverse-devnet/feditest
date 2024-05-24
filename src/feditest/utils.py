@@ -295,6 +295,14 @@ def hostname_validate(candidate: str) -> str | None:
     return None
 
 
+def appname_validate(candidate: str) -> str | None:
+    """
+    Validate that the provided string is a valid application name.
+    return: string if valid, None otherwise
+    """
+    return candidate if len(candidate) > 0 else None
+
+
 def boolean_response_parse_validate(candidate:str) -> bool | None:
     """
     The provided string was entered by the user as a response a boolean question.

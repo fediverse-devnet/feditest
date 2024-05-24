@@ -8,6 +8,7 @@ from typing import Any, List
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
+from feditest.utils import FEDITEST_VERSION
 
 
 class SandboxMultClient_ImplementationA(SandboxMultClient):
@@ -17,6 +18,16 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
     def cause_mult(self, server: SandboxMultServer, a: float, b: float) -> float:
         c = server.mult(a, b)
         return c
+
+
+    @property
+    def app_name(self):
+        return 'SandboxMultClient_ImplementationA'
+
+
+    @property
+    def app_version(self):
+        return FEDITEST_VERSION
 
 
 @nodedriver
@@ -37,6 +48,16 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
     def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation1'):
         super().__init__(rolename, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
+
+
+    @property
+    def app_name(self):
+        return 'SandboxMultServer_Implementation1'
+
+
+    @property
+    def app_version(self):
+        return FEDITEST_VERSION
 
 
     def mult(self, a: float, b: float) -> float:
@@ -75,6 +96,16 @@ class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
     def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
         super().__init__(rolename, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
+
+
+    @property
+    def app_name(self):
+        return 'SandboxMultServer_Implementation2Faulty'
+
+
+    @property
+    def app_version(self):
+        return FEDITEST_VERSION
 
 
     def mult(self, a: float, b: float) -> float:

@@ -29,7 +29,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     plan = TestPlan.load(args.testplan)
     plan.check_can_be_executed()
 
-    test_run = TestRun(plan)
+    test_run = TestRun(plan, args.who)
     controller = InteractiveTestRunController(test_run) if args.interactive else AutomaticTestRunController(test_run)
     test_run.run(controller)
 
@@ -71,12 +71,14 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
         # Can't set a default value, because action='append' adds to the default value, instead of replacing it
     parser.add_argument('--interactive', action="store_true",
                         help="Run the tests interactively")
+    parser.add_argument('--who', action='store_true',
+                        help="Record who ran the test plan on what host.")
     parser.add_argument('--tap', nargs="?", const=True, default=False,
                         help="Write results in TAP format to stdout, or to the provided file (if given).")
     html_group = parser.add_argument_group('html', 'HTML options')
     html_group.add_argument('--html', nargs="?", const=True, default=False,
                         help="Write results in HTML format to stdout, or to the provided file (if given).")
-    html_group.add_argument('--template',
+    html_group.add_argument('--template', default='testrun-report-testmatrix-standalone.jinja2',
                         help="When specifying --html, use this HTML template (jinja2 format).")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")

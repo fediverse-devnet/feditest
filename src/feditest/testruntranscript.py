@@ -5,20 +5,52 @@ import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Optional
+from typing import Any, Iterator, Optional
 
 import jinja2
 import msgspec
 
+import feditest
 from feditest.reporting import fatal
-from feditest.testplan import TestPlan, TestPlanTestSpec
+from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
 
 
+class TestRunNodeTranscript(msgspec.Struct):
+    """
+    Information about a node in a constellation in a transcript.
+    """
+    appdata: dict[str, str | None]
+    """
+    So far, contains:
+    app: name of the app running at the node (required)
+    app_version: version of the app running at the node (optional)
+    """
+
+
+class TestRunConstellationTranscript(msgspec.Struct):
+    """
+    Information about a constellation in a trranscript
+    """
+    nodes: dict[str,TestRunNodeTranscript]
+
+
+_result_transcript_tracker : list['TestRunResultTranscript'] = []
+"""
+Helps with assigning unique instance identifiers without adding it to the instance itself.
+"""
+
+
 class TestRunResultTranscript(msgspec.Struct):
+    """
+    Captures the result of running a step, test, session, or plan if it ended with
+    an Exception. The properties of this class are derived from that exception.
+    """
     type: str
+    problem_category: str
     stacktrace: list[tuple[str,int]]
     msg: str | None
+
 
     @staticmethod
     def create_if_present(exc: Exception | None):
@@ -28,14 +60,80 @@ class TestRunResultTranscript(msgspec.Struct):
         stacktrace: list[tuple[str,int]] = []
         for filename, line, _, _ in traceback.extract_tb(exc.__traceback__):
             stacktrace.append((filename, line))
-        return TestRunResultTranscript(str(exc.__class__.__name__), stacktrace, str(exc), )
+        if isinstance(exc, feditest.HardAssertionFailure):
+            category = 'hard'
+        elif isinstance(exc, feditest.SoftAssertionFailure):
+            category = 'soft'
+        elif isinstance(exc, feditest.DegradeAssertionFailure):
+            category = 'degrade'
+        elif isinstance(exc, feditest.SkipTestException):
+            category = 'skip'
+        else:
+            category = 'error'
+        return TestRunResultTranscript(str(exc.__class__.__name__), category, stacktrace, str(exc))
+
+
+    def status(self):
+        """
+        Construct a status message
+        """
+        ret = self.type
+        if self.msg:
+            ret += f': { self.msg.strip() }'
+        return ret
+
+
+    def details(self):
+        return str(self)
+
+
+    def id(self):
+        """
+        Construct a stable id for this result. This is used, for example, for HTML cross-referencing.
+        """
+        global _result_transcript_tracker
+        for i, result in enumerate(_result_transcript_tracker):
+            if result is self:
+                return i
+        ret = len(_result_transcript_tracker)
+        _result_transcript_tracker.append(self)
+        return ret
 
 
     def __str__(self):
-        return self.msg
+        ret = self.type
+        if self.msg:
+            ret += f': { self.msg.strip() }'
+        for frame in self.stacktrace:
+            ret += f'\n    {frame[0]}:{frame[1]}'
+        return ret
+
+
+
+class TestStepMetaTranscript(msgspec.Struct):
+    """
+    Captures information about a step in a test in a transcript.
+    """
+    name: str
+    description: str | None
+
+
+class TestMetaTranscript(msgspec.Struct):
+    """
+    Captures information about a test in a transcript.
+    """
+    name: str
+    roles: set[str]
+    steps: list[TestStepMetaTranscript] | None
+    description: str | None
 
 
 class TestRunTranscriptSummary:
+    """
+    Summary information derived from a transcript.
+    This class is here in the middle of the file because other XXXTranscript classes need
+    to reference it.
+    """
     def __init__(self) -> None:
         self.hard_failures : list[TestRunResultTranscript] = []
         self.soft_failures : list[TestRunResultTranscript] = []
@@ -116,18 +214,14 @@ class TestRunTestStepTranscript(msgspec.Struct):
     result : TestRunResultTranscript | None
 
 
-    def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
-        ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
-
-        return ret
-
-
     def __str__(self):
         return f"TestStep {self.plan_step_index}"
 
 
 class TestRunTestTranscript(msgspec.Struct):
+    """
+    Captures information about the run of a single test in a transcript.
+    """
     plan_test_index : int
     started : datetime
     ended : datetime
@@ -135,14 +229,31 @@ class TestRunTestTranscript(msgspec.Struct):
     run_steps : list[TestRunTestStepTranscript] | None = None # This is None if it's a function rather than a class
 
 
-    def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
-        ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
+    @property
+    def worst_result(self) -> TestRunResultTranscript | None:
+        if self.result:
+            return self.result
 
+        # The steps don't get their extra entry in the summary, but are abstracted into it.
+        ret : TestRunResultTranscript | None = None
+        # if no other issues occurred than SoftAssertionFailures or DegradeAssertionFailures,
+        #    the first one of those is the result
+        # else
+        #    the last exception is the result
         if self.run_steps:
             for run_step in self.run_steps:
-                run_step.build_summary(ret)
+                if ret is None:
+                    ret = run_step.result # may be None assignment
+                elif run_step.result is not None and run_step.result.type not in ['SoftAssertionFailure', 'DegradeAssertionFailure']:
+                    ret = run_step.result
 
+        return ret
+
+
+    def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
+        ret = augment_this or TestRunTranscriptSummary()
+
+        ret.add_result(self.worst_result)
         return ret
 
 
@@ -151,9 +262,13 @@ class TestRunTestTranscript(msgspec.Struct):
 
 
 class TestRunSessionTranscript(msgspec.Struct):
+    """
+    Captures information about the run of a single session in a transcript.
+    """
     plan_session_index: int
     started : datetime
     ended : datetime
+    constellation: TestRunConstellationTranscript
     run_tests : list[TestRunTestTranscript]
     result : TestRunResultTranscript | None
 
@@ -174,15 +289,19 @@ class TestRunSessionTranscript(msgspec.Struct):
 
 
 class TestRunTranscript(msgspec.Struct):
+    """
+    Captures all information about a single test run in a transcript.
+    """
     plan : TestPlan
     id: str
     started: datetime
     ended: datetime
-    platform: str
-    username: str
-    hostname: str
     sessions: list[TestRunSessionTranscript]
+    test_meta: dict[str,TestMetaTranscript] # key: name of the test
     result : TestRunResultTranscript | None
+    platform: str | None
+    username: str | None
+    hostname: str | None
     type: str = 'feditest-testrun-transcript'
     feditest_version: str = FEDITEST_VERSION
 
@@ -261,6 +380,9 @@ class TestRunTranscriptSerializer(ABC):
 
 
 class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
+    """
+    Knows how to serialize a TestRunTranscript into a single-line summary.
+    """
     def _write(self):
         summary = self.transcript.build_summary()
 
@@ -270,6 +392,9 @@ class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
 
 class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
+    """
+    Knows how to serialize a TestRunTranscript into a report in TAP format.
+    """
     def _write(self):
         plan = self.transcript.plan
         summary = self.transcript.build_summary()
@@ -289,27 +414,35 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             print(f"# session: { plan_session }")
             print(f"# constellation: { constellation }")
             print("#   roles:")
-            for role in plan_session.constellation.roles:
-                print(f"#     - name: {role.name}")
-                print(f"#       driver: {role.nodedriver}")
+            for role_name, node in plan_session.constellation.roles.items():
+                transcript_role = session_transcript.constellation.nodes[role_name]
+                print(f"#     - name: {role_name}")
+                print(f"#       driver: {node.nodedriver}")
+                print(f"#       app: {transcript_role.appdata['app']}")
+                print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
 
-            for test in plan_session.tests:
+
+            for test_index, run_test in enumerate(session_transcript.run_tests):
                 test_id += 1
-                if problem := _get_problem(self.transcript, session_transcript, test):
-                    print(f"not ok {test_id} - {test.name}")
+
+                plan_test_spec = plan_session.tests[run_test.plan_test_index]
+                test_meta = self.transcript.test_meta[plan_test_spec.name]
+
+                result = _get_result_for_test(self.transcript, session_transcript, test_index, run_test)
+                if result:
+                    print(f"not ok {test_id} - {test_meta.name}")
                     print("  ---")
-                    print(f"  problem: {problem.type}")
-                    if problem.msg:
-                        print("  message:")
-                        print("\n".join( [ f"    { p }" for p in problem.msg.strip().split("\n") ] ))
+                    print(f"  problem: {result.type} ({result.problem_category})")
+                    print("  message:")
+                    print("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ))
                     print("  where:")
-                    for loc in problem.stacktrace:
+                    for loc in result.stacktrace:
                         print(f"    {loc[0]} {loc[1]}")
                     print("  ...")
-
                 else:
-                    directives = f" # SKIP {test.disabled}" if test.disabled else ""
-                    print(f"ok {test_id} - {test.name}{directives}")
+                    directives = "" # FIXME f" # SKIP {test.disabled}" if test.disabled else ""
+                    print(f"ok {test_id} - {test_meta.name}{directives}")
+
         print(f"1..{test_id}")
         print("# test run summary:")
         print(f"#   total: {summary.n_total}")
@@ -320,9 +453,12 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
 
 class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
+    """
+    Knows how to serialize a TestRunTrascript into HTML using any Jinja2 template.
+    """
     def __init__(self, transcript: TestRunTranscript, template_name: str | None = None ):
         super().__init__(transcript)
-        self.template_name = template_name or 'report-standalone.jinja2'
+        self.template_name = template_name or 'testrun-report-testmatrix-standalone.jinja2'
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.templates = jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_dir)
@@ -337,26 +473,39 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             except jinja2.TemplateNotFound:
                 fatal('jinja2 template not found:', self.template_name)
 
-        print(template.render(
+        print(  template.render(
                 run=self.transcript,
                 summary=self.transcript.build_summary(),
-                all_tests = sorted(
-                    {test.name: test for s in self.transcript.plan.sessions for test in s.tests}.values(),
-                    key=lambda t: t.name,
-                ),
                 getattr=getattr,
-                get_problem=_get_problem,
+                sorted=sorted,
+                enumerate=enumerate,
+                get_results_for=_get_results_for,
+                get_result_for_test=_get_result_for_test,
+                get_result_for_test_step=_get_result_for_test_step,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
-                local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>'))
+                local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
+                format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
 
 
-def _get_problem(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test: TestPlanTestSpec) -> TestRunResultTranscript | None:
-    plan_session = run_transcript.plan.sessions[session_transcript.plan_session_index
-                                                ]
-    for test_transcript in session_transcript.run_tests:
-        plan_test = plan_session.tests[test_transcript.plan_test_index]
-        if plan_test.name == test.name and test_transcript.result:
-            return test_transcript.result
+def _get_result_for_test(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_transcript: TestRunTestTranscript) -> dict[str,Any]:
+    return test_transcript.worst_result
+
+
+def _get_result_for_test_step(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_step_index: int, test_step_transcript: TestRunTestStepTranscript) -> dict[str,Any]:
+    return test_step_transcript.result
+
+
+def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[dict[str,Any]]:
+    """
+    Determine the set of test results running test_meta within session_transcript, and return it as an Iterator.
+    This is a set, not a single value, because we might run the same test multiple times (perhaps with differing role
+    assignments) in the same session. The run_transcript is passed in because session_transcript does not have a pointer "up".
+    """
+    plan_session = run_transcript.plan.sessions[session_transcript.plan_session_index]
+    for test_index, test_transcript in enumerate(session_transcript.run_tests):
+        plan_testspec = plan_session.tests[test_transcript.plan_test_index]
+        if plan_testspec.name == test_meta.name:
+            yield test_transcript.worst_result
     return None
 
 

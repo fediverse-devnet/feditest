@@ -4,7 +4,7 @@
 from typing import Any
 
 from feditest import nodedriver
-from feditest.protocols import Node, NodeSpecificationInsufficientError
+from feditest.protocols import Node
 from feditest.protocols.fediverse import FediverseNode
 from feditest.ubos import UbosNodeDriver
 
@@ -17,18 +17,20 @@ class WordPressPlusActivityPubPluginUbosNode(FediverseNode):
         return f"https://{self.hostname}/author/{ self.parameter('adminid') }/"
 
 
+    @property
+    def app_name(self):
+        return "WordPress + ActivityPub plugin"
+
+
 @nodedriver
 class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate WordPress with the ActivityPub plugin via UBOr.
     """
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> WordPressPlusActivityPubPluginUbosNode:
-        if 'siteid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'no siteid given')
-        if 'adminid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'no adminid given')
-
-        return WordPressPlusActivityPubPluginUbosNode(rolename, parameters, self)
+        pars = dict(parameters)
+        pars['app'] = 'WordPress + ActivityPub plugin'
+        return WordPressPlusActivityPubPluginUbosNode(rolename, pars, self)
 
 
     def _unprovision_node(self, node: Node) -> None:

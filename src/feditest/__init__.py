@@ -57,14 +57,25 @@ def load_tests_from(dirs: list[str]) -> None:
     for name, value in _registered_as_test.items():
         test : Test | None
         if isinstance(value, FunctionType):
-            test = TestFromTestFunction(name, value.__doc__, value)
+            test = TestFromTestFunction(
+                    name,
+                    value.__doc__.strip() if value.__doc__ else None,
+                    value)
 
         elif isinstance(value, type):
-            test = TestFromTestClass(name, value.__doc__, value)
+            test = TestFromTestClass(
+                name,
+                value.__doc__.strip() if value.__doc__ else None,
+                value)
+
             for _, candidate_step_function in getmembers(value,isfunction):
                 candidate_step_name = _full_name_of_function(candidate_step_function)
                 if candidate_step_name in _registered_as_test_step:
-                    test_step = TestStepInTestClass(candidate_step_name, candidate_step_function.__doc__, test, candidate_step_function)
+                    test_step = TestStepInTestClass(
+                            candidate_step_name,
+                            candidate_step_function.__doc__.strip() if candidate_step_function.__doc__ else None,
+                            test,
+                            candidate_step_function)
                     test.steps.append(test_step)
                     del _registered_as_test_step[candidate_step_name]
                 # else ignore, some other function
@@ -195,7 +206,7 @@ def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],Exceptio
 def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],Exception], reason: Optional[str] = None) -> None:
     if not assertion:
         if not reason:
-            reason = "Assertion failed"
+            reason = "Test failed."
         raise exception_factory(reason)
 
 
