@@ -24,7 +24,7 @@
                 <div class="description">{{ test_meta.description}}</div>
 {%-         endif %}
             <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }}</p>
-{%          set result = get_result_for_test(run, run_session, test_index, run_test) %}
+{%          set result = run_test.worst_result %}
 {%          include "testresult-single.jinja2" %}
 {%-         for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
             <div class="step">
@@ -35,7 +35,7 @@
 {%-             endif %}
                 <p class="when">Started {{ format_timestamp(run_step.started) }}, ended {{ format_timestamp(run_step.ended) }}</p>
 
-{%              set result = get_result_for_test_step(run, run_session, test_index, test_step_index, run_step) %}
+{%              set result = run_step.result %}
 {%              include "testresult-single.jinja2" %}
             </div>
 {%-         endfor %}
