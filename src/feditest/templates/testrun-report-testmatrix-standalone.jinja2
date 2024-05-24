@@ -61,7 +61,7 @@ div.feditest.tests .namedesc > span.name {
         </style>
     </head>
     <body>
-        <h1><a href="https://feditest.org/">Feditest</a> Report: {{ run }}</h1>
+{%  include "testrun-transcript-title.jinja2" %}
         <div class="feditest module summary">
             <h2>Test Run Summary</h2>
 {%  include "testrun-transcript-summary.jinja2" %}

@@ -55,7 +55,12 @@ class TestRunResultTranscript(msgspec.Struct):
 
 
     def __str__(self):
-        return self.msg
+        ret = self.type
+        if self.msg:
+            ret += f': { self.msg.strip() }'
+        for frame in self.stacktrace:
+            ret += f'\n    {frame[0]}:{frame[1]}'
+        return ret
 
 
 class TestStepMetaTranscript(msgspec.Struct):
@@ -244,12 +249,12 @@ class TestRunTranscript(msgspec.Struct):
     id: str
     started: datetime
     ended: datetime
-    platform: str
-    username: str
-    hostname: str
     sessions: list[TestRunSessionTranscript]
     test_meta: dict[str,TestMetaTranscript] # key: name of the test
     result : TestRunResultTranscript | None
+    platform: str | None
+    username: str | None
+    hostname: str | None
     type: str = 'feditest-testrun-transcript'
     feditest_version: str = FEDITEST_VERSION
 
@@ -433,17 +438,19 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 get_result_for_test=_get_result_for_test,
                 get_result_for_test_step=_get_result_for_test_step,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
-                local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>'))
+                local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
+                format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
 
 
 def _get_result_for_test(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_transcript: TestRunTestTranscript) -> dict[str,Any]:
-    if test_transcript.result:
+    worst = test_transcript.worst_result
+    if worst:
         ret = {
-            'statuscssclass' : f'failed { test_transcript.result.type }',
+            'statuscssclass' : f'failed { worst.type }',
             'haspassed' : False,
             'statusmessage' : 'Failed',
             'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }',
-            'problem' : test_transcript.worst_result
+            'problem' : worst
         }
     else:
         ret = {
@@ -482,13 +489,14 @@ def _get_results_for(run_transcript: TestRunTranscript, session_transcript: Test
     for test_index, test_transcript in enumerate(session_transcript.run_tests):
         plan_testspec = plan_session.tests[test_transcript.plan_test_index]
         if plan_testspec.name == test_meta.name:
-            if test_transcript.result:
+            worst = test_transcript.worst_result
+            if worst:
                 ret = {
-                    'statuscssclass' : f'failed { test_transcript.result.type }',
+                    'statuscssclass' : f'failed { worst.type }',
                     'haspassed' : False,
                     'statusmessage' : 'Failed',
                     'id' : f'result-{ session_transcript.plan_session_index }-{ test_index }',
-                    'problem' : test_transcript.worst_result
+                    'problem' : worst
                 }
             else:
                 ret = {

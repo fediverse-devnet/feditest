@@ -338,14 +338,17 @@ class TestRun(HasStartEndResults):
     """
     Encapsulates the state of a test run while feditest is executing a TestPlan
     """
-    def __init__(self, plan: TestPlan):
+    def __init__(self, plan: TestPlan, record_who: bool = False):
         super().__init__()
         self.plan = plan
-        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime( "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S.%fZ")
         self.platform : str = platform.platform()
-        self.username : str = getpass.getuser()
-        self.hostname : str = platform.node()
         self.run_sessions : list[TestRunSession] = []
+        self.username : str | None = None
+        self.hostname : str | None = None
+        if record_who:
+            self.username = getpass.getuser()
+            self.hostname = platform.node()
 
 
     def __str__(self):
@@ -435,10 +438,10 @@ class TestRun(HasStartEndResults):
                 self.id,
                 cast(datetime, self.started),
                 cast(datetime, self.ended),
-                self.platform,
-                self.username,
-                self.hostname,
                 trans_sessions,
                 trans_test_metas,
-                TestRunResultTranscript.create_if_present(self.exception))
+                TestRunResultTranscript.create_if_present(self.exception),
+                self.platform,
+                self.username,
+                self.hostname)
         return ret

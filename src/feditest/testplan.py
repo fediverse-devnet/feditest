@@ -148,8 +148,8 @@ class TestPlanTestSpec(msgspec.Struct):
             ret = ret.copy() # keep unchanged the ones not mapped
             for key, value in self.rolemapping.items():
                 if key in ret:
+                    ret.remove(key) # remove first
                     ret.add(value)
-                    ret.remove(key)
                 else:
                     raise TestPlanError(context_msg + f'Cannot find role "{ key }" in test')
         return ret

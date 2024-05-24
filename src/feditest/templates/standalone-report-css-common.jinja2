@@ -29,8 +29,16 @@ footer {
     font-size: smaller;
 }
 
-h1 {
+div.feditest.title {
     text-align: center;
+}
+div.feditest span.prefix,
+div.feditest span.prefix a {
+		color: var(--pico-muted-color);
+}
+
+div.feditest.title .id::before {
+	content: "TestRun ID: "
 }
 
 div.feditest.module {
@@ -59,10 +67,18 @@ div.feditest.session > h3 {
 
 div.feditest.session > h3::before {
     content: "Session: ";
+	color: var(--pico-muted-color);
+}
+
+.feditest div.session + div.session {
+	padding-top: 2em;
+	margin-top: 2em;
+	border-top: 1px solid var(--pico-table-border-color);
 }
 
 .feditest div.constellation > h4::before {
     content: "Constellation: ";
+	color: var(--pico-muted-color);
 }
 
 .feditest div.roles {

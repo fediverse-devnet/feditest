@@ -1,12 +1,20 @@
 <div class="feditest metadata">
     <table>
         <tbody>
-            {% for key in ['started', 'ended', 'username', 'hostname', 'platform'] -%}
+{%- for key in ['started', 'ended'] -%}
+            <tr>
+                <th>{{ key.capitalize() }}</th>
+                <td>{{ format_timestamp(getattr(run, key)) }}</td>
+            </tr>
+{%- endfor %}
+{%- for key in ['username', 'hostname', 'platform'] -%}
+{%-     if getattr(run,key) %}
             <tr>
                 <th>{{ key.capitalize() }}</th>
                 <td>{{ getattr(run, key) }}</td>
             </tr>
-            {%- endfor %}
+{%-     endif %}
+{%- endfor %}
             <tr>
                 <th>Feditest&nbsp;version</th>
                 <td>{{ getattr(run, 'feditest_version') }}</td>

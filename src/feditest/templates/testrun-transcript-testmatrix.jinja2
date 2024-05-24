@@ -20,15 +20,9 @@
                             {{ run_session }}
 {%-     endif -%}
 {%-     if constellation.name -%}
-                            : {{ constellation.name }}
+                            :<br>{{ constellation.name }}
 {%-     endif -%}
                         </div>
-                        <dl class="roles">
-{%-     for role in constellation.roles %}
-                            <dt>{{ role.name }}</dt>
-                            <dd>{{ role.app_name }}</dd>
-{%-     endfor %}
-                        </dl>
                     </th>
 {%- endfor %}
                 </tr>
