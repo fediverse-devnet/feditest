@@ -230,7 +230,7 @@ class TestRunTranscriptSummary:
             self.soft_failures.append(result)
         elif result.type.endswith('DegradeAssertionFailure'):
             self.degrade_failures.append(result)
-        elif result.type.endswith('SkipTestException'):
+        elif result.type.endswith('SkipTestException') or result.type.endswith('NotImplementedByNodeError') or result.type.endswith('NotImplementedByNodeDriverError'):
             self.skips.append(result)
         elif result.type.endswith('AbortTestRunException') or result.type.endswith('AbortTestRunSessionException') or result.type.endswith('AbortTestException'):
             self.interaction_controls.append(result)
