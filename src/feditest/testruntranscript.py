@@ -1,10 +1,11 @@
-import json
-import os.path
-import re
-import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from datetime import datetime
+import json
+import os
+import os.path
+import re
+import traceback
 from typing import Iterator, Optional
 
 import jinja2
@@ -57,9 +58,6 @@ class TestRunResultTranscript(msgspec.Struct):
         if exc is None:
             return None
 
-        stacktrace: list[tuple[str,int]] = []
-        for filename, line, _, _ in traceback.extract_tb(exc.__traceback__):
-            stacktrace.append((filename, line))
         if isinstance(exc, feditest.HardAssertionFailure):
             category = 'hard'
         elif isinstance(exc, feditest.SoftAssertionFailure):
@@ -70,21 +68,55 @@ class TestRunResultTranscript(msgspec.Struct):
             category = 'skip'
         else:
             category = 'error'
+
+        # for the stack trace:
+        # 1. remove bottom and top frames that contain site-packages"
+        # 2. remove all path prefixes through the current directory
+
+        stacktrace: list[tuple[str,int]] = []
+        pwd = os.path.abspath(os.getcwd()) + '/'
+        for filename, line, _, _ in traceback.extract_tb(exc.__traceback__):
+            if filename.find( 'site-packages/') >= 0:
+                continue
+            if filename.startswith(pwd):
+                stacktrace.append((filename[len(pwd):], line))
+            else:
+                stacktrace.append((filename, line))
+
         return TestRunResultTranscript(str(exc.__class__.__name__), category, stacktrace, str(exc))
 
 
-    def status(self):
+    def title(self):
         """
-        Construct a status message
+        Construct a single-line title for this result.
         """
-        ret = self.type
+        ret = self.short_title()
         if self.msg:
             ret += f': { self.msg.strip() }'
         return ret
 
 
-    def details(self):
-        return str(self)
+    def short_title(self):
+        """
+        Construct a short single-line title for this result.
+        """
+        match self.problem_category:
+            case 'hard':
+                ret = 'Failed (hard)'
+            case 'soft':
+                ret = 'Failed (soft)'
+            case 'degrade':
+                ret = 'Failed (degraded)'
+            case 'skip':
+                ret = 'Skipped'
+            case 'error':
+                ret = f'Error: { self.type }'
+
+        return ret
+
+
+    def stacktrace_as_text(self):
+        return '\n'.join( [ f'{frame[0]}:{frame[1]}' for frame in self.stacktrace ])
 
 
     def id(self):
@@ -98,6 +130,10 @@ class TestRunResultTranscript(msgspec.Struct):
         ret = len(_result_transcript_tracker)
         _result_transcript_tracker.append(self)
         return ret
+
+
+    def css_class(self):
+        return self.problem_category
 
 
     def __str__(self):
@@ -481,6 +517,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 enumerate=enumerate,
                 get_results_for=_get_results_for,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
+                permit_line_breaks_in_identifier=lambda s: re.sub(r'(\.|::)', r'<wbr>\1', s),
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
                 format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
 
