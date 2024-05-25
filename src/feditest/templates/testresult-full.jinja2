@@ -2,7 +2,7 @@
 <div class="status {{ result.css_class() }}">
 	<label for="details-{{ result.id() }}{{ idmod }}">{{ result.title() }}</label>
     <input id="details-{{ result.id() }}{{ idmod }}" type="checkbox">
-    <pre class="stacktrace">{{ result.stacktrace_as_text() }}</pre>
+    <pre class="stacktrace">{{ result }}</pre>
 </div>
 {%- else %}
 <div class="status passed">Passed</div>

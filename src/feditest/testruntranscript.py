@@ -92,7 +92,7 @@ class TestRunResultTranscript(msgspec.Struct):
         """
         ret = self.short_title()
         if self.msg:
-            ret += f': { self.msg.strip() }'
+            ret += f': { self.msg.strip().split('\n')[0] }' # If it's multi-line, only use the first line
         return ret
 
 
@@ -102,7 +102,7 @@ class TestRunResultTranscript(msgspec.Struct):
         """
         match self.problem_category:
             case 'hard':
-                ret = 'Failed (hard)'
+                ret = 'Failed'
             case 'soft':
                 ret = 'Failed (soft)'
             case 'degrade':
@@ -141,7 +141,7 @@ class TestRunResultTranscript(msgspec.Struct):
         if self.msg:
             ret += f': { self.msg.strip() }'
         for frame in self.stacktrace:
-            ret += f'\n    {frame[0]}:{frame[1]}'
+            ret += f'\n{frame[0]}:{frame[1]}'
         return ret
 
 
@@ -517,6 +517,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 enumerate=enumerate,
                 get_results_for=_get_results_for,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
+                nbsp=lambda s: re.sub(r'\s+', '&nbsp;', s),
                 permit_line_breaks_in_identifier=lambda s: re.sub(r'(\.|::)', r'<wbr>\1', s),
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
                 format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
