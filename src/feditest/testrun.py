@@ -283,8 +283,8 @@ class TestRunSession(HasStartEndResults):
                 try:
                     test_spec = self.plan_session.tests[plan_test_index]
 
-                    if test_spec.disabled:
-                        info('Skipping Test:', test_spec.disabled)
+                    if test_spec.skip:
+                        info('Skipping Test:', test_spec.skip)
                     else:
                         test = test_spec.get_test()
                         run_test : TestRunTest | None = None
