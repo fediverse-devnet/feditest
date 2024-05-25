@@ -5,7 +5,7 @@ import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Any, Iterator, Optional
+from typing import Iterator, Optional
 
 import jinja2
 import msgspec
@@ -428,7 +428,7 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 plan_test_spec = plan_session.tests[run_test.plan_test_index]
                 test_meta = self.transcript.test_meta[plan_test_spec.name]
 
-                result = _get_result_for_test(self.transcript, session_transcript, test_index, run_test)
+                result =  run_test.worst_result
                 if result:
                     print(f"not ok {test_id} - {test_meta.name}")
                     print("  ---")
@@ -480,29 +480,19 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 sorted=sorted,
                 enumerate=enumerate,
                 get_results_for=_get_results_for,
-                get_result_for_test=_get_result_for_test,
-                get_result_for_test_step=_get_result_for_test_step,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
                 format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
 
 
-def _get_result_for_test(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_transcript: TestRunTestTranscript) -> dict[str,Any]:
-    return test_transcript.worst_result
-
-
-def _get_result_for_test_step(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_index: int, test_step_index: int, test_step_transcript: TestRunTestStepTranscript) -> dict[str,Any]:
-    return test_step_transcript.result
-
-
-def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[dict[str,Any]]:
+def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[TestRunResultTranscript | None]:
     """
     Determine the set of test results running test_meta within session_transcript, and return it as an Iterator.
     This is a set, not a single value, because we might run the same test multiple times (perhaps with differing role
     assignments) in the same session. The run_transcript is passed in because session_transcript does not have a pointer "up".
     """
     plan_session = run_transcript.plan.sessions[session_transcript.plan_session_index]
-    for test_index, test_transcript in enumerate(session_transcript.run_tests):
+    for test_transcript in session_transcript.run_tests:
         plan_testspec = plan_session.tests[test_transcript.plan_test_index]
         if plan_testspec.name == test_meta.name:
             yield test_transcript.worst_result
