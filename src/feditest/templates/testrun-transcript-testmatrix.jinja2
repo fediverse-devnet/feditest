@@ -31,7 +31,7 @@
 {%- for _, test_meta in sorted(run.test_meta.items()) %}
                 <tr>
                     <td class="namedesc">
-                        <span class="name">{{ test_meta.name }}</span>
+                        <span class="name">{{ permit_line_breaks_in_identifier(test_meta.name) }}</span>
 {%-     if test_meta.description %}
                         <span class="description">{{ test_meta.description }}</span>
 {%-     endif %}
@@ -39,7 +39,7 @@
 {%-     for run_session in run.sessions %}
                     <td class="status">
 {%-         for result in get_results_for(run, run_session, test_meta) %}
-{%              include "testresult-single.jinja2" %}
+{%              include "testresult-brief.jinja2" %}
 {%-         endfor %}
                     </td>
 {%-     endfor %}

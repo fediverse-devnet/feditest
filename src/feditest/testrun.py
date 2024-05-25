@@ -157,7 +157,7 @@ class TestRunFunction(TestRunTest):
         try:
             self.test_from_test_function.test_function(**args)
 
-        except Exception as e: # This should not happen
+        except Exception as e:
             self.exception = e
         finally:
             self.ended = datetime.now(UTC)
