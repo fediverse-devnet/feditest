@@ -68,17 +68,22 @@ def load_tests_from(dirs: list[str]) -> None:
                 value.__doc__.strip() if value.__doc__ else None,
                 value)
 
-            for _, candidate_step_function in getmembers(value,isfunction):
-                candidate_step_name = _full_name_of_function(candidate_step_function)
-                if candidate_step_name in _registered_as_test_step:
-                    test_step = TestStepInTestClass(
-                            candidate_step_name,
-                            candidate_step_function.__doc__.strip() if candidate_step_function.__doc__ else None,
-                            test,
-                            candidate_step_function)
-                    test.steps.append(test_step)
-                    del _registered_as_test_step[candidate_step_name]
-                # else ignore, some other function
+            # inspect.getmembers lists members alphabetically, while our @step annotations
+            # list them in sequence. So we need to process @steps rather than getmembers()
+            to_delete = []
+            for step_name in _registered_as_test_step:
+                for _, candidate_step_function in getmembers(value,isfunction):
+                    candidate_step_name = _full_name_of_function(candidate_step_function)
+                    if step_name == candidate_step_name:
+                        test_step = TestStepInTestClass(
+                                candidate_step_name,
+                                candidate_step_function.__doc__.strip() if candidate_step_function.__doc__ else None,
+                                test,
+                                candidate_step_function)
+                        test.steps.append(test_step)
+                        to_delete.append(step_name)
+            for d in to_delete:
+                del _registered_as_test_step[d]
 
         else:
             fatal('Cannot register a test that is neither a function nor a class', name)
