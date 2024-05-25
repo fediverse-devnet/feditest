@@ -1,11 +1,11 @@
-from abc import ABC, abstractmethod
-from contextlib import redirect_stdout
-from datetime import datetime
 import json
 import os
 import os.path
 import re
 import traceback
+from abc import ABC, abstractmethod
+from contextlib import redirect_stdout
+from datetime import datetime
 from typing import Iterator, Optional
 
 import jinja2
@@ -92,7 +92,8 @@ class TestRunResultTranscript(msgspec.Struct):
         """
         ret = self.short_title()
         if self.msg:
-            ret += f': { self.msg.strip().split('\n')[0] }' # If it's multi-line, only use the first line
+            msg_lines = self.msg.strip().split('\n')
+            ret += f': { msg_lines[0] }' # If it's multi-line, only use the first line
         return ret
 
 
