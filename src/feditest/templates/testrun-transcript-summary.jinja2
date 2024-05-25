@@ -25,7 +25,7 @@
             <tr>
                 <th>Skipped</th>
 {%- if summary.n_skipped != 0 %}
-                <td class="status skipped">{{ summary.n_skipped }}</td>
+                <td class="status skip">{{ summary.n_skipped }}</td>
 {%- else %}
                 <td>0</td>
 {%- endif %}
@@ -33,7 +33,7 @@
             <tr>
                 <th>Errors</th>
 {%- if summary.n_errored != 0 %}
-                <td class="status errored">{{ summary.n_errored }}</td>
+                <td class="status error">{{ summary.n_errored }}</td>
 {%- else %}
                 <td>0</td>
 {%- endif %}

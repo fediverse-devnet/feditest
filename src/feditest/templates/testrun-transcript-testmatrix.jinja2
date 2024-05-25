@@ -15,9 +15,9 @@
                     <th>
                         <div class="title">
 {%-     if session_links -%}
-                            <a href="#{{ remove_white(run_session) }}">{{ run_session }}</a>
+                            <a href="#{{ remove_white(run_session) }}">{{ nbsp(run_session) }}</a>
 {%-     else -%}
-                            {{ run_session }}
+                            {{ nbsp(run_session) }}
 {%-     endif -%}
 {%-     if constellation.name -%}
                             :<br>{{ constellation.name }}

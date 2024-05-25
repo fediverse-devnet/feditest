@@ -518,7 +518,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 enumerate=enumerate,
                 get_results_for=_get_results_for,
                 remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
-                nbsp=lambda s: re.sub(r'\s+', '&nbsp;', s),
+                nbsp=lambda s: re.sub(r'\s+', '&nbsp;', str(s)),
                 permit_line_breaks_in_identifier=lambda s: re.sub(r'(\.|::)', r'<wbr>\1', s),
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
                 format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
