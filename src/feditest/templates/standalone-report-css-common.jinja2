@@ -1,5 +1,6 @@
 :root:not([data-theme="dark"]), [data-theme="light"] {
 	--feditest-background-color: #f8f8f8;
+	--feditest-h4-background-color: #e8e8e8;
     --feditest-color-passed: #00c000;
     --feditest-color-failed: #c00000;
     --feditest-color-skip: #0000ff;
@@ -9,11 +10,12 @@
 @media only screen and (prefers-color-scheme: dark) {
 	:root:not([data-theme]) {
 		--feditest-background-color: #000;
+		--feditest-h4-background-color: #242c38;
 		--feditest-color-passed: #00c000;
 		--feditest-color-failed: #c00000;
 		--feditest-color-skip: #8080ff;
 		--feditest-color-error: #c08000;
-		}
+	}
 }
 
 :root {
@@ -68,6 +70,10 @@ div.feditest.session > h3 {
 div.feditest.session > h3::before {
     content: "Session: ";
 	color: var(--pico-muted-color);
+}
+
+.feditest h4 {
+    background: var(--feditest-h4-background-color);
 }
 
 .feditest div.session + div.session {
