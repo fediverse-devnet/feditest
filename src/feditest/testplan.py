@@ -124,7 +124,7 @@ class TestPlanConstellation(msgspec.Struct):
 class TestPlanTestSpec(msgspec.Struct):
     name: str
     rolemapping: dict[str,str] | None = None # maps from the Test's role names to the constellation's role names
-    disabled: str | None = None # if a string is given, it's a reason message why disabled
+    skip: str | None = None # if a string is given, it's a reason message why this test spec should be skipped
 
 
     def __str__(self):

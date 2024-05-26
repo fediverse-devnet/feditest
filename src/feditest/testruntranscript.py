@@ -477,7 +477,7 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                         print(f"    {loc[0]} {loc[1]}")
                     print("  ...")
                 else:
-                    directives = "" # FIXME f" # SKIP {test.disabled}" if test.disabled else ""
+                    directives = "" # FIXME f" # SKIP {test.skip}" if test.skip else ""
                     print(f"ok {test_id} - {test_meta.name}{directives}")
 
         print(f"1..{test_id}")
