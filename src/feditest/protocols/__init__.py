@@ -6,6 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
+from feditest import SkipTestException
 from feditest.reporting import warning
 
 
@@ -169,7 +170,7 @@ class NodeDriver(ABC):
         return f'"{ self.name }"'
 
 
-class NotImplementedByNodeOrDriverError(RuntimeError):
+class NotImplementedByNodeOrDriverError(SkipTestException):
     pass
 
 
