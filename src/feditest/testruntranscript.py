@@ -521,7 +521,8 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 nbsp=lambda s: re.sub(r'\s+', '&nbsp;', str(s)),
                 permit_line_breaks_in_identifier=lambda s: re.sub(r'(\.|::)', r'<wbr>\1', s),
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
-                format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else ''))
+                format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else '',
+                format_duration=lambda d: str(d)))
 
 
 def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[TestRunResultTranscript | None]:
