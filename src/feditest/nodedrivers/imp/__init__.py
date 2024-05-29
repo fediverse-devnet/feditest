@@ -62,13 +62,7 @@ class Imp(WebFingerClient):
 
 
     # @override # from WebFingerClient
-    def perform_webfinger_query(
-        self,
-        resource_uri: str,
-        rels: list[str] | None = None,
-        check_content_type: bool = False,
-        validate_jrd: bool = False,
-    ) -> WebFingerQueryResponse:
+    def perform_webfinger_query(self, resource_uri: str, rels: list[str] | None = None) -> WebFingerQueryResponse:
         uri = self.construct_webfinger_uri_for(resource_uri, rels)
         parsed_uri = ParsedUri.parse(uri)
         if not parsed_uri:
@@ -91,29 +85,21 @@ class Imp(WebFingerClient):
         if pair:
             ret_pair = HttpRequestResponsePair(first_request, current_request, pair.response)
             if ret_pair.response is not None:
-                if ret_pair.response.http_status == 200:
-                    if (
-                        not check_content_type
-                        or ret_pair.response.content_type() == "application/jrd+json"
-                        or ret_pair.response.content_type().startswith(
-                            "application/jrd+json;"
-                        )
-                    ):
-                        if ret_pair.response.payload is not None:
-                            json_string = ret_pair.response.payload.decode(
-                                encoding=ret_pair.response.payload_charset() or "utf8" )
-                            jrd = ClaimedJrd(json_string)
-                            if validate_jrd:
-                                try:
-                                    jrd.validate()
-                                except Exception as ex:
-                                    raise AssertionError(*ex.args[1:])
-                            return WebFingerQueryResponse(pair, jrd)
-                        raise WebFingerClient.WebfingerQueryFailedError(
-                            uri, ret_pair, "No payload"
-                        )
+                if ret_pair.response.http_status != 200:
+                    raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid HTTP status: { ret_pair.response.http_status }")
+
+                if( ret_pair.response.content_type() != "application/jrd+json"
+                    and not ret_pair.response.content_type().startswith( "application/jrd+json;" )
+                ):
                     raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid content type: { ret_pair.response.content_type() }")
-                raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid HTTP status: { ret_pair.response.http_status }")
+
+                if ret_pair.response.payload is None:
+                    raise WebFingerClient.WebfingerQueryFailedError( uri, ret_pair, "No payload" )
+
+                json_string = ret_pair.response.payload.decode(encoding=ret_pair.response.payload_charset() or "utf8")
+                jrd = ClaimedJrd(json_string)
+                jrd.validate() # May throw JrdError
+                return WebFingerQueryResponse(pair, jrd)
 
         raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair)
 
@@ -134,3 +120,4 @@ class ImpInProcessNodeDriver(NodeDriver):
     # Python 3.12 @override
     def _unprovision_node(self, node: Node) -> None:
         pass
+
