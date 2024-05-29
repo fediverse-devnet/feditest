@@ -16,15 +16,16 @@
 #
 
 UNAME:=$(shell uname -s | tr [A-Z] [a-z])
-VENV:=venv.$(UNAME)
+BRANCH:=$(shell git branch --show-current)
+VENV:=venv.$(UNAME).$(BRANCH)
 PYTHON:=python
 
 build : venv
 	$(VENV)/bin/pip install .
 
-venv : venv.$(UNAME)
+venv : $(VENV)
 
-venv.$(UNAME) :
+$(VENV) :
 	@which $(PYTHON) || echo 'No executable called "python". Run with "PYTHON=your-python"'
 	$(PYTHON) -mvenv $(VENV)
 	$(VENV)/bin/pip install ruff mypy pylint
