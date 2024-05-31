@@ -2,7 +2,7 @@
 An in-process Node implementation for now.
 """
 
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from multidict import MultiDict
@@ -62,17 +62,11 @@ class Imp(WebFingerClient):
 
 
     # @override # from WebFingerClient
-    def perform_webfinger_query(
-        self,
-        resource_uri: str,
-        rels: list[str] | None = None,
-        check_content_type: bool = False,
-        validate_jrd: bool = False,
-    ) -> WebFingerQueryResponse:
+    def perform_webfinger_query(self, resource_uri: str, rels: list[str] | None = None) -> WebFingerQueryResponse:
         uri = self.construct_webfinger_uri_for(resource_uri, rels)
         parsed_uri = ParsedUri.parse(uri)
         if not parsed_uri:
-            raise ValueError('Not a valid URI:', uri)
+            raise ValueError('Not a valid URI:', uri) # can't avoid this
         first_request = HttpRequest(parsed_uri)
         current_request = first_request
         pair : HttpRequestResponsePair | None = None
@@ -80,42 +74,49 @@ class Imp(WebFingerClient):
             pair = self.http(current_request)
             if pair.response and pair.response.is_redirect():
                 if redirect_count <= 0:
-                    raise WebClient.TooManyRedirectsError(current_request)
+                    return WebFingerQueryResponse(pair, None, WebClient.TooManyRedirectsError(current_request))
                 parsed_location_uri = ParsedUri.parse(pair.response.location())
                 if not parsed_location_uri:
-                    raise ValueError('Location header is not a valid URI:', uri, '(from', resource_uri, ')')
+                    return WebFingerQueryResponse(pair, None, ValueError('Location header is not a valid URI:', uri, '(from', resource_uri, ')'))
                 current_request = HttpRequest(parsed_location_uri)
             break
 
-        # I guess we always have a non-null responses here, but mypy complains without the if
-        if pair:
-            ret_pair = HttpRequestResponsePair(first_request, current_request, pair.response)
-            if ret_pair.response is not None:
-                if ret_pair.response.http_status == 200:
-                    if (
-                        not check_content_type
-                        or ret_pair.response.content_type() == "application/jrd+json"
-                        or ret_pair.response.content_type().startswith(
-                            "application/jrd+json;"
-                        )
-                    ):
-                        if ret_pair.response.payload is not None:
-                            json_string = ret_pair.response.payload.decode(
-                                encoding=ret_pair.response.payload_charset() or "utf8" )
-                            jrd = ClaimedJrd(json_string)
-                            if validate_jrd:
-                                try:
-                                    jrd.validate()
-                                except Exception as ex:
-                                    raise AssertionError(*ex.args[1:])
-                            return WebFingerQueryResponse(pair, jrd)
-                        raise WebFingerClient.WebfingerQueryFailedError(
-                            uri, ret_pair, "No payload"
-                        )
-                    raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid content type: { ret_pair.response.content_type() }")
-                raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair, f"Invalid HTTP status: { ret_pair.response.http_status }")
+        # I guess we always have a non-null responses here, but mypy complains without the cast
+        pair = cast(HttpRequestResponsePair, pair)
+        ret_pair = HttpRequestResponsePair(first_request, current_request, pair.response)
+        if ret_pair.response is None:
+            raise RuntimeError('Unexpected None HTTP response')
 
-        raise WebFingerClient.WebfingerQueryFailedError(uri, ret_pair)
+        excs : list[Exception] = []
+        if ret_pair.response.http_status != 200:
+            excs.append(WebClient.WrongHttpStatusError(ret_pair))
+
+        if( ret_pair.response.content_type() != "application/jrd+json"
+            and not ret_pair.response.content_type().startswith( "application/jrd+json;" )
+        ):
+            excs.append(WebClient.WrongContentTypeError(ret_pair))
+
+        jrd : ClaimedJrd | None = None
+
+        if ret_pair.response.payload is None:
+            raise RuntimeError('Unexpected None payload in HTTP response')
+
+        try:
+            json_string = ret_pair.response.payload.decode(encoding=ret_pair.response.payload_charset() or "utf8")
+
+            jrd = ClaimedJrd(json_string) # May throw JSONDecodeError
+            jrd.validate() # May throw JrdError
+        except ExceptionGroup as exc:
+            excs += exc.exceptions
+        except Exception as exc:
+            excs.append(exc)
+
+        if len(excs) > 1:
+            return WebFingerQueryResponse(ret_pair, jrd, ExceptionGroup('Multiple WebFinger errors', excs))
+        elif len(excs) == 1:
+            return WebFingerQueryResponse(ret_pair, jrd, excs[0])
+        else:
+            return WebFingerQueryResponse(ret_pair, jrd, None)
 
 
 @nodedriver
@@ -134,3 +135,4 @@ class ImpInProcessNodeDriver(NodeDriver):
     # Python 3.12 @override
     def _unprovision_node(self, node: Node) -> None:
         pass
+

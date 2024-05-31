@@ -117,6 +117,10 @@ class WebClient(Node):
             self._request = request
 
 
+        def __str__(self):
+            f'Too many redirects: { self._request.uri.get_uri() }'
+
+
     class HttpUnsuccessfulError(RuntimeError):
         """
         Thrown to indicate an unsuccessful HTTP request because DNS could not be resolved, the request
@@ -127,3 +131,33 @@ class WebClient(Node):
             request: the request
             """
             self._request = request
+
+
+        def __str__(self):
+            f'Unsuccessful HTTP request: { self._request.uri.get_uri() }'
+
+
+    class WrongHttpStatusError(RuntimeError):
+        """
+        Raised when an HTTP status was obtained that was wrong for the situation.
+        """
+        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
+            self._http_request_response_pair = http_request_response_pair
+
+
+        def __str__(self):
+            return 'Wrong HTTP status code.' \
+                   + f'\n -> { self._http_request_response_pair.response.http_status }'
+
+
+    class WrongContentTypeError(RuntimeError):
+        """
+        Raised when payload of a content type was received that was wrong for the situation
+        """
+        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
+            self._http_request_response_pair = http_request_response_pair
+
+
+        def __str__(self):
+            return 'Wrong HTTP content type.' \
+                   + f'\n -> "{ self._http_request_response_pair.response.content_type() }"'

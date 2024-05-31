@@ -7,7 +7,6 @@ from urllib.parse import quote, urlparse
 
 from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
-from feditest.protocols.web.traffic import HttpRequestResponsePair
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
 from feditest.utils import http_https_acct_uri_validate
 
@@ -86,7 +85,8 @@ class WebFingerClient(WebClient):
         The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
         'https://example.com/aabc' (not escaped).
         rels is an optional list of 'rel' query parameters
-        Return the result of the query
+        Return the result of the query. This should returns WebFingerQueryResponse in as many cases
+        as possible, but the WebFingerQueryResponse may indicate errors.
         """
         raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
 
@@ -134,13 +134,3 @@ class WebFingerClient(WebClient):
         """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
-
-
-    class WebfingerQueryFailedError(RuntimeError):
-        """
-        Raised when no JRD could be obtained (e.g. got 404)
-        """
-        def __init__(self, resource_uri: str, http_request_response_pair: HttpRequestResponsePair | None, msg: str | None = None ):
-            super().__init__(msg)
-            self.resource_uri = resource_uri
-            self.http_request_response_pair = http_request_response_pair
