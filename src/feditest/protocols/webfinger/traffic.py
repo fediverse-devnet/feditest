@@ -359,7 +359,7 @@ working-copy-of"""
                         if not isinstance(link['properties'], dict):
                             excs.append(ClaimedJrd.InvalidTypeError(self, 'Member properties in a links array member must be a JSON object'))
                         else:
-                            for key, value in link['properties']:
+                            for key, value in link['properties'].items():
                                 if not isinstance(key, str):
                                     excs.append(ClaimedJrd.InvalidTypeError(self, 'Names in the properties object in a links array member must be strings'))
                                 elif http_https_acct_uri_parse_validate(key) is None:
