@@ -34,10 +34,7 @@ class ClaimedJrd:
 
 
         def __str__(self):
-            if self._msg:
-                return f'{ self.__class__.__name__ }: { self._msg }'
-            else:
-                return self.__class__.__name__
+            return { self._msg } or self.__class__.__name__
 
 
     class InvalidTypeError(JrdError):
@@ -275,98 +272,98 @@ working-copy-of"""
             # is optional
 
             if not isinstance(self._json['subject'], str):
-                excs.append(ClaimedJrd.InvalidTypeError(self, 'Member subject must be a string'))
+                excs.append(ClaimedJrd.InvalidTypeError(self, 'Subject not a string'))
             elif http_https_acct_uri_parse_validate(self._json['subject']) is None:
-                excs.append(ClaimedJrd.InvalidUriError(self, 'Member subject must be an absolute URI: "' + f"{ self._json['subject'] }" + '"'))
+                excs.append(ClaimedJrd.InvalidUriError(self, 'Subject not absolute URI: "' + f"{ self._json['subject'] }" + '"'))
 
 
         if 'aliases' in self._json:
             # is optional
 
             if not isinstance(self._json['aliases'], list):
-                excs.append(ClaimedJrd.InvalidTypeError(self, 'Member aliases must be a JSON array'))
+                excs.append(ClaimedJrd.InvalidTypeError(self, 'Aliases not a JSON array'))
             else:
                 for alias in self._json['aliases'] :
                     if not isinstance(alias, str):
-                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Members of the aliases array must be strings'))
+                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Alias not a string'))
                     elif http_https_acct_uri_parse_validate(alias) is None:
-                        excs.append(ClaimedJrd.InvalidUriError(self, f'Members of aliases array must be absolute URIs: "{ alias }"'))
+                        excs.append(ClaimedJrd.InvalidUriError(self, f'Alias not absolute URI: "{ alias }"'))
 
         if 'properties' in self._json:
             # is optional
 
             if not isinstance(self._json['properties'], dict):
-                excs.append(ClaimedJrd.InvalidTypeError(self, 'Member properties must be a JSON object'))
+                excs.append(ClaimedJrd.InvalidTypeError(self, 'Properties not a JSON object'))
             else:
                 for key, value in self._json['properties'].items():
                     if not isinstance(key, str):
-                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Names in the properties object must be strings'))
+                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Property name not a string'))
                     elif http_https_acct_uri_parse_validate(key) is None:
-                        excs.append(ClaimedJrd.InvalidUriError(self, f'Names in the properties object must be absolute URIs: "{ key }"'))
+                        excs.append(ClaimedJrd.InvalidUriError(self, f'Property name not an absolute URI: "{ key }"'))
                     elif value is not None and not isinstance(value, str):
-                        excs.append(ClaimedJrd.InvalidTypeError(self, f'Values in the properties object must be strings or null: value for key "{ key }"'))
+                        excs.append(ClaimedJrd.InvalidTypeError(self, f'Property value not string or null: key "{ key }"'))
 
         if 'links' in self._json:
             # is optional
 
             if not isinstance(self._json['links'], list):
-                excs.append(ClaimedJrd.InvalidTypeError(self, 'Member links must be a JSON array'))
+                excs.append(ClaimedJrd.InvalidTypeError(self, 'Links not a JSON array'))
             else:
                 for link in self._json['links']:
                     if not isinstance(link, dict):
-                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Members of the links array must be JSON objects'))
+                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Link not a JSON object'))
                     elif 'rel' not in link:
-                        excs.append(ClaimedJrd.MissingMemberError(self, 'All members of the links array must have a rel property'))
+                        excs.append(ClaimedJrd.MissingMemberError(self, 'Link missing rel property'))
                     elif not isinstance(link['rel'], str):
-                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Values for the rel member in the links array must be strings'))
+                        excs.append(ClaimedJrd.InvalidTypeError(self, 'Link rel value not a string'))
                     elif http_https_acct_uri_parse_validate(link['rel']) is None and not ClaimedJrd.is_registered_relation_type(link['rel']):
-                        excs.append(ClaimedJrd.InvalidRelError(self, 'All rel entries in the links array must be a URI or a registered relation type: "' + f"{link['rel']}" + '"'))
+                        excs.append(ClaimedJrd.InvalidRelError(self, 'Link rel value not absolute URI nor registered relation type: "' + f"{link['rel']}" + '"'))
 
                     if 'type' in link:
                         # is optional
 
                         if not isinstance(link['type'], str):
-                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings'))
+                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Link type not a string'))
                         elif not ClaimedJrd.is_valid_media_type(link['type']):
-                            excs.append(ClaimedJrd.InvalidMediaTypeError(self, 'Values for the type member in the links array must be valid media types: "' + f"{ link['type'] }" + '"'))
+                            excs.append(ClaimedJrd.InvalidMediaTypeError(self, 'Link type not a valid media type: "' + f"{ link['type'] }" + '"'))
 
                     if 'href' in link:
                         # is optional
 
                         if not isinstance(link['href'], str):
-                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Values for the type member in the links array must be strings'))
+                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Link href not a string'))
                         elif uri_parse_validate(link['href']) is None:
-                            excs.append( ClaimedJrd.InvalidUriError(self, 'Values for the href member in the links array must be URIs: "' + f"{ link['href']}" + '+'))
+                            excs.append( ClaimedJrd.InvalidUriError(self, 'Link href not a URI: "' + f"{ link['href']}" + '+'))
 
                     if 'titles' in link:
                         # is optional
 
                         if not isinstance(link['titles'], dict):
-                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Values for the titles member in a links array mbmber must be JSON objects'))
+                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Link titles not a JSON Object'))
                         else:
                             for key, value in link['titles']:
                                 if not isinstance(key,str):
-                                    excs.append(ClaimedJrd.InvalidTypeError(self, 'Names in the titles object in a links array member must be strings'))
+                                    excs.append(ClaimedJrd.InvalidTypeError(self, 'Link title name not a string'))
                                 elif key != 'und' and rfc5646_language_tag_parse_validate(key) is None:
-                                    excs.append(ClaimedJrd.InvalidLanguageTagError(self, f'Names in the titles object in a links array member must be valid language tags or "und": "{ key }"'))
+                                    excs.append(ClaimedJrd.InvalidLanguageTagError(self, f'Link title name not a valid language tag or "und": "{ key }"'))
 
                                 if not value or not isinstance(value, str):
-                                    excs.append(ClaimedJrd.InvalidValueError(self, 'Values in the titles objects in a links array member must be non-null strings: value for key "{ key }"'))
+                                    excs.append(ClaimedJrd.InvalidValueError(self, 'Link title value not a non-null string: name "{ key }"'))
 
                     if 'properties' in link:
                         # is optional
 
                         if not isinstance(link['properties'], dict):
-                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Member properties in a links array member must be a JSON object'))
+                            excs.append(ClaimedJrd.InvalidTypeError(self, 'Link properties not a JSON object'))
                         else:
                             for key, value in link['properties'].items():
                                 if not isinstance(key, str):
-                                    excs.append(ClaimedJrd.InvalidTypeError(self, 'Names in the properties object in a links array member must be strings'))
+                                    excs.append(ClaimedJrd.InvalidTypeError(self, 'Link property name not a string'))
                                 elif http_https_acct_uri_parse_validate(key) is None:
-                                    excs.append(ClaimedJrd.InvalidUriError(self, 'Names in the properties object in a links array member must be absolute URIs: "{ key }"'))
+                                    excs.append(ClaimedJrd.InvalidUriError(self, 'Link property name not absolute URI: "{ key }"'))
 
                                 if value is not None and not isinstance(value, str):
-                                    excs.append(ClaimedJrd.InvalidTypeError(self, 'Values in the properties object in a links array member must be strings or null. Value for key "{ key }"'))
+                                    excs.append(ClaimedJrd.InvalidTypeError(self, 'Link property value not a string nor null. Key "{ key }"'))
 
         if excs:
             if len(excs) == 1:

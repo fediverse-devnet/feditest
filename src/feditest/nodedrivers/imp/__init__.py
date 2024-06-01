@@ -112,7 +112,7 @@ class Imp(WebFingerClient):
             excs.append(exc)
 
         if len(excs) > 1:
-            return WebFingerQueryResponse(ret_pair, jrd, ExceptionGroup('Multiple WebFinger errors', excs))
+            return WebFingerQueryResponse(ret_pair, jrd, ExceptionGroup('WebFinger errors', excs))
         elif len(excs) == 1:
             return WebFingerQueryResponse(ret_pair, jrd, excs[0])
         else:
