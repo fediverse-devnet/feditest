@@ -333,7 +333,7 @@ working-copy-of"""
                         if not isinstance(link['href'], str):
                             excs.append(ClaimedJrd.InvalidTypeError(self, 'Link href not a string'))
                         elif uri_parse_validate(link['href']) is None:
-                            excs.append( ClaimedJrd.InvalidUriError(self, 'Link href not a URI: "' + f"{ link['href']}" + '+'))
+                            excs.append( ClaimedJrd.InvalidUriError(self, 'Link href not a URI: "' + f"{ link['href']}" + '"'))
 
                     if 'titles' in link:
                         # is optional
