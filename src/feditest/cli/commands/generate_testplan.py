@@ -27,12 +27,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     test_plan = TestPlan([], args.name)
     for session_template in session_templates:
-        # Let's make this the outer loop: we pick a feature domain and make
-        # sure it works in all constellations, before moving to the next
-        # feature domain
-
         for constellation in constellations:
-            session = session_template.instantiate_with_constellation(constellation)
+            session = session_template.instantiate_with_constellation(constellation, constellation.name)
             test_plan.sessions.append(session)
 
     if args.out:

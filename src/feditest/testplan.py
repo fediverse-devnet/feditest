@@ -215,13 +215,13 @@ class TestPlanSession(msgspec.Struct):
         return ret
 
 
-    def instantiate_with_constellation(self, constellation: TestPlanConstellation) -> 'TestPlanSession':
+    def instantiate_with_constellation(self, constellation: TestPlanConstellation, name: str | None = None) -> 'TestPlanSession':
         """
         Treat this session as a template. Create a new (non-template) session that's like this one
         and that uses the provided constellation.
         """
         constellation.check_defines_all_role_names(self.needed_role_names())
-        return TestPlanSession(constellation=constellation,tests=self.tests)
+        return TestPlanSession(constellation=constellation,tests=self.tests, name=name)
 
 
     def as_json(self) -> bytes:

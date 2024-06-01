@@ -90,9 +90,9 @@ class TestRunResultTranscript(msgspec.Struct):
         """
         Construct a single-line title for this result.
         """
-        ret = self.short_title()
+        ret = self.str_problem_category()
         if self.msg:
-            msg_lines = self.msg.strip().split('\n')
+            msg_lines = self.msg.strip().split('\n', maxsplit=1)
             ret += f': { msg_lines[0] }' # If it's multi-line, only use the first line
         return ret
 
@@ -101,6 +101,19 @@ class TestRunResultTranscript(msgspec.Struct):
         """
         Construct a short single-line title for this result.
         """
+        if self.msg:
+            msg_lines = self.msg.strip().split('\n', maxsplit=1)
+            return msg_lines[0]
+        return self.str_problem_category()
+
+
+    def str_problem_category(self):
+        """
+        Construct a short single-line title for this result.
+        """
+        if not self.problem_category:
+            return 'passed'
+
         match self.problem_category:
             case 'hard':
                 ret = 'Failed'
@@ -112,7 +125,6 @@ class TestRunResultTranscript(msgspec.Struct):
                 ret = 'Skipped'
             case 'error':
                 ret = f'Error: { self.type }'
-
         return ret
 
 
@@ -452,12 +464,14 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             print(f"# constellation: { constellation }")
             print("#   roles:")
             for role_name, node in plan_session.constellation.roles.items():
-                transcript_role = session_transcript.constellation.nodes[role_name]
-                print(f"#     - name: {role_name}")
-                print(f"#       driver: {node.nodedriver}")
-                print(f"#       app: {transcript_role.appdata['app']}")
-                print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
-
+                if role_name in session_transcript.constellation.nodes:
+                    transcript_role = session_transcript.constellation.nodes[role_name]
+                    print(f"#     - name: {role_name}")
+                    print(f"#       driver: {node.nodedriver}")
+                    print(f"#       app: {transcript_role.appdata['app']}")
+                    print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
+                else:
+                    print(f"#     - name: {role_name} -- not instantiated")
 
             for test_index, run_test in enumerate(session_transcript.run_tests):
                 test_id += 1

@@ -143,9 +143,13 @@ class TestRunFunction(TestRunTest):
         return str(self.test_from_test_function)
 
 
+    def str_in_session(self):
+        return f'{ self.test_from_test_function } in { self.run_session }'
+
+
     def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
         self.started = datetime.now(UTC)
-        info(f'Started TestRunFunction { self }')
+        info(f'Started test { self.str_in_session() }')
 
         args = {}
         for local_role_name in self.test_from_test_function.needed_local_role_names():
@@ -162,9 +166,9 @@ class TestRunFunction(TestRunTest):
         finally:
             self.ended = datetime.now(UTC)
             if self.exception:
-                error(f'Ended TestRunFunction { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+                error(f'Ended test { self.str_in_session() } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
-                info(f'Ended TestRunFunction { self }')
+                info(f'Ended test { self.str_in_session() }')
 
 
 class TestRunStepInClass(HasStartEndResults):
@@ -179,9 +183,13 @@ class TestRunStepInClass(HasStartEndResults):
         return str(self.test_step)
 
 
+    def str_in_session(self):
+        return f'{ self.test_steo } in { self.run_test.run_session }'
+
+
     def run(self, test_instance: object, controller: feditest.testruncontroller.TestRunController) -> None:
         self.started = datetime.now(UTC)
-        info(f'Started TestRunStepInClass { self }')
+        info(f'Started step { self.str_in_session() }')
 
         try:
             self.test_step.test_step_function(test_instance) # what an object-oriented language this is
@@ -191,9 +199,9 @@ class TestRunStepInClass(HasStartEndResults):
         finally:
             self.ended = datetime.now(UTC)
             if self.exception:
-                error(f'Ended TestRunStepInClass { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+                error(f'Ended step { self.str_in_session() } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
-                info(f'Ended TestRunStepInClass { self }')
+                info(f'Ended step { self.str_in_session() }')
 
 
 class TestRunClass(TestRunTest):
@@ -207,9 +215,13 @@ class TestRunClass(TestRunTest):
         return str(self.test_from_test_class)
 
 
+    def str_in_session(self):
+        return f'{ self.test_from_test_class } in { self.run_session }'
+
+
     def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
         self.started = datetime.now(UTC)
-        info(f'Started TestRunClass { self }')
+        info(f'Started test { self.str_in_session() }')
 
         args = {}
         for local_role_name in self.plan_testspec.needed_role_names():
@@ -245,9 +257,9 @@ class TestRunClass(TestRunTest):
         finally:
             self.ended = datetime.now(UTC)
             if self.exception:
-                error(f'Ended TestRunClass { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+                error(f'Ended test { self.str_in_session() } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
-                info(f'Ended TestRunClass { self }')
+                info(f'Ended test { self.str_in_session() }')
 
 
 class TestRunSession(HasStartEndResults):
@@ -296,12 +308,12 @@ class TestRunSession(HasStartEndResults):
                             fatal('What is this?', test)
                             return # does not actually return, but makes lint happy
 
-                        self.run_tests.append(run_test)
-
                         if not self.run_constellation:
                             # only allocate the constellation if we actually want to run a test
                             self.run_constellation = TestRunConstellation(self.plan_session.constellation)
                             self.run_constellation.setup()
+
+                        self.run_tests.append(run_test) # constellation.setup() may raise, so don't add before that
 
                         run_test.run(controller)
 

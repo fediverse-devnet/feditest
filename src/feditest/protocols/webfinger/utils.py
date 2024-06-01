@@ -150,7 +150,7 @@ def wf_error(response: WebFingerQueryResponse) -> str:
     """
     if not response.exc:
         return 'ok'
-    msg = str(response.exc).split('\n')[0]
+    msg = str(response.exc).split('\n', maxsplit=1)[0]
     msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
 
     if isinstance(response.exc, ExceptionGroup):

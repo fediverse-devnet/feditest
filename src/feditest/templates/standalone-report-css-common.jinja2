@@ -1,21 +1,27 @@
 :root:not([data-theme="dark"]), [data-theme="light"] {
 	--feditest-background-color: #f8f8f8;
 	--feditest-h4-background-color: #e8e8e8;
-    --feditest-color-passed: #00c000;
-    --feditest-color-failed: #c00000;
-    --feditest-color-skip: #0000ff;
-    --feditest-color-error: #c06000;
+    --feditest-color-status: inherit;
+    --feditest-color-status-passed: #BBF5CA;
+    --feditest-color-status-hard: #F5B0A7;
+    --feditest-color-status-soft: #F5D4A4;
+    --feditest-color-status-degrade: #EDF593;
+    --feditest-color-status-skip: inherit;
+    --feditest-color-status-error: #F58171;
 }
 
 @media only screen and (prefers-color-scheme: dark) {
 	:root:not([data-theme]) {
 		--feditest-background-color: #000;
 		--feditest-h4-background-color: #242c38;
-		--feditest-color-passed: #00c000;
-		--feditest-color-failed: #c00000;
-		--feditest-color-skip: #8080ff;
-		--feditest-color-error: #c08000;
-	}
+        --feditest-color-status: #000;
+        --feditest-color-status-passed: #BBF5CA;
+        --feditest-color-status-hard: #F5B0A7;
+        --feditest-color-status-soft: #F5D4A4;
+        --feditest-color-status-degrade: #EDF593;
+        --feditest-color-status-skip: inherit;
+        --feditest-color-status-error: #F58171;
+    }
 }
 
 :root {
@@ -121,27 +127,32 @@ div.feditest.session > h3::before {
     content: "App version: ";
 }
 
-.feditest .status  { /* catch-all for everything else */
-    color: var(--feditest-color-error);
+.feditest div.status {
+    padding: .5rem;
+    color: var(--feditest-color-status);
 }
 
 .feditest .status.passed {
-    color: var(--feditest-color-passed);
+    background: var(--feditest-color-status-passed);
 }
 
-.feditest .status.failed,
-.feditest .status.hard,
-.feditest .status.soft,
+.feditest .status.hard {
+    background: var(--feditest-color-status-hard);
+}
+
+.feditest .status.soft {
+    background: var(--feditest-color-status-soft);
+}
+
 .feditest .status.degrade {
-	color: var(--feditest-color-failed);
+    background: var(--feditest-color-status-degrade);
 }
 
 .feditest .status.skip {
-    color: var(--feditest-color-skip);
+    background: var(--feditest-color-status-skip);
 }
-
 .feditest .status.error {
-    color: var(--feditest-color-error);
+    background: var(--feditest-color-status-error);
 }
 
 .feditest .status input {
