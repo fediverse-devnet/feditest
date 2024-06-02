@@ -69,6 +69,10 @@ class LinkSubsetOrEqualToMatcher(BaseMatcher):
 
 
     def _matches(self, jrd_with_subset: ClaimedJrd) -> bool:
+        if self._jrd_with_superset is None:
+            return False
+        if jrd_with_subset is None:
+            return False
         return jrd_with_subset.is_valid_link_subset(self._jrd_with_superset, self._rels)
 
 
