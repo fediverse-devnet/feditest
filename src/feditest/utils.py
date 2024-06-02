@@ -35,7 +35,7 @@ class ParsedUri(ABC):
         if parsed.scheme == 'acct':
             if match := ACCT_REGEX.match(url):
                 return ParsedAcctUri(match[1], match[2])
-        if len(parsed.scheme) and len(parsed.netloc) and len(parsed.path):
+        if len(parsed.scheme) and len(parsed.netloc):
             return ParsedNonAcctUri(parsed.scheme, parsed.netloc, parsed.path, parsed.params, parsed.query, parsed.fragment)
         return None
 
