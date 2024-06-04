@@ -21,7 +21,7 @@ class UbosNodeDriver(NodeDriver):
         with "ubos-admin deploy" or to restore a known state of a Site with "ubos-admin restore".
         """
         if not shutil.which('ubos-admin'):
-            raise NodeSpecificationInvalidError(self, str(type(self)), 'can only be used on UBOS.')
+            raise OSError(f'{ type(self).__name__ } requires UBOS Gears (see ubos.net).')
 
         # FIXME: reconcile provided hostname with what's in the site json / backup
 
