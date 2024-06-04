@@ -34,7 +34,7 @@ class ClaimedJrd:
 
 
         def __str__(self):
-            return { self._msg } or self.__class__.__name__
+            return self._msg or self.__class__.__name__
 
 
     class InvalidTypeError(JrdError):
