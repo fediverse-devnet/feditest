@@ -91,8 +91,9 @@ class Imp(WebFingerClient):
         if ret_pair.response.http_status != 200:
             excs.append(WebClient.WrongHttpStatusError(ret_pair))
 
-        if( ret_pair.response.content_type() != "application/jrd+json"
-            and not ret_pair.response.content_type().startswith( "application/jrd+json;" )
+        content_type = ret_pair.response.content_type()
+        if (content_type is None or (content_type != "application/jrd+json"
+            and not content_type.startswith( "application/jrd+json;" ))
         ):
             excs.append(WebClient.WrongContentTypeError(ret_pair))
 
