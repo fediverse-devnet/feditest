@@ -2,6 +2,7 @@ import json
 import os
 import os.path
 import re
+import shutil
 import traceback
 from abc import ABC, abstractmethod
 from contextlib import redirect_stdout
@@ -12,6 +13,7 @@ import jinja2
 import msgspec
 
 import feditest
+import feditest.testplan
 from feditest.reporting import fatal
 from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
@@ -156,7 +158,6 @@ class TestRunResultTranscript(msgspec.Struct):
         for frame in self.stacktrace:
             ret += f'\n{frame[0]}:{frame[1]}'
         return ret
-
 
 
 class TestStepMetaTranscript(msgspec.Struct):
@@ -537,6 +538,122 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
                 format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else '',
                 format_duration=lambda d: str(d)))
+
+
+class MultifileRunTranscriptSerializer:
+    """Generates the Feditest reports into a test matrix and a linked, separate
+    file per session. It uses a template path so variants of reports can be generated
+    while sharing common templates. The file_ext can be specified to support generating
+    other formats like MarkDown.
+
+    The generation uses two primary templates. The 'test_matrix.jinja2' template is used for
+    the matrix generation and 'test_session.jinja2' is used for session file generation.
+
+    Any files in the a directory called "static" in a template folder will be copied verbatim
+    to the output directory (useful for css, etc.). If a file exists in the static folder of more
+    than one directory in the template path, earlier path entries will overwrite later ones.
+    """
+
+    def __init__(
+        self,
+        output_dir: str | os.PathLike,
+        template_path: str | os.PathLike | list[str | os.PathLike] | None = None,
+        file_ext: str = "html",
+        matrix_base_name="index",
+    ):
+        self.output_dir = output_dir
+        self.template_path = template_path or "multifile"
+        self.file_ext = file_ext
+        self.matrix_base_name = matrix_base_name
+
+    def write(self, transcript: TestRunTranscript):
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        sessions_dir = os.path.join(self.output_dir, "sessions")
+        if not os.path.exists(sessions_dir):
+            os.makedirs(sessions_dir)
+
+        templates_base_dir = os.path.join(os.path.dirname(__file__), "templates")
+        os.chdir(templates_base_dir)
+
+        jinja2_env = self._init_jinja2_env(self.template_path)
+        self._copy_static_files(self.template_path, self.output_dir)
+
+
+        def session_file_path(plan_session):
+            return f"sessions/{plan_session.name}.{self.file_ext}"
+
+        context = dict(
+            run=transcript,
+            summary=transcript.build_summary(),
+            getattr=getattr,
+            sorted=sorted,
+            enumerate=enumerate,
+            get_results_for=_get_results_for,
+            remove_white=lambda s: re.sub("[ \t\n\a]", "_", str(s)),
+            session_file_path=session_file_path,
+            permit_line_breaks_in_identifier=lambda s: re.sub(
+                r"(\.|::)", r"<wbr>\1", s
+            ),
+            local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
+            format_timestamp=lambda ts: ts.isoformat() if ts else "",
+            # TODO not needed since it is default behavior?
+            format_duration=lambda s: str(s),
+        )
+
+        matrix_filename = os.path.join(
+            self.output_dir, f"{self.matrix_base_name}.{self.file_ext}"
+        )
+        with open(matrix_filename, "w") as fp:
+            matrix_template = jinja2_env.get_template("test_matrix.jinja2")
+            fp.write(matrix_template.render(**context))
+
+        session_template = jinja2_env.get_template("test_session.jinja2")
+        for run_session in transcript.sessions:
+            session_context = dict(context)
+            session_context.update(
+                run_session=run_session,
+                summary=run_session.build_summary(),
+            )
+            plan_session = transcript.plan.sessions[run_session.plan_session_index]
+            with open(
+                os.path.join(
+                    self.output_dir,
+                    session_file_path(plan_session),
+                ),
+                "w",
+            ) as fp:
+                fp.write(session_template.render(**session_context))
+
+    @staticmethod
+    def _init_jinja2_env(template_path: str) -> jinja2.Environment:
+        template_path = template_path.split(",")
+        templates = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path))
+        templates.filters["regex_sub"] = lambda s, pattern, replacement: re.sub(
+            pattern, replacement, s
+        )
+        return templates
+
+    @staticmethod
+    def _copy_static_files(template: str, output_dir: str):
+        template_path = template.split(",")
+        for path in reversed(template_path):
+            static_dir = os.path.join(path, "static")
+            if os.path.exists(static_dir):
+                for dirpath, _, filenames in os.walk(static_dir):
+                    if len(filenames) == 0:
+                        continue
+                    filedir_to = os.path.join(
+                        output_dir, os.path.relpath(dirpath, static_dir)
+                    )
+                    if not os.path.exists(filedir_to):
+                        os.makedirs(filedir_to, exist_ok=True)
+                    for filename in filenames:
+                        filepath_from = os.path.join(dirpath, filename)
+                        filepath_to = os.path.join(output_dir, filedir_to, filename)
+                        # Notusing copytree since it would copy static too
+                        shutil.copyfile(filepath_from, filepath_to)
 
 
 def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[TestRunResultTranscript | None]:

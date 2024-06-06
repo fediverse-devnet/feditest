@@ -1,0 +1,178 @@
+:root:not([data-theme="dark"]), [data-theme="light"] {
+	--feditest-background-color: #f8f8f8;
+	--feditest-h4-background-color: #e8e8e8;
+    --feditest-color-status: inherit;
+    --feditest-color-status-passed: #BBF5CA;
+    --feditest-color-status-hard: #F5B0A7;
+    --feditest-color-status-soft: #F5D4A4;
+    --feditest-color-status-degrade: #EDF593;
+    --feditest-color-status-skip: inherit;
+    --feditest-color-status-error: #F58171;
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--feditest-background-color: #000;
+		--feditest-h4-background-color: #242c38;
+        --feditest-color-status: #000;
+        --feditest-color-status-passed: #BBF5CA;
+        --feditest-color-status-hard: #F5B0A7;
+        --feditest-color-status-soft: #F5D4A4;
+        --feditest-color-status-degrade: #EDF593;
+        --feditest-color-status-skip: inherit;
+        --feditest-color-status-error: #F58171;
+    }
+}
+
+:root {
+    --pico-font-size: 100%;
+}
+
+body {
+    padding: 2rem;
+	background: var(--feditest-background-color);
+}
+
+footer {
+    font-size: smaller;
+}
+
+div.feditest.title {
+    text-align: center;
+}
+div.feditest span.prefix,
+div.feditest span.prefix a {
+		color: var(--pico-muted-color);
+}
+
+div.feditest.title .id::before {
+	content: "TestRun ID: "
+}
+
+div.feditest.module {
+    background: var(--pico-background-color);
+    border-radius: 5px;
+    border: 1px solid var(--pico-table-border-color);
+    margin: 0 0 2rem 0;
+    padding: 2rem;
+}
+
+div.feditest.module.summary {
+    box-shadow: 0px 0px 5px var(--pico-table-border-color);
+}
+
+div.feditest.module.results {
+    box-shadow: 0px 0px 5px var(--pico-table-border-color);
+}
+
+div.feditest.session {
+    margin-bottom: 2rem;
+}
+
+div.feditest.session > h3 {
+    font-weight: bold;
+}
+
+div.feditest.session > h3::before {
+    content: "Session: ";
+	color: var(--pico-muted-color);
+}
+
+.feditest h4 {
+    background: var(--feditest-h4-background-color);
+}
+
+.feditest div.session + div.session {
+	padding-top: 2em;
+	margin-top: 2em;
+	border-top: 1px solid var(--pico-table-border-color);
+}
+
+.feditest div.constellation > h4::before {
+    content: "Constellation: ";
+	color: var(--pico-muted-color);
+}
+
+.feditest div.roles {
+    display: flex;
+    gap: 1rem;
+    margin-left: 1rem;
+}
+
+.feditest div.role {
+    width: 30rem;
+    border: 1px solid;
+    padding: 1rem;
+    border-color: var(--pico-table-border-color);
+}
+
+.feditest div.role > div.name {
+    font-weight: bold;
+
+}
+
+.feditest div.role > div.name::before {
+    content: "Role: ";
+}
+
+.feditest div.role > div.driver::before {
+    content: "Node Driver: ";
+}
+
+.feditest div.role > div.app::before {
+    content: "App: ";
+}
+
+.feditest div.role > div.appversion::before {
+    content: "App version: ";
+}
+
+.feditest div.status {
+    color: var(--feditest-color-status);
+    padding: .5rem;
+}
+
+.feditest .status.passed {
+    background: var(--feditest-color-status-passed);
+}
+
+.feditest .status.hard {
+    background: var(--feditest-color-status-hard);
+}
+
+.feditest .status.soft {
+    background: var(--feditest-color-status-soft);
+}
+
+.feditest .status.degrade {
+    background: var(--feditest-color-status-degrade);
+}
+
+.feditest .status.skip {
+    background: var(--feditest-color-status-skip);
+}
+.feditest .status.error {
+    background: var(--feditest-color-status-error);
+}
+
+.feditest .status input {
+    display: none;
+}
+
+.feditest pre.stacktrace {
+    display: none;
+    padding: 1rem;
+}
+
+.feditest input:checked + pre.stacktrace {
+    display: block;
+}
+
+.feditest .status label {
+    color: inherit;
+}
+
+.feditest .status label::after {
+    content: " ▼";
+    color: inherit;
+}

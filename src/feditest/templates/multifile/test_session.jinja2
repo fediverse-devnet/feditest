@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+        <title>{{ plan_session.name }} | Feditest</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        >
+        <!-- The page will be in sessions/(session).html -->
+        <link rel="stylesheet" href="../css/common.css">
+        <link rel="stylesheet" href="../css/feditest.css">
+    </head>
+    <body>
+{%  include "partials/test_session/title.jinja2" %}
+        <nav class="matrix">
+            <ul>
+                <li><a href="#summary">Summary</a></li>
+                <li><a href="#results">Results</a></li>
+                <li><a href="#metadata">Metadata</a></li>
+            </ul>
+        </nav>
+        <div id="summary" class="feditest module summary">
+            <h2>Test Run Summary</h2>
+{%  include "testrun-transcript-summary.jinja2" %}
+        </div>
+        <div id="results" class="feditest module results">
+{%  include "partials/test_session/results.jinja2" %}
+        </div>
+        <div id="metadata" class="feditest module metadata">
+            <h2>Test Run Metadata</h2>
+{%  include "partials/test_session/metadata.jinja2" %}
+        </div>
+{%   include "standalone-report-footer.jinja2" %}
+    </body>
+</html>

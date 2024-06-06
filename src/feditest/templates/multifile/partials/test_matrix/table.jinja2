@@ -1,0 +1,56 @@
+{% macro column_headings() %}
+                    <tr>
+                    <th>Test (alphabetical order)</th>
+{%- for run_session in run.sessions %}
+{%-     set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+{%-     set constellation = plan_session.constellation %}
+                    <th>
+                        <div class="title">
+{%-     if session_links -%}
+                            <a href="{{ session_file_path(plan_session) }}">
+{%-     endif -%}
+                            {{ constellation.name or "Unnamed" }}
+{%-     if session_links -%}
+                            </a>
+{%-     endif -%}
+                        </div>
+                    </th>
+{%- endfor %}
+                </tr>
+{% endmacro %}
+
+    <div class="feditest tests">
+        <table class="tests">
+            <colgroup>
+                <col>
+{%- for run_session in run.sessions %}
+                <col class="session">
+{%- endfor %}
+            </colgroup>
+            <thead>
+                {{ column_headings() }}
+            </thead>
+            <tbody>
+{%- for _, test_meta in sorted(run.test_meta.items()) %}
+                <tr>
+                    <td class="namedesc">
+                        <span class="name">{{ permit_line_breaks_in_identifier(test_meta.name) }}</span>
+{%-     if test_meta.description %}
+                        <span class="description">{{ test_meta.description }}</span>
+{%-     endif %}
+                    </td>
+{%-     for run_session in run.sessions %}
+                    <td class="status">
+{%-         for result in get_results_for(run, run_session, test_meta) %}
+{%              include "testresult-brief.jinja2" %}
+{%-         endfor %}
+                    </td>
+{%-     endfor %}
+                </tr>
+{%- endfor %}
+            </tbody>
+            <tfoot>
+                {{ column_headings() }}
+            </thead>
+        </table>
+    </div>

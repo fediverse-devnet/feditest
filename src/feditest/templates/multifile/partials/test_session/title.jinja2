@@ -1,0 +1,5 @@
+{% set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+<header class="feditest title" style="text-align: center">
+  <h1><span class="prefix"><a href="https://feditest.org/">Feditest</a>:</span> {{ plan_session.name }}</h1>
+  <p class="id">{{ run.id }} [<a href="../">Test Matrix</a>] </p>
+</header>

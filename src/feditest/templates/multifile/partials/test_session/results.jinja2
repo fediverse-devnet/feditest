@@ -1,0 +1,54 @@
+{%-     set plan_session = run.plan.sessions[run_session.plan_session_index] %}
+{%-     set constellation = plan_session.constellation %}
+   <div class="feditest module results">
+        <h2>Constellation</h2>
+                    <dl class="roles"">
+{%-     for role_name, role in constellation.roles.items() %}
+                        <dt>{{ role_name }}</dt>
+                        
+                        <dd>{% if role.parameters.app %}
+                            {{ role.parameters.app}}
+                            {% else %}
+                            <code>{{ role.nodedriver }}</code>
+                            {% endif %}
+                        </dd> 
+{%-     endfor %}
+                    </dl>
+        <h2>Test Results</h2>
+            <div class="feditest tests">
+                <div class="session">
+{%-     for test_index, run_test in enumerate(run_session.run_tests) %}
+{%-         set plan_test_spec = plan_session.tests[run_test.plan_test_index] %}
+{%-         set test_meta = run.test_meta[plan_test_spec.name] %}
+                    <div class="test">
+                        <h4><span class="prefix">Test:</span> {{ test_meta.name }}</h4>
+{%-         if test_meta.description %}
+                            <div class="description">{{ test_meta.description}}</div>
+{%-         endif %}
+                        <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }}</p>
+{%-         with result=run_test.worst_result %}
+{%-             include "testresult-full.jinja2" %}
+{%-         endwith %}
+{%-         for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
+                        <div class="step">
+{%              set test_step_meta = test_meta.steps[run_step.plan_step_index] %}
+                            <h5><span class="prefix">Test step:</span> {{ test_step_meta.name }}</h5>
+{%-             if test_step_meta.description %}
+                                <div class="description">{{ test_step_meta.description}}</div>
+{%-             endif %}
+                            <p class="when">Started {{ format_timestamp(run_step.started) }}, ended {{ format_timestamp(run_step.ended) }}</p>
+
+{%-             with result=run_step.result, idmod='step' %}
+{%-                 include "testresult-full.jinja2" %}
+{%-             endwith %}
+                        </div>
+{%-         endfor %}
+                    </div>
+{%-     endfor %}
+                </div>
+            </div>
+    </div>
+    {# <div class="feditest module metadata">
+        <h2>Test Run Metadata</h2>
+{%  include "testrun-transcript-metadata.jinja2" %}
+    </div> #}
