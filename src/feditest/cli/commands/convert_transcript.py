@@ -8,6 +8,7 @@ from feditest.reporting import warning
 from feditest.testruntranscript import (
     HtmlTestRunTranscriptSerializer,
     JsonTestRunTranscriptSerializer,
+    MultifileRunTranscriptSerializer,
     SummaryTestRunTranscriptSerializer,
     TapTestRunTranscriptSerializer,
     TestRunTranscript,
@@ -15,6 +16,7 @@ from feditest.testruntranscript import (
 )
 from feditest.utils import FEDITEST_VERSION
 
+SINGLE_FILE_DEFAULT_TEMPLATE = 'testrun-report-testmatrix-standalone.jinja2'
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -42,6 +44,17 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         serializer = SummaryTestRunTranscriptSerializer(transcript)
         serializer.write(args.json)
 
+    if isinstance(args.multifile, str):
+        template = args.template
+        if template == SINGLE_FILE_DEFAULT_TEMPLATE:
+            template = "multifile"
+        serializer = MultifileRunTranscriptSerializer(args.multifile, template)
+        try:
+            serializer.write(transcript)
+        except Exception:
+            import traceback
+            traceback.print_exc()
+
     return 0
 
 
@@ -58,9 +71,12 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     html_group = parser.add_argument_group('html', 'HTML options')
     html_group.add_argument('--html', nargs="?", const=True, default=False,
                         help="Write results in HTML format to stdout, or to the provided file (if given).")
-    html_group.add_argument('--template', default='testrun-report-testmatrix-standalone.jinja2',
+    html_group.add_argument('--template', default=SINGLE_FILE_DEFAULT_TEMPLATE,
                         help="When specifying --html, use this HTML template (jinja2 format).")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
+    parser.add_argument("--multifile", 
+        help="""Write results to a directory of files. A matrix and a file per session. 
+        The template argument refers to to a directory (path) of template directories""")

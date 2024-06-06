@@ -35,10 +35,6 @@ class TestPlanConstellationNode(msgspec.Struct):
         return msgspec.convert(testplanconstellationnode_json, type=TestPlanConstellationNode)
 
 
-    def __str__(self):
-        return self.name
-
-
     def parameter(self, name: str) -> Any | None:
         if self.parameters:
             return self.parameters.get(name)

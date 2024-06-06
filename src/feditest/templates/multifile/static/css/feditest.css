@@ -1,0 +1,99 @@
+/* This was previously embedded in some of the templates */
+
+div.feditest.tests {
+    overflow: auto;
+    position: relative;
+}
+
+div.feditest.tests div.roles dd {
+    font-weight: normal;
+}
+
+div.feditest.tests .namedesc>span {
+    display: block;
+}
+
+div.feditest.tests .namedesc>span.name {
+    font-weight: bold;
+}
+
+.feditest .role>table.parameters {
+    font-size: 0.8rem;
+}
+
+.feditest dl.roles {
+    display: grid;
+    grid-template-columns: auto auto;
+    width: fit-content;
+    column-gap: 8px;
+}
+
+.feditest dl.roles dt::after {
+    content: ": ";
+}
+
+.feditest dl.roles dd {
+    margin-left: 0;
+    font-weight: normal;
+}
+
+.feditest table.tests {
+    overflow: scroll;
+    border-collapse: collapse;
+}
+
+.feditest table.tests td:first-child,
+.feditest table.tests th:first-child {
+    position: sticky;
+    left: 0;
+}
+
+.feditest table.tests col.session {
+    border: 2px solid var(--pico-contast);
+}
+
+.feditest div.status {
+    max-width: 120px;
+    max-height: 150px;
+    overflow: auto;
+}
+
+.feditest .session .test {
+    margin-bottom: 2rem;;
+}
+
+div.feditest.module.summary {
+    box-shadow: none;
+}
+
+div.feditest.module.results {
+    box-shadow: none;
+}
+
+div.feditest.module {
+    border: none;
+}
+
+table.feditest.summary {
+    width: 20rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    table.feditest.summary td.status {
+        color: black;
+    }
+}
+
+nav.matrix {
+    display: block;
+    text-align: center;
+}
+
+nav.matrix ul {
+    display: block;
+    font-size: 1.4rem;
+}
+
+table.tests tfoot th:first-of-type {
+    visibility: hidden;
+}
