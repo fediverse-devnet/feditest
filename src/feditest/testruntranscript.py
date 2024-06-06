@@ -542,9 +542,9 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
 class MultifileRunTranscriptSerializer:
     """Generates the Feditest reports into a test matrix and a linked, separate
-    file per session. It uses a template path so variants of reports can be generated
-    while sharing common templates. The file_ext can be specified to support generating
-    other formats like MarkDown.
+    file per session. It uses a template path (comma-delimited string)
+    so variants of reports can be generated while sharing common templates. The file_ext 
+    can be specified to support generating other formats like MarkDown.
 
     The generation uses two primary templates. The 'test_matrix.jinja2' template is used for
     the matrix generation and 'test_session.jinja2' is used for session file generation.
@@ -557,12 +557,16 @@ class MultifileRunTranscriptSerializer:
     def __init__(
         self,
         output_dir: str | os.PathLike,
-        template_path: str | os.PathLike | list[str | os.PathLike] | None = None,
+        template_path: str = "multifile",
         file_ext: str = "html",
         matrix_base_name="index",
     ):
         self.output_dir = output_dir
         self.template_path = template_path or "multifile"
+        templates_base_dir = os.path.join(os.path.dirname(__file__), "templates")
+        self.template_path = [
+            os.path.join(templates_base_dir, t) for t in template_path.split(",")
+        ]
         self.file_ext = file_ext
         self.matrix_base_name = matrix_base_name
 
@@ -574,12 +578,9 @@ class MultifileRunTranscriptSerializer:
         if not os.path.exists(sessions_dir):
             os.makedirs(sessions_dir)
 
-        templates_base_dir = os.path.join(os.path.dirname(__file__), "templates")
-        os.chdir(templates_base_dir)
+        self._copy_static_files()
 
-        jinja2_env = self._init_jinja2_env(self.template_path)
-        self._copy_static_files(self.template_path, self.output_dir)
-
+        jinja2_env = self._init_jinja2_env()
 
         def session_file_path(plan_session):
             return f"sessions/{plan_session.name}.{self.file_ext}"
@@ -605,6 +606,7 @@ class MultifileRunTranscriptSerializer:
         matrix_filename = os.path.join(
             self.output_dir, f"{self.matrix_base_name}.{self.file_ext}"
         )
+
         with open(matrix_filename, "w") as fp:
             matrix_template = jinja2_env.get_template("test_matrix.jinja2")
             fp.write(matrix_template.render(**context))
@@ -626,32 +628,30 @@ class MultifileRunTranscriptSerializer:
             ) as fp:
                 fp.write(session_template.render(**session_context))
 
-    @staticmethod
-    def _init_jinja2_env(template_path: str) -> jinja2.Environment:
-        template_path = template_path.split(",")
-        templates = jinja2.Environment(loader=jinja2.FileSystemLoader(template_path))
+    def _init_jinja2_env(self) -> jinja2.Environment:
+        templates = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(self.template_path)
+        )
         templates.filters["regex_sub"] = lambda s, pattern, replacement: re.sub(
             pattern, replacement, s
         )
         return templates
 
-    @staticmethod
-    def _copy_static_files(template: str, output_dir: str):
-        template_path = template.split(",")
-        for path in reversed(template_path):
+    def _copy_static_files(self):
+        for path in reversed(self.template_path):
             static_dir = os.path.join(path, "static")
             if os.path.exists(static_dir):
                 for dirpath, _, filenames in os.walk(static_dir):
                     if len(filenames) == 0:
                         continue
                     filedir_to = os.path.join(
-                        output_dir, os.path.relpath(dirpath, static_dir)
+                        self.output_dir, os.path.relpath(dirpath, static_dir)
                     )
                     if not os.path.exists(filedir_to):
                         os.makedirs(filedir_to, exist_ok=True)
                     for filename in filenames:
                         filepath_from = os.path.join(dirpath, filename)
-                        filepath_to = os.path.join(output_dir, filedir_to, filename)
+                        filepath_to = os.path.join(filedir_to, filename)
                         # Notusing copytree since it would copy static too
                         shutil.copyfile(filepath_from, filepath_to)
 
