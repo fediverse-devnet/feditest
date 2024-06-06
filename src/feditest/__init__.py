@@ -2,6 +2,7 @@
 Core module.
 """
 
+import os
 from collections.abc import Callable
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
@@ -160,6 +161,7 @@ def load_node_drivers_from(dirs: list[str]) -> None:
 # Holds all node drivers
 all_node_drivers : dict[str,Type[Any]]= {}
 
+
 def nodedriver(to_register: Type[Any]):
     """
     Used as decorator of NodeDriver classes, like this:
@@ -170,7 +172,7 @@ def nodedriver(to_register: Type[Any]):
     global _loading_node_drivers
     global all_node_drivers
 
-    if not _loading_node_drivers:
+    if not os.environ.get("ALLOW_EXTERNAL_NODE_DRIVERS") and not _loading_node_drivers:
         fatal('Do not define NodeDrivers outside of nodedriversdir')
 
     if not isinstance(to_register,type):
