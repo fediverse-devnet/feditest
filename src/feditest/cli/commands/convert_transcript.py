@@ -47,7 +47,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if isinstance(args.multifile, str):
         template = args.template
         if template == SINGLE_FILE_DEFAULT_TEMPLATE:
-            template = "multifile"
+            template = "multifile,."
         serializer = MultifileRunTranscriptSerializer(args.multifile, template)
         try:
             serializer.write(transcript)
