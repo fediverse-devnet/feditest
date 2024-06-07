@@ -557,12 +557,11 @@ class MultifileRunTranscriptSerializer:
     def __init__(
         self,
         output_dir: str | os.PathLike,
-        template_path: str = "multifile",
+        template_path: str,
         file_ext: str = "html",
         matrix_base_name="index",
     ):
         self.output_dir = output_dir
-        self.template_path = template_path or "multifile"
         templates_base_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.template_path = [
             os.path.join(templates_base_dir, t) for t in template_path.split(",")
