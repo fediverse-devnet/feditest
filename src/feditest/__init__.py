@@ -3,6 +3,7 @@ Core module.
 """
 
 from collections.abc import Callable
+from enum import Enum
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
 from typing import Any, Optional, Type, TypeVar, cast
@@ -215,44 +216,32 @@ def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],Exc
         raise exception_factory(reason)
 
 
-class HardAssertionFailure(Exception):
+class SpecLevel(Enum):
+    MUST = 1
+    SHOULD = 2
+    IMPLIED = 3
+    UNDEFINED = 4
+
+
+class InteropLevel(Enum):
+    PROBLEM = 1
+    DEGRADED = 2
+    UNAFFECTED = 3
+
+
+class AssertionFailure(Exception):
     """
-    Indicates an unacceptable failure in the system under test.
+    Indicates a failure in the system under test.
     """
-    pass
+    def __init__(self, spec_level: SpecLevel, interop_level: InteropLevel, *args, **kwargs):
+       ...
 
 
-class SoftAssertionFailure(Exception):
-    """
-    Indicates a failure in the system under test that violates the specification but likely does
-    not cause interoperability problems.
-    """
-    pass
-
-
-class DegradeAssertionFailure(Exception):
-    """
-    Indicates that data or content is degraded. For example, use this is a Fediverse application
-    turns all ActivityStreams object types into Nodes or strips important formatting.
-    """
-    pass
-
-
-class SkipTestException(Exception):
-    """
-    Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
-    the circumstances in which it should be run are not currently present.
-    """
-    pass
-
-
-def hard_assert_that(actual_or_assertion: T, matcher=None, reason="" ) -> None:
-    feditest_assert_that(actual_or_assertion, HardAssertionFailure, matcher, reason)
-
-
-def soft_assert_that(actual_or_assertion: T, matcher=None, reason="" ) -> None:
-    feditest_assert_that(actual_or_assertion, SoftAssertionFailure, matcher, reason)
-
-
-def degrade_assert_that(actual_or_assertion: T, matcher=None, reason="" ) -> None:
-    feditest_assert_that(actual_or_assertion, DegradeAssertionFailure, matcher, reason)
+def assert_that(
+    actual_or_assertion: T,
+    spec_level: SpecLevel = SpecLevel.UNDEFINED,
+    interop_level: InteropLevel = InteropLevel.UNAFFECTED,
+    matcher=None,
+    reason=""
+) -> None:
+    ... # TODO
