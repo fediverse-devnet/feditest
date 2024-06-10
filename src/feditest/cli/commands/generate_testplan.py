@@ -31,6 +31,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
             session = session_template.instantiate_with_constellation(constellation, constellation.name)
             test_plan.sessions.append(session)
 
+    test_plan.simplify()
     if args.out:
         test_plan.save(args.out)
     else:
