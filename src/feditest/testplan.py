@@ -150,10 +150,28 @@ class TestPlanTestSpec(msgspec.Struct):
                     raise TestPlanError(context_msg + f'Cannot find role "{ key }" in test')
         return ret
 
+
     def check_can_be_executed(self, constellation: TestPlanConstellation, context_msg: str = "") -> None:
         test_context_msg = context_msg + f'Test "{ self.name }": '
         needed_role_names = self.needed_role_names(context_msg) # may raise
         constellation.check_defines_all_role_names(needed_role_names, test_context_msg )
+
+
+    def simplify(self) -> None:
+        """
+        If possible, simplify this test specification
+        """
+        if self.rolemapping:
+            new_rolemapping : dict[str,str] | None = None
+            for name, value in self.rolemapping.items():
+                if name != value:
+                    if new_rolemapping is None:
+                        new_rolemapping = {}
+                    new_rolemapping[name] = value
+            if new_rolemapping is None:
+                self.rolemapping = None
+            elif len(new_rolemapping) < len(self.rolemapping):
+                self.rolemapping = new_rolemapping
 
 
 class TestPlanSession(msgspec.Struct):
@@ -220,6 +238,14 @@ class TestPlanSession(msgspec.Struct):
         return TestPlanSession(constellation=constellation,tests=self.tests, name=name)
 
 
+    def simplify(self) -> None:
+        """
+        If possible, simplify this test plan session.
+        """
+        for test in self.tests:
+            test.simplify()
+
+
     def as_json(self) -> bytes:
         ret = msgspec.json.encode(self)
         ret = msgspec.json.format(ret, indent=4)
@@ -242,6 +268,15 @@ class TestPlan(msgspec.Struct):
     """
     sessions : list[TestPlanSession] = []
     name: str | None = None
+
+
+    def simplify(self) -> None:
+        """
+        If possible, simplify this test plan.
+        """
+        for session in self.sessions:
+            session.simplify()
+
 
     @staticmethod
     def load(filename: str) -> 'TestPlan':
