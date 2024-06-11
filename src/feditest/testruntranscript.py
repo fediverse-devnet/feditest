@@ -5,16 +5,16 @@ import re
 import shutil
 import traceback
 from abc import ABC, abstractmethod
-from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Iterator, Optional
+import sys
+from typing import IO, Iterator, Optional
 
 import jinja2
 import msgspec
 
 import feditest
 import feditest.testplan
-from feditest.reporting import fatal, error
+from feditest.reporting import fatal
 from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
 
@@ -164,19 +164,21 @@ class TestRunTranscriptSummary:
     to reference it.
     """
     def __init__(self) -> None:
-        # We count failures in both categories
-        self.must_failures : list[TestRunResultTranscript] = []
-        self.should_failures : list[TestRunResultTranscript] = []
-        self.implied_failures : list[TestRunResultTranscript] = []
-        self.unspecified_failures : list[TestRunResultTranscript] = []
-        self.problem_failures : list[TestRunResultTranscript] = []
-        self.degraded_failures : list[TestRunResultTranscript] = []
-        self.unaffected_failures : list[TestRunResultTranscript] = []
-        self.unknown_failures : list[TestRunResultTranscript] = []
+        self.failures : list[TestRunResultTranscript] = []
         self.skips : list[TestRunResultTranscript] = []
         self.interaction_controls : list[TestRunResultTranscript] = []
         self.errors : list[TestRunResultTranscript] = []
         self.tests : list[TestRunTestTranscript] = []
+
+
+    def count_failures_for(self, spec_level: feditest.SpecLevel | None, interop_level: feditest.InteropLevel | None):
+        current = self.failures
+        if spec_level is not None:
+            current = [ f for f in current if f.spec_level == spec_level.name ]
+        if interop_level is not None:
+            current = [ f for f in current if f.interop_level == interop_level.name ]
+        return len(current)
+
 
     @property
     def n_total(self):
@@ -184,49 +186,8 @@ class TestRunTranscriptSummary:
 
 
     @property
-    def n_must_failed(self):
-        return len(self.must_failures)
-
-
-    @property
-    def n_should_failed(self):
-        return len(self.should_failures)
-
-
-    @property
-    def n_implied_failed(self):
-        return len(self.implied_failures)
-
-
-    @property
-    def n_unspecified_failed(self):
-        return len(self.unspecified_failures)
-
-
-    @property
-    def n_problem_failed(self):
-        return len(self.problem_failures)
-
-
-    @property
-    def n_degraded_failed(self):
-        return len(self.degraded_failures)
-
-
-    @property
-    def n_unaffected_failed(self):
-        return len(self.unaffected_failures)
-
-
-    @property
-    def n_unknown_failed(self):
-        return len(self.unknown_failures)
-
-
-    @property
     def n_failed(self):
-        # we can count either category
-        return self.n_must_failed + self.n_should_failed + self.n_implied_failed + self.n_unspecified_failed
+        return len(self.failures)
 
 
     @property
@@ -241,35 +202,14 @@ class TestRunTranscriptSummary:
 
     @property
     def n_passed(self):
-        return self.n_total - self.n_failed - self.n_skipped - self.n_errored
+        return len(self.tests) - len(self.failures) - len(self.skips) - len(self.errors)
 
 
     def add_result(self, result: TestRunResultTranscript | None):
         if result is None:
             return
         if result.type.endswith('AssertionFailure'):
-            match result.spec_level:
-                case feditest.SpecLevel.MUST.name:
-                    self.must_failures.append(result)
-                case feditest.SpecLevel.SHOULD.name:
-                    self.should_failures.append(result)
-                case feditest.SpecLevel.IMPLIED.name:
-                    self.implied_failures.append(result)
-                case feditest.SpecLevel.UNSPECIFIED.name:
-                    self.unspecified_failures.append(result)
-                case _:
-                    error('Unexpected value:', result.spec_level)
-            match result.interop_level:
-                case feditest.InteropLevel.PROBLEM.name:
-                    self.problem_failures.append(result)
-                case feditest.InteropLevel.DEGRADED.name:
-                    self.degraded_failures.append(result)
-                case feditest.InteropLevel.UNAFFECTED.name:
-                    self.unaffected_failures.append(result)
-                case feditest.InteropLevel.UNKNOWN.name:
-                    self.unknown_failures.append(result)
-                case _:
-                    error('Unexpected value:', result.interop_level)
+            self.failures.append(result)
         elif result.type.endswith('SkipTestException') or result.type.endswith('NotImplementedByNodeError') or result.type.endswith('NotImplementedByNodeDriverError'):
             self.skips.append(result)
         elif result.type.endswith('AbortTestRunException') or result.type.endswith('AbortTestRunSessionException') or result.type.endswith('AbortTestException'):
@@ -389,7 +329,6 @@ class TestRunTranscript(msgspec.Struct):
 
         for session in self.sessions:
             session.build_summary(ret)
-
         return ret
 
 
@@ -404,8 +343,8 @@ class TestRunTranscript(msgspec.Struct):
             f.write(self.as_json())
 
 
-    def print(self) -> None:
-        print(self.as_json().decode('utf-8'))
+    def write(self, fd: IO[str]) -> None:
+        fd.write(self.as_json().decode('utf-8'))
 
 
     @staticmethod
@@ -445,14 +384,13 @@ class TestRunTranscriptSerializer(ABC):
         """
         if dest and isinstance(dest,str):
             with open(dest, "w", encoding="utf8") as out:
-                with redirect_stdout(out):
-                    self._write()
+               self._write(out)
         else:
-            self._write()
+            self._write(sys.stdout)
 
 
     @abstractmethod
-    def _write(self):
+    def _write(self, fd: IO[str]):
         ...
 
 
@@ -460,46 +398,48 @@ class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     Knows how to serialize a TestRunTranscript into a single-line summary.
     """
-    def _write(self):
+    def _write(self, fd: IO[str]):
         summary = self.transcript.build_summary()
 
-        print(f'Test summary: total={ summary.n_total }, passed={ summary.n_passed }'
+        print(f'Test summary: total={ len(summary.tests) }, passed={ summary.n_passed }'
               + f', failed={ summary.n_failed } (hard={ summary.n_hard_failed }, soft={ summary.n_soft_failed }, degrade={ summary.n_degrade_failed })'
-              + f', skipped={ summary.n_skipped }, errors={ summary.n_errored }.')
+              + f', skipped={ summary.n_skipped }, errors={ summary.n_errored }.',
+              file=fd)
 
 
 class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     Knows how to serialize a TestRunTranscript into a report in TAP format.
     """
-    def _write(self):
+    def _write(self, fd: IO[str]):
         plan = self.transcript.plan
         summary = self.transcript.build_summary()
 
-        print("TAP version 14")
-        print(f"# test plan: { plan }")
+        fd.write("TAP version 14\n")
+        fd.write(f"# test plan: { plan }\n")
         for key in ['started', 'ended', 'platform', 'username', 'hostname']:
             value = getattr(self.transcript, key)
             if value:
-                print(f"# {key}: {value}")
+                fd.write(f"# {key}: {value}\n")
 
         test_id = 0
         for session_transcript in self.transcript.sessions:
             plan_session = plan.sessions[session_transcript.plan_session_index]
             constellation = plan_session.constellation
 
-            print(f"# session: { plan_session }")
-            print(f"# constellation: { constellation }")
-            print("#   roles:")
+            fd.write(f"# session: { plan_session }\n")
+            fd.write(f"# constellation: { constellation }\n")
+            fd.write("#   roles:\n")
             for role_name, node in plan_session.constellation.roles.items():
                 if role_name in session_transcript.constellation.nodes:
                     transcript_role = session_transcript.constellation.nodes[role_name]
-                    print(f"#     - name: {role_name}")
-                    print(f"#       driver: {node.nodedriver}")
-                    print(f"#       app: {transcript_role.appdata['app']}")
-                    print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
+                    fd.write(f"#     - name: {role_name}\n")
+                    if node:
+                        fd.write(f"#       driver: {node.nodedriver}\n")
+                    fd.write(f"#       app: {transcript_role.appdata['app']}\n")
+                    fd.write(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}\n")
                 else:
-                    print(f"#     - name: {role_name} -- not instantiated")
+                    fd.write(f"#     - name: {role_name} -- not instantiated\n")
 
             for test_index, run_test in enumerate(session_transcript.run_tests):
                 test_id += 1
@@ -509,26 +449,27 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
                 result =  run_test.worst_result
                 if result:
-                    print(f"not ok {test_id} - {test_meta.name}")
-                    print("  ---")
-                    print(f"  problem: {result.type} ({ result.spec_level }, { result.interop_level })")
-                    print("  message:")
-                    print("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ))
-                    print("  where:")
+                    fd.write(f"not ok {test_id} - {test_meta.name}\n")
+                    fd.write("  ---\n")
+                    fd.write(f"  problem: {result.type} ({ result.spec_level }, { result.interop_level })\n")
+                    if result.msg:
+                        fd.write("  message:\n")
+                        fd.write("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ) + "\n")
+                    fd.write("  where:\n")
                     for loc in result.stacktrace:
-                        print(f"    {loc[0]} {loc[1]}")
-                    print("  ...")
+                        fd.write(f"    {loc[0]} {loc[1]}\n")
+                    fd.write("  ...\n")
                 else:
                     directives = "" # FIXME f" # SKIP {test.skip}" if test.skip else ""
-                    print(f"ok {test_id} - {test_meta.name}{directives}")
+                    fd.write(f"ok {test_id} - {test_meta.name}{directives}\n")
 
-        print(f"1..{test_id}")
-        print("# test run summary:")
-        print(f"#   total: {summary.n_total}")
-        print(f"#   passed: {summary.n_passed}")
-        print(f"#   failed: {summary.n_failed}")
-        print(f"#   skipped: {summary.n_skipped}")
-        print(f"#   errors: {summary.n_errored}")
+        fd.write(f"1..{test_id}\n")
+        fd.write("# test run summary:\n")
+        fd.write(f"#   total: {summary.n_total}\n")
+        fd.write(f"#   passed: {summary.n_passed}\n")
+        fd.write(f"#   failed: {summary.n_failed}\n")
+        fd.write(f"#   skipped: {summary.n_skipped}\n")
+        fd.write(f"#   errors: {summary.n_errored}\n")
 
 
 class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
@@ -543,7 +484,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             loader=jinja2.FileSystemLoader(template_dir)
         )
 
-    def _write(self):
+    def _write(self, fd: IO[str]):
         try:
             template = self.templates.get_template(self.template_name)
         except jinja2.TemplateNotFound:
@@ -552,7 +493,8 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             except jinja2.TemplateNotFound:
                 fatal('jinja2 template not found:', self.template_name)
 
-        print(  template.render(
+        fd.write(template.render(
+                feditest=feditest,
                 run=self.transcript,
                 summary=self.transcript.build_summary(),
                 getattr=getattr,
@@ -612,6 +554,7 @@ class MultifileRunTranscriptSerializer:
             return f"sessions/{plan_session.name}.{self.file_ext}"
 
         context = dict(
+            feditest=feditest,
             run=transcript,
             summary=transcript.build_summary(),
             getattr=getattr,
@@ -700,5 +643,5 @@ class JsonTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     An object that knows how to serialize a TestRun into JSON format
     """
-    def _write(self):
-        self.transcript.print()
+    def _write(self, fd: IO[str]):
+        self.transcript.write(fd)

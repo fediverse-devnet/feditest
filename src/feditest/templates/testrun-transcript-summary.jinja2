@@ -1,13 +1,13 @@
     <table class="feditest summary">
        <thead>
             <tr>
-                <th colspan="2">Status</th>
+                <th>Status</th>
                 <th>Count</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <th colspan="2">Passed</th>
+                <th>Passed</th>
 {%- if summary.n_passed != 0 %}
                 <td class="status passed">{{ summary.n_passed }}</td>
 {%- else %}
@@ -15,77 +15,53 @@
 {%- endif %}
             </tr>
             <tr>
-                <th rowspan="4">Failed (classified by specification conformance)</th>
-                <th>MUST requirement not met</th>
-{%- if summary.n_must_failed != 0 %}
-                <td class="status must">{{ summary.n_must_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
+                <th>Failed</th>
+                <td>
+                    <table class="failed">
+                        <thead>
+                            <tr>
+                                <td colspan="2" rowspan="2"></td>
+                                <th colspan="5">Interoperability</th>
+                            </tr>
+                            <tr>
+                                <th>Compromised</th>
+                                <th>Degraded</th>
+                                <th>Unaffected</th>
+                                <th>Unknown</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th rowspan="5">Conformance</th>
+                                <th>Must</th>
+{%- for interop_level in feditest.InteropLevel %}
+                                <td class="status must {{ interop_level.name.lower() }}">{{ summary.count_failures_for(feditest.SpecLevel.MUST, interop_level) }}</td>
+{%- endfor %}
+                                <td class="status must total">{{ summary.count_failures_for(feditest.SpecLevel.MUST, None) }}</td>
+                            </tr>
+{%- for spec_level in [ feditest.SpecLevel.SHOULD, feditest.SpecLevel.IMPLIED, feditest.SpecLevel.UNSPECIFIED ] %}
+                            <tr>
+                                <td>{{ spec_level.formatted_name() }}</td>
+{%-     for interop_level in feditest.InteropLevel %}
+                                <td class="status must {{ interop_level.name.lower() }}">{{ summary.count_failures_for(spec_level, interop_level) }}</td>
+{%-     endfor %}
+                                <td class="status must total">{{ summary.count_failures_for(spec_level, None) }}</td>
+                            </tr>
+{%- endfor %}
+                            <tr>
+                                <td>Total</td>
+{%- for interop_level in feditest.InteropLevel %}
+                                <td class="status {{ interop_level.name.lower() }} total">{{ summary.count_failures_for(None, interop_level) }}</td>
+{%- endfor %}
+                                <td class="status total">{{ summary.n_failed }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </td>
             </tr>
             <tr>
-                <th>SHOULD requirement not met</th>
-{%- if summary.n_should_failed != 0 %}
-                <td class="status should">{{ summary.n_should_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-            <tr>
-                <th>IMPLIED requirement not met</th>
-{%- if summary.n_implied_failed != 0 %}
-                <td class="status implied">{{ summary.n_implied_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-            <tr>
-                <th>Unspecified requirement not met</th>
-{%- if summary.n_unspecified_failed != 0 %}
-                <td class="status unspecified">{{ summary.n_unspecified_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-            <tr>
-                <th rowspan="4">Failed (classified by interoperability impact)</th>
-                <th>Likely compromises interoperability</th>
-{%- if summary.n_problem_failed != 0 %}
-                <td class="status problem">{{ summary.n_problem_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-            <tr>
-                <th>Degrades interoperability</th>
-{%- if summary.n_degraded_failed != 0 %}
-                <td class="status degraded">{{ summary.n_degraded_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-            <tr>
-                <th>Interoperability likely unaffected</th>
-{%- if summary.n_unaffected_failed != 0 %}
-                <td class="status unaffected">{{ summary.n_unaffected_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-            <tr>
-                <th>Unknown impact</th>
-{%- if summary.n_unknown_failed != 0 %}
-                <td class="status unknown">{{ summary.n_unknown_failed }}</td>
-{%- else %}
-                <td>0</td>
-{%- endif %}
-            </tr>
-
-
-
-
-            <tr>
-                <th colspan="2">Skipped</th>
+                <th>Skipped</th>
 {%- if summary.n_skipped != 0 %}
                 <td class="status skip">{{ summary.n_skipped }}</td>
 {%- else %}
@@ -93,7 +69,7 @@
 {%- endif %}
             </tr>
             <tr>
-                <th colspan="2">Errors</th>
+                <th>Errors</th>
 {%- if summary.n_errored != 0 %}
                 <td class="status error">{{ summary.n_errored }}</td>
 {%- else %}
@@ -103,7 +79,7 @@
         </tbody>
         <tfoot>
             <tr>
-                <th colspan="2">Total</th>
+                <th>Total</th>
                 <td>{{ summary.n_total }}</td>
             </tr>
         </tfoot>

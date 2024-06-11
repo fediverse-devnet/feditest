@@ -192,11 +192,20 @@ class SpecLevel(Enum):
     IMPLIED = 3
     UNSPECIFIED = 4
 
+
+    def formatted_name(self):
+        return self.name.capitalize()
+
+
 class InteropLevel(Enum):
     PROBLEM = 1
     DEGRADED = 2
     UNAFFECTED = 3
     UNKNOWN = 4
+
+
+    def formatted_name(self):
+        return self.name.capitalize()
 
 
 class AssertionFailure(Exception):
@@ -223,7 +232,7 @@ def _assert_match(
     if not matcher.matches(actual):
         description = StringDescription()
         if reason:
-            description.append_text(reason).append_test("\n")
+            description.append_text(reason).append_text("\n")
         description.append_text("Expected: ").append_description_of(
             matcher
         ).append_text("\n     but: ")
