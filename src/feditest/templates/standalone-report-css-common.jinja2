@@ -3,8 +3,9 @@
 	--feditest-h4-background-color: #e8e8e8;
     --feditest-color-status: inherit;
     --feditest-color-status-passed: #BBF5CA;
+    --feditest-color-status-failed: #FFF0F0;
 
-    --feditest-color-status-must: #F5B0A7;
+    --feditest-color-status-must: #FF6060;
     --feditest-color-status-should: #F5D4A4;
     --feditest-color-status-implied: #EDF593;
     --feditest-color-status-unspecified: #EDF5ff;
@@ -14,8 +15,8 @@
     --feditest-color-status-unaffected: #EDF593;
     --feditest-color-status-unknown: #EDF5ff;
 
-    --feditest-color-status-skip: inherit;
-    --feditest-color-status-error: #F58171;
+    --feditest-color-status-skip: #D0F0FF;
+    --feditest-color-status-error: #F6B1A1;
 }
 
 @media only screen and (prefers-color-scheme: dark) {
@@ -24,8 +25,9 @@
 		--feditest-h4-background-color: #242c38;
         --feditest-color-status: #000;
         --feditest-color-status-passed: #BBF5CA;
+        --feditest-color-status-failed: #FFF0F0;
 
-        --feditest-color-status-must: #F5B0A7;
+        --feditest-color-status-must: #FF6060;
         --feditest-color-status-should: #F5D4A4;
         --feditest-color-status-implied: #EDF593;
         --feditest-color-status-unspecified: #EDF5ff;
@@ -35,8 +37,8 @@
         --feditest-color-status-unaffected: #EDF593;
         --feditest-color-status-unknown: #EDF5ff;
 
-        --feditest-color-status-skip: inherit;
-        --feditest-color-status-error: #F58171;
+        --feditest-color-status-skip: #D0F0FF;
+        --feditest-color-status-error: #F6B1A1;
     }
 }
 
@@ -143,60 +145,154 @@ div.feditest.session > h3::before {
     content: "App version: ";
 }
 
-.feditest div.status {
-    color: var(--feditest-color-status);
-    padding: .5rem;
-    border-left: 5px solid;
+.feditest.module.summary table.summary th:first-child {
+    width: 200px;
 }
 
-.feditest td.status {
-    border-width: 5px;
-    border-style: solid;
-    border-color: inherit;
+.feditest.module.summary table.failed {
+    table-layout: fixed;
+    --pico-table-border-color: #808080;
 }
 
-.feditest .status.passed {
+.feditest.module.summary table.failed thead th,
+.feditest.module.summary table.failed td {
+    text-align: center;
+}
+
+.feditest.module.summary table.failed th,
+.feditest.module.summary table.failed td {
+    background: inherit;
+}
+
+.feditest.module.summary table.failed tbody th {
+    --pico-font-weight: 600; /* same way pico does this for thead th */
+}
+
+.feditest .status div {
+    margin: 3px 6px;
+    padding: 5px;
+}
+
+.feditest .status.moreinfo div:hover::after,
+.feditest .status.moreinfo label:hover::after {
+        padding: 10px;
+    border: 1px solid #808080;
+    position: absolute;
+    z-index: 1;
+    text-align: left;
+    white-space: pre-wrap;
+    background-color: var(--pico-background-color);
+}
+
+.feditest .status.passed div,
+.feditest .status.passed label {
     background: var(--feditest-color-status-passed);
 }
 
-.feditest .status.must {
-    background: var(--feditest-color-status-must);
+.feditest .status.failed div,
+.feditest .status.failed label {
+    background: var(--feditest-color-status-failed);
 }
 
-.feditest .status.should {
-    background: var(--feditest-color-status-should);
+.feditest .status.must div,
+.feditest .status.must label {
+    border-left: 5px solid var(--feditest-color-status-must);
 }
 
-.feditest .status.implied {
-    background: var(--feditest-color-status-implied);
+.feditest .status.problem div,
+.feditest .status.problem label {
+    background: var(--feditest-color-status-problem) !important;
 }
 
-.feditest .status.unspecified {
-    background: var(--feditest-color-status-unspecified);
+.feditest .status.degraded div,
+.feditest .status.degraded label {
+    background: var(--feditest-color-status-degraded) !important;
 }
 
-.feditest .status.problem {
-    border-color: var(--feditest-color-status-problem);
-}
-
-.feditest .status.degraded {
-    border-color; var(--feditest-color-status-degraded);
-}
-
-.feditest .status.unaffected {
-    border-color: var(--feditest-color-status-unaffected);
-}
-
-.feditest .status.unkown {
-    border-color: var(--feditest-color-status-unknown);
-}
-
-.feditest .status.skip {
+.feditest .status.skip div,
+.feditest .status.skip label {
     background: var(--feditest-color-status-skip);
 }
-.feditest .status.error {
+
+.feditest .status.error div,
+.feditest .status.error label {
     background: var(--feditest-color-status-error);
 }
+
+.feditest .status.passed.moreinfo div:hover::after,
+.feditest .status.passed.moreinfo label:hover::after {
+    content: "Conformance: Pass.\AInteroperability: Pass.";
+}
+
+.feditest .status.must.problem.moreinfo div:hover::after,
+.feditest .status.must.problem.moreinfo label:hover::after {
+    content: "Conformance: MUST failed.\AInteroperability: COMPROMISED.";
+}
+.feditest .status.must.degraded.moreinfo div:hover::after,
+.feditest .status.must.degraded.moreinfo label:hover::after {
+    content: "Conformance: MUST failed.\AInteroperability: DEGRADED.";
+}
+.feditest .status.must.unaffected.moreinfo div:hover::after,
+.feditest .status.must.unaffected.moreinfo label:hover::after {
+    content: "Conformance: MUST failed.\AInteroperability: likely unaffected.";
+}
+.feditest .status.must.unknown.moreinfo div:hover::after,
+.feditest .status.must.unknown.moreinfo label:hover::after {
+    content: "Conformance: MUST failed.\AInteroperability: unknown impact.";
+}
+
+.feditest .status.should.problem.moreinfo div:hover::after,
+.feditest .status.should.problem.moreinfo label:hover::after {
+    content: "Conformance: SHOULD not met.\AInteroperability: COMPROMISED.";
+}
+.feditest .status.should.degraded.moreinfo div:hover::after,
+.feditest .status.should.degraded.moreinfo label:hover::after {
+    content: "Conformance: SHOULD not met.\AInteroperability: DEGRADED.";
+}
+.feditest .status.should.unaffected.moreinfo div:hover::after,
+.feditest .status.should.unaffected.moreinfo label:hover::after {
+    content: "Conformance: SHOULD not met.\AInteroperability: likely unaffected.";
+}
+.feditest .status.should.unknown.moreinfo div:hover::after,
+.feditest .status.should.unknown.moreinfo label:hover::after {
+    content: "Conformance: SHOULD not met.\AInteroperability: unknown impact.";
+}
+
+.feditest .status.implied.problem.moreinfo div:hover::after,
+.feditest .status.implied.problem.moreinfo label:hover::after {
+    content: "Conformance: IMPLIED failed.\AInteroperability: COMPROMISED.";
+}
+.feditest .status.implied.degraded.moreinfo div:hover::after,
+.feditest .status.implied.degraded.moreinfo label:hover::after {
+    content: "Conformance: IMPLIED failed.\AInteroperability: DEGRADED.";
+}
+.feditest .status.implied.unaffected.moreinfo div:hover::after,
+.feditest .status.implied.unaffected.moreinfo label:hover::after {
+    content: "Conformance: IMPLIED failed.\AInteroperability: likely unaffected.";
+}
+.feditest .status.implied.unknown.moreinfo div:hover::after,
+.feditest .status.implied.unknown.moreinfo label:hover::after {
+    content: "Conformance: IMPLIED failed.\AInteroperability: unknown impact.";
+}
+
+.feditest .status.unspecified.problem.moreinfo div:hover::after,
+.feditest .status.unspecified.problem.moreinfo label:hover::after {
+    content: "Conformance: unspecified.\AInteroperability: COMPROMISED.";
+}
+.feditest .status.unspecified.degraded.moreinfo div:hover::after,
+.feditest .status.unspecified.degraded.moreinfo label:hover::after {
+    content: "Conformance: unspecified.\AInteroperability: DEGRADED.";
+}
+.feditest .status.unspecified.unaffected.moreinfo div:hover::after,
+.feditest .status.unspecified.unaffected.moreinfo label:hover::after {
+    content: "Conformance: unspecified.\AInteroperability: likely unaffected.";
+}
+.feditest .status.unspecified.unknown.moreinfo div:hover::after,
+.feditest .status.unspecified.unknown.moreinfo label:hover::after {
+    content: "Conformance: unspecified.\AInteroperability: unknown impact.";
+}
+
+/** for unraveling details **/
 
 .feditest .status input {
     display: none;

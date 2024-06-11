@@ -127,7 +127,7 @@ class TestRunResultTranscript(msgspec.Struct):
         """
         return a space-separated list of CSS classes to mark up the result with in HTML
         """
-        return f'{ self.spec_level } { self.interop_level }'.lower()
+        return f'failed { self.spec_level } { self.interop_level }'.lower()
 
 
     def __str__(self):

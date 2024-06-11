@@ -9,14 +9,18 @@
             <tr>
                 <th>Passed</th>
 {%- if summary.n_passed != 0 %}
-                <td class="status passed">{{ summary.n_passed }}</td>
+                <td class="status passed">
+                    <div>{{ summary.n_passed }}</div>
+                </td>
 {%- else %}
-                <td>0</td>
+                <td>
+                    <div>0</div>
+                </td>
 {%- endif %}
             </tr>
             <tr>
                 <th>Failed</th>
-                <td>
+                <td class="status failed">
                     <table class="failed">
                         <thead>
                             <tr>
@@ -36,25 +40,37 @@
                                 <th rowspan="5">Conformance</th>
                                 <th>Must</th>
 {%- for interop_level in feditest.InteropLevel %}
-                                <td class="status must {{ interop_level.name.lower() }}">{{ summary.count_failures_for(feditest.SpecLevel.MUST, interop_level) }}</td>
+                                <td class="status must {{ interop_level.name.lower() }} moreinfo">
+                                    <div>{{ summary.count_failures_for(feditest.SpecLevel.MUST, interop_level) }}</div>
+                                </td>
 {%- endfor %}
-                                <td class="status must total">{{ summary.count_failures_for(feditest.SpecLevel.MUST, None) }}</td>
+                                <td class="status must total">
+                                    <div>{{ summary.count_failures_for(feditest.SpecLevel.MUST, None) }}</div>
+                                </td>
                             </tr>
 {%- for spec_level in [ feditest.SpecLevel.SHOULD, feditest.SpecLevel.IMPLIED, feditest.SpecLevel.UNSPECIFIED ] %}
                             <tr>
-                                <td>{{ spec_level.formatted_name() }}</td>
+                                <th>{{ spec_level.formatted_name() }}</th>
 {%-     for interop_level in feditest.InteropLevel %}
-                                <td class="status must {{ interop_level.name.lower() }}">{{ summary.count_failures_for(spec_level, interop_level) }}</td>
+                                <td class="status {{ spec_level.name.lower() }} {{ interop_level.name.lower() }} moreinfo">
+                                    <div>{{ summary.count_failures_for(spec_level, interop_level) }}</div>
+                                </td>
 {%-     endfor %}
-                                <td class="status must total">{{ summary.count_failures_for(spec_level, None) }}</td>
+                                <td class="status {{ spec_level.name.lower() }} total">
+                                    <div>{{ summary.count_failures_for(spec_level, None) }}</div>
+                                </td>
                             </tr>
 {%- endfor %}
                             <tr>
-                                <td>Total</td>
+                                <th>Total</th>
 {%- for interop_level in feditest.InteropLevel %}
-                                <td class="status {{ interop_level.name.lower() }} total">{{ summary.count_failures_for(None, interop_level) }}</td>
+                                <td class="status {{ interop_level.name.lower() }} total">
+                                    <div>{{ summary.count_failures_for(None, interop_level) }}</div>
+                                </td>
 {%- endfor %}
-                                <td class="status total">{{ summary.n_failed }}</td>
+                                <td class="status total">
+                                    <div>{{ summary.n_failed }}</div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -63,24 +79,34 @@
             <tr>
                 <th>Skipped</th>
 {%- if summary.n_skipped != 0 %}
-                <td class="status skip">{{ summary.n_skipped }}</td>
+                <td class="status skip">
+                    <div>{{ summary.n_skipped }}</div>
+                </td>
 {%- else %}
-                <td>0</td>
+                <td>
+                    <div>0</div>
+                </td>
 {%- endif %}
             </tr>
             <tr>
                 <th>Errors</th>
 {%- if summary.n_errored != 0 %}
-                <td class="status error">{{ summary.n_errored }}</td>
+                <td class="status error">
+                    <div>{{ summary.n_errored }}</div>
+                </td>
 {%- else %}
-                <td>0</td>
+                <td>
+                    <div>0</div>
+                </td>
 {%- endif %}
             </tr>
         </tbody>
         <tfoot>
             <tr>
                 <th>Total</th>
-                <td>{{ summary.n_total }}</td>
+                <td>
+                    <div>{{ summary.n_total }}</div>
+                </td>
             </tr>
         </tfoot>
     </table>
