@@ -6,7 +6,7 @@ from collections.abc import Callable
 from enum import Enum
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any,  Type, TypeVar, cast
 
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
@@ -186,62 +186,92 @@ def nodedriver(to_register: Type[Any]):
         all_node_drivers[full_name] = to_register
 
 
-def feditest_assert_that(actual_or_assertion, exception_factory: Callable[[Any],Exception], matcher, reason: str):
-    """
-    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
-    """
-    if isinstance(matcher, Matcher):
-        _feditest_assert_match(actual=actual_or_assertion, exception_factory=exception_factory, matcher=matcher, reason=reason)
-    else:
-        if isinstance(actual_or_assertion, Matcher):
-            warning("arg1 should be boolean, but was {}".format(type(actual_or_assertion)))
-        _feditest_assert_bool(assertion=cast(bool, actual_or_assertion), exception_factory=exception_factory, reason=cast(str, matcher))
-
-
-def _feditest_assert_match(actual: T, exception_factory: Callable[[Any],Exception], matcher: Matcher[T], reason: str) -> None:
-    if not matcher.matches(actual):
-        description = StringDescription()
-        description.append_text(reason).append_text("\nExpected: ").append_description_of(
-            matcher
-        ).append_text("\n     but: ")
-        matcher.describe_mismatch(actual, description)
-        description.append_text("\n")
-        raise exception_factory(description)
-
-
-def _feditest_assert_bool(assertion: bool, exception_factory: Callable[[Any],Exception], reason: Optional[str] = None) -> None:
-    if not assertion:
-        if not reason:
-            reason = "Test failed."
-        raise exception_factory(reason)
-
-
 class SpecLevel(Enum):
     MUST = 1
     SHOULD = 2
     IMPLIED = 3
-    UNDEFINED = 4
-
+    UNSPECIFIED = 4
 
 class InteropLevel(Enum):
     PROBLEM = 1
     DEGRADED = 2
     UNAFFECTED = 3
+    UNKNOWN = 4
 
 
 class AssertionFailure(Exception):
     """
     Indicates a failure in the system under test.
     """
-    def __init__(self, spec_level: SpecLevel, interop_level: InteropLevel, *args, **kwargs):
-       ...
+    def __init__(self, spec_level: SpecLevel, interop_level: InteropLevel, msg: Any):
+        self.spec_level = spec_level
+        self.interop_level = interop_level
+        self.msg = msg
+
+
+    def __str__(self):
+        return str(self.msg)
+
+
+def _assert_match(
+    actual: T,
+    matcher: Matcher[T],
+    reason: str,
+    spec_level: SpecLevel,
+    interop_level: InteropLevel
+) -> None:
+    if not matcher.matches(actual):
+        description = StringDescription()
+        if reason:
+            description.append_text(reason).append_test("\n")
+        description.append_text("Expected: ").append_description_of(
+            matcher
+        ).append_text("\n     but: ")
+        matcher.describe_mismatch(actual, description)
+        description.append_text("\n")
+        raise AssertionFailure(spec_level, interop_level, description)
+
+
+def _assert_bool(
+    assertion: bool,
+    reason: str,
+    spec_level: SpecLevel,
+    interop_level: InteropLevel
+) -> None:
+    if not assertion:
+        if not reason:
+            reason = "Test failed."
+        raise AssertionFailure(spec_level, interop_level, reason)
 
 
 def assert_that(
     actual_or_assertion: T,
-    spec_level: SpecLevel = SpecLevel.UNDEFINED,
-    interop_level: InteropLevel = InteropLevel.UNAFFECTED,
     matcher=None,
-    reason=""
+    reason="",
+    spec_level: SpecLevel | None = None,
+    interop_level: InteropLevel | None = None
 ) -> None:
-    ... # TODO
+    """
+    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
+    """
+    # set the defaults here, so we don't have to replicate them in functions that invoke this function, like in the activitypub Node
+    if spec_level is None:
+        spec_level = SpecLevel.MUST
+    if interop_level is None:
+        interop_level = InteropLevel.UNKNOWN
+
+    if isinstance(matcher, Matcher):
+        _assert_match(actual=actual_or_assertion, matcher=matcher, reason=reason, spec_level=spec_level, interop_level=interop_level)
+    else:
+        if isinstance(actual_or_assertion, Matcher):
+            warning("arg1 should be boolean, but was {}".format(type(actual_or_assertion)))
+        _assert_bool(assertion=cast(bool, actual_or_assertion), reason=cast(str, matcher), spec_level=spec_level, interop_level=interop_level)
+
+
+class SkipTestException(Exception):
+    """
+    Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
+    the circumstances in which it should be run are not currently present.
+    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
+    """
+    pass

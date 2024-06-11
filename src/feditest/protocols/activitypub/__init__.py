@@ -7,7 +7,7 @@ from typing import Any, cast
 from hamcrest import is_not
 from feditest.protocols.activitypub.utils import is_member_of_collection_at
 
-from feditest import hard_assert_that
+from feditest import InteropLevel, SpecLevel, assert_that
 from feditest.protocols.web import WebServer
 from feditest.utils import http_https_uri_validate
 
@@ -95,15 +95,23 @@ class ActivityPubNode(WebServer):
                 http_https_uri_validate))
 
 
-    def hard_assert_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
+    def assert_member_of_collection_at(self,
+        candidate_member_uri: str,
+        collection_uri: str,
+        spec_level: SpecLevel | None = None,
+        interop_level: InteropLevel | None= None):
         """
         Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
         """
-        hard_assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self))
+        assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self), spec_level=spec_level, interop_level=interop_level)
 
 
-    def hard_assert_not_member_of_collection_at(self, candidate_member_uri: str, collection_uri: str ):
+    def assert_not_member_of_collection_at(self,
+        candidate_member_uri: str,
+        collection_uri: str,
+        spec_level: SpecLevel | None = None,
+        interop_level: InteropLevel | None= None):
         """
         Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
         """
-        hard_assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)))
+        assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)), spec_level=spec_level, interop_level=interop_level)

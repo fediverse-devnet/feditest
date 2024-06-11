@@ -3,9 +3,17 @@
 	--feditest-h4-background-color: #e8e8e8;
     --feditest-color-status: inherit;
     --feditest-color-status-passed: #BBF5CA;
-    --feditest-color-status-hard: #F5B0A7;
-    --feditest-color-status-soft: #F5D4A4;
-    --feditest-color-status-degrade: #EDF593;
+
+    --feditest-color-status-must: #F5B0A7;
+    --feditest-color-status-should: #F5D4A4;
+    --feditest-color-status-implied: #EDF593;
+    --feditest-color-status-unspecified: #EDF5ff;
+
+    --feditest-color-status-problem: #F5B0A7;
+    --feditest-color-status-degraded: #F5D4A4;
+    --feditest-color-status-unaffected: #EDF593;
+    --feditest-color-status-unknown: #EDF5ff;
+
     --feditest-color-status-skip: inherit;
     --feditest-color-status-error: #F58171;
 }
@@ -16,9 +24,17 @@
 		--feditest-h4-background-color: #242c38;
         --feditest-color-status: #000;
         --feditest-color-status-passed: #BBF5CA;
-        --feditest-color-status-hard: #F5B0A7;
-        --feditest-color-status-soft: #F5D4A4;
-        --feditest-color-status-degrade: #EDF593;
+
+        --feditest-color-status-must: #F5B0A7;
+        --feditest-color-status-should: #F5D4A4;
+        --feditest-color-status-implied: #EDF593;
+        --feditest-color-status-unspecified: #EDF5ff;
+
+        --feditest-color-status-problem: #F5B0A7;
+        --feditest-color-status-degraded: #F5D4A4;
+        --feditest-color-status-unaffected: #EDF593;
+        --feditest-color-status-unknown: #EDF5ff;
+
         --feditest-color-status-skip: inherit;
         --feditest-color-status-error: #F58171;
     }
@@ -130,22 +146,49 @@ div.feditest.session > h3::before {
 .feditest div.status {
     color: var(--feditest-color-status);
     padding: .5rem;
+    border-left: 5px solid;
+}
+
+.feditest td.status {
+    border-width: 5px;
+    border-style: solid;
+    border-color: inherit;
 }
 
 .feditest .status.passed {
     background: var(--feditest-color-status-passed);
 }
 
-.feditest .status.hard {
-    background: var(--feditest-color-status-hard);
+.feditest .status.must {
+    background: var(--feditest-color-status-must);
 }
 
-.feditest .status.soft {
-    background: var(--feditest-color-status-soft);
+.feditest .status.should {
+    background: var(--feditest-color-status-should);
 }
 
-.feditest .status.degrade {
-    background: var(--feditest-color-status-degrade);
+.feditest .status.implied {
+    background: var(--feditest-color-status-implied);
+}
+
+.feditest .status.unspecified {
+    background: var(--feditest-color-status-unspecified);
+}
+
+.feditest .status.problem {
+    border-color: var(--feditest-color-status-problem);
+}
+
+.feditest .status.degraded {
+    border-color; var(--feditest-color-status-degraded);
+}
+
+.feditest .status.unaffected {
+    border-color: var(--feditest-color-status-unaffected);
+}
+
+.feditest .status.unkown {
+    border-color: var(--feditest-color-status-unknown);
 }
 
 .feditest .status.skip {

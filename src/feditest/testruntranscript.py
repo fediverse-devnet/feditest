@@ -14,7 +14,7 @@ import msgspec
 
 import feditest
 import feditest.testplan
-from feditest.reporting import fatal
+from feditest.reporting import fatal, error
 from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
 
@@ -50,7 +50,8 @@ class TestRunResultTranscript(msgspec.Struct):
     an Exception. The properties of this class are derived from that exception.
     """
     type: str
-    problem_category: str
+    spec_level: str
+    interop_level: str
     stacktrace: list[tuple[str,int]]
     msg: str | None
 
@@ -60,16 +61,12 @@ class TestRunResultTranscript(msgspec.Struct):
         if exc is None:
             return None
 
-        if isinstance(exc, feditest.HardAssertionFailure):
-            category = 'hard'
-        elif isinstance(exc, feditest.SoftAssertionFailure):
-            category = 'soft'
-        elif isinstance(exc, feditest.DegradeAssertionFailure):
-            category = 'degrade'
-        elif isinstance(exc, feditest.SkipTestException):
-            category = 'skip'
+        if isinstance(exc, feditest.AssertionFailure):
+            spec_level = exc.spec_level.name
+            interop_level = exc.interop_level.name
         else:
-            category = 'error'
+            spec_level = feditest.SpecLevel.UNSPECIFIED.name
+            interop_level = feditest.InteropLevel.UNKNOWN.name
 
         # for the stack trace:
         # 1. remove bottom and top frames that contain site-packages"
@@ -85,14 +82,14 @@ class TestRunResultTranscript(msgspec.Struct):
             else:
                 stacktrace.append((filename, line))
 
-        return TestRunResultTranscript(str(exc.__class__.__name__), category, stacktrace, str(exc))
+        return TestRunResultTranscript(str(exc.__class__.__name__), spec_level, interop_level, stacktrace, str(exc))
 
 
     def title(self):
         """
         Construct a single-line title for this result.
         """
-        ret = self.str_problem_category()
+        ret = f'{ self.spec_level } { self.interop_level }'
         if self.msg:
             msg_lines = self.msg.strip().split('\n', maxsplit=1)
             ret += f': { msg_lines[0] }' # If it's multi-line, only use the first line
@@ -106,28 +103,7 @@ class TestRunResultTranscript(msgspec.Struct):
         if self.msg:
             msg_lines = self.msg.strip().split('\n', maxsplit=1)
             return msg_lines[0]
-        return self.str_problem_category()
-
-
-    def str_problem_category(self):
-        """
-        Construct a short single-line title for this result.
-        """
-        if not self.problem_category:
-            return 'passed'
-
-        match self.problem_category:
-            case 'hard':
-                ret = 'Failed'
-            case 'soft':
-                ret = 'Failed (soft)'
-            case 'degrade':
-                ret = 'Failed (degraded)'
-            case 'skip':
-                ret = 'Skipped'
-            case 'error':
-                ret = f'Error: { self.type }'
-        return ret
+        return 'Unnamed failure.'
 
 
     def stacktrace_as_text(self):
@@ -147,8 +123,11 @@ class TestRunResultTranscript(msgspec.Struct):
         return ret
 
 
-    def css_class(self):
-        return self.problem_category
+    def css_classes(self):
+        """
+        return a space-separated list of CSS classes to mark up the result with in HTML
+        """
+        return f'{ self.spec_level } { self.interop_level }'.lower()
 
 
     def __str__(self):
@@ -185,14 +164,19 @@ class TestRunTranscriptSummary:
     to reference it.
     """
     def __init__(self) -> None:
-        self.hard_failures : list[TestRunResultTranscript] = []
-        self.soft_failures : list[TestRunResultTranscript] = []
-        self.degrade_failures : list[TestRunResultTranscript] = []
+        # We count failures in both categories
+        self.must_failures : list[TestRunResultTranscript] = []
+        self.should_failures : list[TestRunResultTranscript] = []
+        self.implied_failures : list[TestRunResultTranscript] = []
+        self.unspecified_failures : list[TestRunResultTranscript] = []
+        self.problem_failures : list[TestRunResultTranscript] = []
+        self.degraded_failures : list[TestRunResultTranscript] = []
+        self.unaffected_failures : list[TestRunResultTranscript] = []
+        self.unknown_failures : list[TestRunResultTranscript] = []
         self.skips : list[TestRunResultTranscript] = []
         self.interaction_controls : list[TestRunResultTranscript] = []
         self.errors : list[TestRunResultTranscript] = []
         self.tests : list[TestRunTestTranscript] = []
-
 
     @property
     def n_total(self):
@@ -200,23 +184,49 @@ class TestRunTranscriptSummary:
 
 
     @property
-    def n_hard_failed(self):
-        return len(self.hard_failures)
+    def n_must_failed(self):
+        return len(self.must_failures)
 
 
     @property
-    def n_soft_failed(self):
-        return len(self.soft_failures)
+    def n_should_failed(self):
+        return len(self.should_failures)
 
 
     @property
-    def n_degrade_failed(self):
-        return len(self.degrade_failures)
+    def n_implied_failed(self):
+        return len(self.implied_failures)
+
+
+    @property
+    def n_unspecified_failed(self):
+        return len(self.unspecified_failures)
+
+
+    @property
+    def n_problem_failed(self):
+        return len(self.problem_failures)
+
+
+    @property
+    def n_degraded_failed(self):
+        return len(self.degraded_failures)
+
+
+    @property
+    def n_unaffected_failed(self):
+        return len(self.unaffected_failures)
+
+
+    @property
+    def n_unknown_failed(self):
+        return len(self.unknown_failures)
 
 
     @property
     def n_failed(self):
-        return len(self.hard_failures) + len(self.soft_failures) + len(self.degrade_failures)
+        # we can count either category
+        return self.n_must_failed + self.n_should_failed + self.n_implied_failed + self.n_unspecified_failed
 
 
     @property
@@ -231,18 +241,35 @@ class TestRunTranscriptSummary:
 
     @property
     def n_passed(self):
-        return self.n_total - self.n_hard_failed - self.n_soft_failed - self.n_degrade_failed - self.n_skipped - self.n_errored
+        return self.n_total - self.n_failed - self.n_skipped - self.n_errored
 
 
     def add_result(self, result: TestRunResultTranscript | None):
         if result is None:
             return
-        if result.type.endswith('HardAssertionFailure'):
-            self.hard_failures.append(result)
-        elif result.type.endswith('SoftAssertionFailure'):
-            self.soft_failures.append(result)
-        elif result.type.endswith('DegradeAssertionFailure'):
-            self.degrade_failures.append(result)
+        if result.type.endswith('AssertionFailure'):
+            match result.spec_level:
+                case feditest.SpecLevel.MUST.name:
+                    self.must_failures.append(result)
+                case feditest.SpecLevel.SHOULD.name:
+                    self.should_failures.append(result)
+                case feditest.SpecLevel.IMPLIED.name:
+                    self.implied_failures.append(result)
+                case feditest.SpecLevel.UNSPECIFIED.name:
+                    self.unspecified_failures.append(result)
+                case _:
+                    error('Unexpected value:', result.spec_level)
+            match result.interop_level:
+                case feditest.InteropLevel.PROBLEM.name:
+                    self.problem_failures.append(result)
+                case feditest.InteropLevel.DEGRADED.name:
+                    self.degraded_failures.append(result)
+                case feditest.InteropLevel.UNAFFECTED.name:
+                    self.unaffected_failures.append(result)
+                case feditest.InteropLevel.UNKNOWN.name:
+                    self.unknown_failures.append(result)
+                case _:
+                    error('Unexpected value:', result.interop_level)
         elif result.type.endswith('SkipTestException') or result.type.endswith('NotImplementedByNodeError') or result.type.endswith('NotImplementedByNodeDriverError'):
             self.skips.append(result)
         elif result.type.endswith('AbortTestRunException') or result.type.endswith('AbortTestRunSessionException') or result.type.endswith('AbortTestException'):
@@ -484,7 +511,7 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
                 if result:
                     print(f"not ok {test_id} - {test_meta.name}")
                     print("  ---")
-                    print(f"  problem: {result.type} ({result.problem_category})")
+                    print(f"  problem: {result.type} ({ result.spec_level }, { result.interop_level })")
                     print("  message:")
                     print("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ))
                     print("  where:")
@@ -543,7 +570,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 class MultifileRunTranscriptSerializer:
     """Generates the Feditest reports into a test matrix and a linked, separate
     file per session. It uses a template path (comma-delimited string)
-    so variants of reports can be generated while sharing common templates. The file_ext 
+    so variants of reports can be generated while sharing common templates. The file_ext
     can be specified to support generating other formats like MarkDown.
 
     The generation uses two primary templates. The 'test_matrix.jinja2' template is used for

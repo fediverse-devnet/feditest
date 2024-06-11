@@ -1,5 +1,5 @@
 {%- if result %}
-<div class="status {{ result.css_class() }}">
+<div class="status {{ result.css_classes() }}">
 	<label for="details-{{ result.id() }}{{ idmod }}">{{ result.title() }}</label>
     <input id="details-{{ result.id() }}{{ idmod }}" type="checkbox">
     <pre class="stacktrace">{{ result }}</pre>
