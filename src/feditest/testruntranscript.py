@@ -205,7 +205,7 @@ class TestRunTranscriptSummary:
         return len(self.tests) - len(self.failures) - len(self.skips) - len(self.errors)
 
 
-    def add_result(self, result: TestRunResultTranscript | None):
+    def add_test_result(self, result: TestRunResultTranscript | None):
         if result is None:
             return
         if result.type.endswith('AssertionFailure'):
@@ -216,6 +216,14 @@ class TestRunTranscriptSummary:
             self.interaction_controls.append(result)
         else:
             self.errors.append(result)
+
+
+    def add_session_result(self, result: TestRunResultTranscript | None):
+        pass # FIXME
+
+
+    def add_run_result(self, result: TestRunResultTranscript | None):
+        pass # FIXME
 
 
     def add_run_test(self, run_test: Optional['TestRunTestTranscript']):
@@ -270,7 +278,7 @@ class TestRunTestTranscript(msgspec.Struct):
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
 
-        ret.add_result(self.worst_result)
+        ret.add_test_result(self.worst_result)
         return ret
 
 
@@ -292,7 +300,7 @@ class TestRunSessionTranscript(msgspec.Struct):
 
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
+        ret.add_session_result(self.result)
 
         for run_test in self.run_tests:
             run_test.build_summary(ret)
@@ -315,7 +323,7 @@ class TestRunTranscript(msgspec.Struct):
     ended: datetime
     sessions: list[TestRunSessionTranscript]
     test_meta: dict[str,TestMetaTranscript] # key: name of the test
-    result : TestRunResultTranscript | None
+    result : TestRunResultTranscript | None # for interactive user input like abort
     platform: str | None
     username: str | None
     hostname: str | None
@@ -325,7 +333,7 @@ class TestRunTranscript(msgspec.Struct):
 
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
+        ret.add_run_result(self.result)
 
         for session in self.sessions:
             session.build_summary(ret)
