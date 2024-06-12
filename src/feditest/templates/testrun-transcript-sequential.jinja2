@@ -9,12 +9,6 @@
             : {{ constellation.name }}
 {%-     endif -%}
         </h3>
-        <dl class="roles">
-{%-     for role in constellation.roles %}
-            <dt>{{ role.name }}</dt>
-            <dd>{{ role.app_name }}</dd>
-{%-     endfor %}
-        </dl>
 {%-     for test_index, run_test in enumerate(run_session.run_tests) %}
 {%-         set plan_test_spec = plan_session.tests[run_test.plan_test_index] %}
 {%-         set test_meta = run.test_meta[plan_test_spec.name] %}
