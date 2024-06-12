@@ -283,4 +283,8 @@ class SkipTestException(Exception):
     the circumstances in which it should be run are not currently present.
     Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
     """
-    pass
+    def __init__(self, msg: str) :
+        """
+        Provide reasoning why this test was skipped.
+        """
+        super().__init__(msg)
