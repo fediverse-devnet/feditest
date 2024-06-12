@@ -6,6 +6,7 @@ from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
 from feditest.cli import default_node_drivers_dir
+from feditest.reporting import warning
 from feditest.testplan import TestPlan
 from feditest.testruntranscript import HtmlTestRunTranscriptSerializer, JsonTestRunTranscriptSerializer, SummaryTestRunTranscriptSerializer, TapTestRunTranscriptSerializer, TestRunTranscriptSerializer
 from feditest.testrun import TestRun
@@ -30,7 +31,11 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     plan.check_can_be_executed()
 
     test_run = TestRun(plan, args.who)
-    controller = InteractiveTestRunController(test_run) if args.interactive else AutomaticTestRunController(test_run)
+    if args.interactive :
+        warning('--interactive: implementation is incomplete')
+        controller = InteractiveTestRunController(test_run)
+    else:
+        controller = AutomaticTestRunController(test_run)
     test_run.run(controller)
 
     transcript : feditest.testruntranscript.TestRunTranscript = test_run.transcribe()
