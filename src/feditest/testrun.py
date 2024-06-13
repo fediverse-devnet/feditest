@@ -184,7 +184,7 @@ class TestRunStepInClass(HasStartEndResults):
 
 
     def str_in_session(self):
-        return f'{ self.test_steo } in { self.run_test.run_session }'
+        return f'{ self.test_step } in { self.run_test.run_session }'
 
 
     def run(self, test_instance: object, controller: feditest.testruncontroller.TestRunController) -> None:

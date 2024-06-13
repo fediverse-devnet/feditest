@@ -5,9 +5,9 @@ import re
 import shutil
 import traceback
 from abc import ABC, abstractmethod
-from contextlib import redirect_stdout
 from datetime import datetime
-from typing import Iterator, Optional
+import sys
+from typing import IO, Iterator, Optional
 
 import jinja2
 import msgspec
@@ -50,7 +50,8 @@ class TestRunResultTranscript(msgspec.Struct):
     an Exception. The properties of this class are derived from that exception.
     """
     type: str
-    problem_category: str
+    spec_level: str
+    interop_level: str
     stacktrace: list[tuple[str,int]]
     msg: str | None
 
@@ -60,16 +61,12 @@ class TestRunResultTranscript(msgspec.Struct):
         if exc is None:
             return None
 
-        if isinstance(exc, feditest.HardAssertionFailure):
-            category = 'hard'
-        elif isinstance(exc, feditest.SoftAssertionFailure):
-            category = 'soft'
-        elif isinstance(exc, feditest.DegradeAssertionFailure):
-            category = 'degrade'
-        elif isinstance(exc, feditest.SkipTestException):
-            category = 'skip'
+        if isinstance(exc, feditest.AssertionFailure):
+            spec_level = exc.spec_level.name
+            interop_level = exc.interop_level.name
         else:
-            category = 'error'
+            spec_level = feditest.SpecLevel.UNSPECIFIED.name
+            interop_level = feditest.InteropLevel.UNKNOWN.name
 
         # for the stack trace:
         # 1. remove bottom and top frames that contain site-packages"
@@ -85,14 +82,14 @@ class TestRunResultTranscript(msgspec.Struct):
             else:
                 stacktrace.append((filename, line))
 
-        return TestRunResultTranscript(str(exc.__class__.__name__), category, stacktrace, str(exc))
+        return TestRunResultTranscript(str(exc.__class__.__name__), spec_level, interop_level, stacktrace, str(exc))
 
 
     def title(self):
         """
         Construct a single-line title for this result.
         """
-        ret = self.str_problem_category()
+        ret = f'{ self.spec_level } { self.interop_level }'
         if self.msg:
             msg_lines = self.msg.strip().split('\n', maxsplit=1)
             ret += f': { msg_lines[0] }' # If it's multi-line, only use the first line
@@ -106,28 +103,7 @@ class TestRunResultTranscript(msgspec.Struct):
         if self.msg:
             msg_lines = self.msg.strip().split('\n', maxsplit=1)
             return msg_lines[0]
-        return self.str_problem_category()
-
-
-    def str_problem_category(self):
-        """
-        Construct a short single-line title for this result.
-        """
-        if not self.problem_category:
-            return 'passed'
-
-        match self.problem_category:
-            case 'hard':
-                ret = 'Failed'
-            case 'soft':
-                ret = 'Failed (soft)'
-            case 'degrade':
-                ret = 'Failed (degraded)'
-            case 'skip':
-                ret = 'Skipped'
-            case 'error':
-                ret = f'Error: { self.type }'
-        return ret
+        return 'Unnamed failure.'
 
 
     def stacktrace_as_text(self):
@@ -147,8 +123,11 @@ class TestRunResultTranscript(msgspec.Struct):
         return ret
 
 
-    def css_class(self):
-        return self.problem_category
+    def css_classes(self):
+        """
+        return a space-separated list of CSS classes to mark up the result with in HTML
+        """
+        return f'failed { self.spec_level } { self.interop_level }'.lower()
 
 
     def __str__(self):
@@ -185,13 +164,20 @@ class TestRunTranscriptSummary:
     to reference it.
     """
     def __init__(self) -> None:
-        self.hard_failures : list[TestRunResultTranscript] = []
-        self.soft_failures : list[TestRunResultTranscript] = []
-        self.degrade_failures : list[TestRunResultTranscript] = []
+        self.failures : list[TestRunResultTranscript] = []
         self.skips : list[TestRunResultTranscript] = []
         self.interaction_controls : list[TestRunResultTranscript] = []
         self.errors : list[TestRunResultTranscript] = []
         self.tests : list[TestRunTestTranscript] = []
+
+
+    def count_failures_for(self, spec_level: feditest.SpecLevel | None, interop_level: feditest.InteropLevel | None):
+        current = self.failures
+        if spec_level is not None:
+            current = [ f for f in current if f.spec_level == spec_level.name ]
+        if interop_level is not None:
+            current = [ f for f in current if f.interop_level == interop_level.name ]
+        return len(current)
 
 
     @property
@@ -200,23 +186,8 @@ class TestRunTranscriptSummary:
 
 
     @property
-    def n_hard_failed(self):
-        return len(self.hard_failures)
-
-
-    @property
-    def n_soft_failed(self):
-        return len(self.soft_failures)
-
-
-    @property
-    def n_degrade_failed(self):
-        return len(self.degrade_failures)
-
-
-    @property
     def n_failed(self):
-        return len(self.hard_failures) + len(self.soft_failures) + len(self.degrade_failures)
+        return len(self.failures)
 
 
     @property
@@ -231,24 +202,28 @@ class TestRunTranscriptSummary:
 
     @property
     def n_passed(self):
-        return self.n_total - self.n_hard_failed - self.n_soft_failed - self.n_degrade_failed - self.n_skipped - self.n_errored
+        return len(self.tests) - len(self.failures) - len(self.skips) - len(self.errors)
 
 
-    def add_result(self, result: TestRunResultTranscript | None):
+    def add_test_result(self, result: TestRunResultTranscript | None):
         if result is None:
             return
-        if result.type.endswith('HardAssertionFailure'):
-            self.hard_failures.append(result)
-        elif result.type.endswith('SoftAssertionFailure'):
-            self.soft_failures.append(result)
-        elif result.type.endswith('DegradeAssertionFailure'):
-            self.degrade_failures.append(result)
+        if result.type.endswith('AssertionFailure'):
+            self.failures.append(result)
         elif result.type.endswith('SkipTestException') or result.type.endswith('NotImplementedByNodeError') or result.type.endswith('NotImplementedByNodeDriverError'):
             self.skips.append(result)
         elif result.type.endswith('AbortTestRunException') or result.type.endswith('AbortTestRunSessionException') or result.type.endswith('AbortTestException'):
             self.interaction_controls.append(result)
         else:
             self.errors.append(result)
+
+
+    def add_session_result(self, result: TestRunResultTranscript | None):
+        pass # FIXME
+
+
+    def add_run_result(self, result: TestRunResultTranscript | None):
+        pass # FIXME
 
 
     def add_run_test(self, run_test: Optional['TestRunTestTranscript']):
@@ -303,7 +278,7 @@ class TestRunTestTranscript(msgspec.Struct):
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
 
-        ret.add_result(self.worst_result)
+        ret.add_test_result(self.worst_result)
         return ret
 
 
@@ -325,7 +300,7 @@ class TestRunSessionTranscript(msgspec.Struct):
 
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
+        ret.add_session_result(self.result)
 
         for run_test in self.run_tests:
             run_test.build_summary(ret)
@@ -348,7 +323,7 @@ class TestRunTranscript(msgspec.Struct):
     ended: datetime
     sessions: list[TestRunSessionTranscript]
     test_meta: dict[str,TestMetaTranscript] # key: name of the test
-    result : TestRunResultTranscript | None
+    result : TestRunResultTranscript | None # for interactive user input like abort
     platform: str | None
     username: str | None
     hostname: str | None
@@ -358,11 +333,10 @@ class TestRunTranscript(msgspec.Struct):
 
     def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
         ret = augment_this or TestRunTranscriptSummary()
-        ret.add_result(self.result)
+        ret.add_run_result(self.result)
 
         for session in self.sessions:
             session.build_summary(ret)
-
         return ret
 
 
@@ -377,8 +351,8 @@ class TestRunTranscript(msgspec.Struct):
             f.write(self.as_json())
 
 
-    def print(self) -> None:
-        print(self.as_json().decode('utf-8'))
+    def write(self, fd: IO[str]) -> None:
+        fd.write(self.as_json().decode('utf-8'))
 
 
     @staticmethod
@@ -418,14 +392,13 @@ class TestRunTranscriptSerializer(ABC):
         """
         if dest and isinstance(dest,str):
             with open(dest, "w", encoding="utf8") as out:
-                with redirect_stdout(out):
-                    self._write()
+               self._write(out)
         else:
-            self._write()
+            self._write(sys.stdout)
 
 
     @abstractmethod
-    def _write(self):
+    def _write(self, fd: IO[str]):
         ...
 
 
@@ -433,46 +406,48 @@ class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     Knows how to serialize a TestRunTranscript into a single-line summary.
     """
-    def _write(self):
+    def _write(self, fd: IO[str]):
         summary = self.transcript.build_summary()
 
-        print(f'Test summary: total={ summary.n_total }, passed={ summary.n_passed }'
+        print(f'Test summary: total={ len(summary.tests) }, passed={ summary.n_passed }'
               + f', failed={ summary.n_failed } (hard={ summary.n_hard_failed }, soft={ summary.n_soft_failed }, degrade={ summary.n_degrade_failed })'
-              + f', skipped={ summary.n_skipped }, errors={ summary.n_errored }.')
+              + f', skipped={ summary.n_skipped }, errors={ summary.n_errored }.',
+              file=fd)
 
 
 class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     Knows how to serialize a TestRunTranscript into a report in TAP format.
     """
-    def _write(self):
+    def _write(self, fd: IO[str]):
         plan = self.transcript.plan
         summary = self.transcript.build_summary()
 
-        print("TAP version 14")
-        print(f"# test plan: { plan }")
+        fd.write("TAP version 14\n")
+        fd.write(f"# test plan: { plan }\n")
         for key in ['started', 'ended', 'platform', 'username', 'hostname']:
             value = getattr(self.transcript, key)
             if value:
-                print(f"# {key}: {value}")
+                fd.write(f"# {key}: {value}\n")
 
         test_id = 0
         for session_transcript in self.transcript.sessions:
             plan_session = plan.sessions[session_transcript.plan_session_index]
             constellation = plan_session.constellation
 
-            print(f"# session: { plan_session }")
-            print(f"# constellation: { constellation }")
-            print("#   roles:")
+            fd.write(f"# session: { plan_session }\n")
+            fd.write(f"# constellation: { constellation }\n")
+            fd.write("#   roles:\n")
             for role_name, node in plan_session.constellation.roles.items():
                 if role_name in session_transcript.constellation.nodes:
                     transcript_role = session_transcript.constellation.nodes[role_name]
-                    print(f"#     - name: {role_name}")
-                    print(f"#       driver: {node.nodedriver}")
-                    print(f"#       app: {transcript_role.appdata['app']}")
-                    print(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}")
+                    fd.write(f"#     - name: {role_name}\n")
+                    if node:
+                        fd.write(f"#       driver: {node.nodedriver}\n")
+                    fd.write(f"#       app: {transcript_role.appdata['app']}\n")
+                    fd.write(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}\n")
                 else:
-                    print(f"#     - name: {role_name} -- not instantiated")
+                    fd.write(f"#     - name: {role_name} -- not instantiated\n")
 
             for test_index, run_test in enumerate(session_transcript.run_tests):
                 test_id += 1
@@ -482,26 +457,27 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 
                 result =  run_test.worst_result
                 if result:
-                    print(f"not ok {test_id} - {test_meta.name}")
-                    print("  ---")
-                    print(f"  problem: {result.type} ({result.problem_category})")
-                    print("  message:")
-                    print("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ))
-                    print("  where:")
+                    fd.write(f"not ok {test_id} - {test_meta.name}\n")
+                    fd.write("  ---\n")
+                    fd.write(f"  problem: {result.type} ({ result.spec_level }, { result.interop_level })\n")
+                    if result.msg:
+                        fd.write("  message:\n")
+                        fd.write("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ) + "\n")
+                    fd.write("  where:\n")
                     for loc in result.stacktrace:
-                        print(f"    {loc[0]} {loc[1]}")
-                    print("  ...")
+                        fd.write(f"    {loc[0]} {loc[1]}\n")
+                    fd.write("  ...\n")
                 else:
                     directives = "" # FIXME f" # SKIP {test.skip}" if test.skip else ""
-                    print(f"ok {test_id} - {test_meta.name}{directives}")
+                    fd.write(f"ok {test_id} - {test_meta.name}{directives}\n")
 
-        print(f"1..{test_id}")
-        print("# test run summary:")
-        print(f"#   total: {summary.n_total}")
-        print(f"#   passed: {summary.n_passed}")
-        print(f"#   failed: {summary.n_failed}")
-        print(f"#   skipped: {summary.n_skipped}")
-        print(f"#   errors: {summary.n_errored}")
+        fd.write(f"1..{test_id}\n")
+        fd.write("# test run summary:\n")
+        fd.write(f"#   total: {summary.n_total}\n")
+        fd.write(f"#   passed: {summary.n_passed}\n")
+        fd.write(f"#   failed: {summary.n_failed}\n")
+        fd.write(f"#   skipped: {summary.n_skipped}\n")
+        fd.write(f"#   errors: {summary.n_errored}\n")
 
 
 class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
@@ -516,7 +492,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             loader=jinja2.FileSystemLoader(template_dir)
         )
 
-    def _write(self):
+    def _write(self, fd: IO[str]):
         try:
             template = self.templates.get_template(self.template_name)
         except jinja2.TemplateNotFound:
@@ -525,7 +501,8 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
             except jinja2.TemplateNotFound:
                 fatal('jinja2 template not found:', self.template_name)
 
-        print(  template.render(
+        fd.write(template.render(
+                feditest=feditest,
                 run=self.transcript,
                 summary=self.transcript.build_summary(),
                 getattr=getattr,
@@ -543,7 +520,7 @@ class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
 class MultifileRunTranscriptSerializer:
     """Generates the Feditest reports into a test matrix and a linked, separate
     file per session. It uses a template path (comma-delimited string)
-    so variants of reports can be generated while sharing common templates. The file_ext 
+    so variants of reports can be generated while sharing common templates. The file_ext
     can be specified to support generating other formats like MarkDown.
 
     The generation uses two primary templates. The 'test_matrix.jinja2' template is used for
@@ -585,6 +562,7 @@ class MultifileRunTranscriptSerializer:
             return f"sessions/{plan_session.name}.{self.file_ext}"
 
         context = dict(
+            feditest=feditest,
             run=transcript,
             summary=transcript.build_summary(),
             getattr=getattr,
@@ -673,5 +651,5 @@ class JsonTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
     An object that knows how to serialize a TestRun into JSON format
     """
-    def _write(self):
-        self.transcript.print()
+    def _write(self, fd: IO[str]):
+        self.transcript.write(fd)

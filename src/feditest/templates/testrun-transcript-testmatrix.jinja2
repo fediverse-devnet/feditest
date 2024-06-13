@@ -36,11 +36,9 @@
 {%-     endif %}
                     </td>
 {%-     for run_session in run.sessions %}
-                    <td class="status">
 {%-         for result in get_results_for(run, run_session, test_meta) %}
 {%              include "testresult-brief.jinja2" %}
 {%-         endfor %}
-                    </td>
 {%-     endfor %}
                 </tr>
 {%- endfor %}

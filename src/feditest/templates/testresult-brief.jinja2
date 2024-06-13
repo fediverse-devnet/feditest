@@ -1,5 +1,9 @@
 {%- if result %}
-<div class="status {{ result.css_class() }}">{{ result.short_title() }}</div>
+<td class="status {{ result.css_classes() }} moreinfo">
+    <div>{{ result.short_title() }}</div>
+</td>
 {%- else %}
-<div class="status passed">Passed</div>
+<td class="status passed">
+    <div>Passed</div>
+</td>
 {%- endif %}
