@@ -16,8 +16,11 @@ dependencies = [
   "multidict",
   "jinja2",
   "pyhamcrest",
-  "pytest"
+  "pytest",
+  "grpcio",
+  "grpcio-tools"
 ]
+
 description = "Testing federated protocols"
 readme = "README.md"
 requires-python = ">=3.11" # type annotations changed in 3.9, @override in 3.12
@@ -50,6 +53,8 @@ exclude = [
     "docs/"
 ]
 
+[tool.ruff]
+line-length=120
 
 [tool.pylint."MESSAGES CONTROL"]
 max-line-length=120

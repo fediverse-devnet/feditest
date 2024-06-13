@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package feditest.nodedrivers.grpc.service;
+
+message ActorUriRequest {
+    string role_name = 1;
+}
+
+message ActorUriReply {
+    string actor_uri = 1;
+}
+
+message ActorFollowersUriRequest {
+    string actor_uri = 1;
+}
+
+message ActorFollowersUriReply {
+    string uri = 1;
+}
+
+message ActorFollowingUriRequest {
+    string actor_uri = 1;
+}
+
+message ActorFollowingUriReply {
+    string uri = 1;
+}
+
+message CreateObjectRequest {
+    string type = 1; // default = "Note"
+    string actor_uri = 2;
+    string content = 3;
+    string inbox_kind = 4;
+    string to_uri = 5;
+}
+
+message CreateObjectReply {
+    string activity_uri = 1;
+    string object_uri = 2;
+}
+
+
+message WaitForInboxObjectRequest {
+    string actor_uri = 1;
+    string object_uri = 2;
+}
+
+message WaitForInboxObjectReply {
+    bool succeeded = 1;
+}
+
+message AnnounceObjectRequest {
+    string actor_uri = 1;
+    string object_uri = 2;
+}
+
+message AnnounceObjectReply {
+    bool succeeded = 1;
+    // Announce activity and possible new object
+    string activity_uri = 2;
+    string object_uri = 3;
+}
+
+message ReplyToObjectRequest {
+    string actor_uri = 1;
+    string object_uri = 2;
+    string content = 3;
+}
+
+message ReplyToObjectReply {
+    bool succeeded = 1;
+    // Reply activity and possible new object
+    string activity_uri = 2;
+    string object_uri = 3;
+}
+ 
+message FollowActorRequest {
+    string following_actor_uri = 1;
+    string followed_actor_uri = 2;
+}
+
+message FollowActorReply {
+    bool accepted = 2;
+}
+
+message CollectionContainsRequest {
+    string object_uri = 1;
+    string collection_uri = 2;
+}
+
+message CollectionContainsReply {
+    bool result = 1;
+}
+
+
+service FeditestNode {
+
+    rpc GetActorUri(ActorUriRequest) returns (ActorUriReply) { }
+
+    rpc GetActorFollowersUri(ActorFollowersUriRequest) returns (ActorFollowersUriReply) { }
+
+    rpc GetActorFollowingUri(ActorFollowingUriRequest) returns (ActorFollowingUriReply) { }
+
+    rpc CreateObject(CreateObjectRequest) returns (CreateObjectReply) { }
+
+    rpc WaitForInboxObject(WaitForInboxObjectRequest) returns (WaitForInboxObjectReply) { }
+
+    rpc AnnounceObject(AnnounceObjectRequest) returns (AnnounceObjectReply) { }
+
+    rpc ReplyToObject(ReplyToObjectRequest) returns (ReplyToObjectReply) { }
+ 
+    rpc FollowActor(FollowActorRequest) returns (FollowActorReply) { }
+
+    rpc CollectionContains(CollectionContainsRequest) returns (CollectionContainsReply) { }
+
+}
