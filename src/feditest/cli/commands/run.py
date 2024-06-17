@@ -8,10 +8,17 @@ import feditest
 from feditest.cli import default_node_drivers_dir
 from feditest.reporting import warning
 from feditest.testplan import TestPlan
-from feditest.testruntranscript import HtmlTestRunTranscriptSerializer, JsonTestRunTranscriptSerializer, SummaryTestRunTranscriptSerializer, TapTestRunTranscriptSerializer, TestRunTranscriptSerializer
 from feditest.testrun import TestRun
-from feditest.testruncontroller import AutomaticTestRunController, InteractiveTestRunController
-import feditest.testruntranscript
+from feditest.testruncontroller import AutomaticTestRunController, InteractiveTestRunController, TestRunController
+from feditest.testruntranscript import (
+    JsonTestRunTranscriptSerializer,
+    MultifileRunTranscriptSerializer,
+    SummaryTestRunTranscriptSerializer,
+    TapTestRunTranscriptSerializer,
+    TestRunTranscriptSerializer,
+)
+
+DEFAULT_TEMPLATE = 'default'
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -33,7 +40,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     test_run = TestRun(plan, args.who)
     if args.interactive :
         warning('--interactive: implementation is incomplete')
-        controller = InteractiveTestRunController(test_run)
+        controller : TestRunController = InteractiveTestRunController(test_run)
     else:
         controller = AutomaticTestRunController(test_run)
     test_run.run(controller)
@@ -47,8 +54,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         serializer.write(args.tap)
 
     if isinstance(args.html, str) or args.html:
-        serializer = HtmlTestRunTranscriptSerializer(transcript, args.template)
-        serializer.write(args.html)
+        multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template)
+        multifile_serializer.write(transcript)
 
     if isinstance(args.json, str) or args.json:
         serializer = JsonTestRunTranscriptSerializer(transcript)
@@ -81,10 +88,10 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--tap', nargs="?", const=True, default=False,
                         help="Write results in TAP format to stdout, or to the provided file (if given).")
     html_group = parser.add_argument_group('html', 'HTML options')
-    html_group.add_argument('--html', nargs="?", const=True, default=False,
-                        help="Write results in HTML format to stdout, or to the provided file (if given).")
-    html_group.add_argument('--template', default='testrun-report-testmatrix-standalone.jinja2',
-                        help="When specifying --html, use this HTML template (jinja2 format).")
+    html_group.add_argument('--html',
+                        help="Write results in HTML format to the provided file.")
+    html_group.add_argument('--template', default=DEFAULT_TEMPLATE,
+                        help=f"When specifying --html, use this template (defaults to '{ DEFAULT_TEMPLATE }').")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,

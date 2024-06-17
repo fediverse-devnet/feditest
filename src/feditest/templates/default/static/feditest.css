@@ -70,7 +70,6 @@ div.feditest.title .id::before {
 div.feditest.module {
     background: var(--pico-background-color);
     border-radius: 5px;
-    border: 1px solid var(--pico-table-border-color);
     margin: 0 0 2rem 0;
     padding: 2rem;
 }
@@ -114,7 +113,7 @@ div.feditest.session > h3::before {
 .feditest div.roles {
     display: flex;
     gap: 1rem;
-    margin-left: 1rem;
+    margin: 0 0 2rem 1rem;
 }
 
 .feditest div.role {
@@ -126,7 +125,6 @@ div.feditest.session > h3::before {
 
 .feditest div.role > div.name {
     font-weight: bold;
-
 }
 
 .feditest div.role > div.name::before {
@@ -183,6 +181,7 @@ div.feditest.session > h3::before {
     white-space: pre-wrap;
     background-color: var(--pico-background-color);
 }
+
 
 .feditest .status.passed div,
 .feditest .status.passed label {
@@ -309,9 +308,119 @@ div.feditest.session > h3::before {
 
 .feditest .status label {
     color: inherit;
+    padding: 0.5ex;
 }
 
 .feditest .status label::after {
     content: " ▼";
     color: inherit;
+}
+
+div.feditest.tests {
+    overflow: auto;
+    position: relative;
+}
+
+.feditest .test {
+    margin-bottom: 2rem;
+}
+
+div.feditest.tests div.roles dd {
+    font-weight: normal;
+}
+
+div.feditest.tests .namedesc > span {
+    display: block;
+}
+
+div.feditest.tests .namedesc > span.name {
+    font-weight: bold;
+}
+
+.feditest .role>table.parameters {
+    font-size: 0.8rem;
+}
+
+.feditest dl.roles {
+    display: grid;
+    grid-template-columns: auto auto;
+    width: fit-content;
+    column-gap: 8px;
+}
+
+.feditest dl.roles dt::after {
+    content: ": ";
+}
+
+.feditest dl.roles dd {
+    margin-left: 0;
+    font-weight: normal;
+}
+
+.feditest table.tests {
+    overflow: scroll;
+    border-collapse: collapse;
+}
+
+.feditest table.tests td:first-child,
+.feditest table.tests th:first-child {
+    position: sticky;
+    left: 0;
+}
+
+.feditest table.tests col.session {
+    border: 2px solid var(--pico-contast);
+}
+
+.feditest div.description {
+    margin: 1rem;
+    padding: 1rem;
+    border-left: 3px solid var(--pico-blockquote-border-color);
+}
+
+.feditest p.when {
+    font-size: smaller;
+}
+
+.feditest div.status {
+    margin-bottom: 1rem;
+}
+
+.feditest div.test h4 {
+    margin-top: 1rem;
+    padding: 0.5ex;
+}
+
+.feditest div.step {
+    margin-left: 3rem;
+}
+
+.feditest div.step h5 {
+    font-size: 100%;
+}
+
+
+
+.feditest .session .test {
+    margin-bottom: 2rem;;
+}
+
+@media (prefers-color-scheme: dark) {
+    table.feditest.summary td.status {
+        color: black;
+    }
+}
+
+nav.matrix {
+    display: block;
+    text-align: center;
+}
+
+nav.matrix ul {
+    display: block;
+    font-size: 1.4rem;
+}
+
+table.tests tfoot th:first-of-type {
+    visibility: hidden;
 }

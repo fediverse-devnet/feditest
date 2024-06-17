@@ -1,12 +1,12 @@
+from abc import ABC, abstractmethod
+from datetime import datetime
 import json
 import os
 import os.path
 import re
 import shutil
-import traceback
-from abc import ABC, abstractmethod
-from datetime import datetime
 import sys
+import traceback
 from typing import IO, Iterator, Optional
 
 import jinja2
@@ -14,7 +14,6 @@ import msgspec
 
 import feditest
 import feditest.testplan
-from feditest.reporting import fatal
 from feditest.testplan import TestPlan
 from feditest.utils import FEDITEST_VERSION
 
@@ -480,43 +479,6 @@ class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
         fd.write(f"#   errors: {summary.n_errored}\n")
 
 
-class HtmlTestRunTranscriptSerializer(TestRunTranscriptSerializer):
-    """
-    Knows how to serialize a TestRunTrascript into HTML using any Jinja2 template.
-    """
-    def __init__(self, transcript: TestRunTranscript, template_name: str | None = None ):
-        super().__init__(transcript)
-        self.template_name = template_name or 'testrun-report-testmatrix-standalone.jinja2'
-        template_dir = os.path.join(os.path.dirname(__file__), "templates")
-        self.templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_dir)
-        )
-
-    def _write(self, fd: IO[str]):
-        try:
-            template = self.templates.get_template(self.template_name)
-        except jinja2.TemplateNotFound:
-            try:
-                template = self.templates.get_template(self.template_name + '.jinja2')
-            except jinja2.TemplateNotFound:
-                fatal('jinja2 template not found:', self.template_name)
-
-        fd.write(template.render(
-                feditest=feditest,
-                run=self.transcript,
-                summary=self.transcript.build_summary(),
-                getattr=getattr,
-                sorted=sorted,
-                enumerate=enumerate,
-                get_results_for=_get_results_for,
-                remove_white=lambda s: re.sub('[ \t\n\a]', '_', str(s)),
-                nbsp=lambda s: re.sub(r'\s+', '&nbsp;', str(s)),
-                permit_line_breaks_in_identifier=lambda s: re.sub(r'(\.|::)', r'<wbr>\1', s),
-                local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
-                format_timestamp=lambda ts, format='%Y-%m-%dT%H-%M-%S.%fZ': ts.strftime(format) if ts else '',
-                format_duration=lambda d: str(d)))
-
-
 class MultifileRunTranscriptSerializer:
     """Generates the Feditest reports into a test matrix and a linked, separate
     file per session. It uses a template path (comma-delimited string)
@@ -533,33 +495,31 @@ class MultifileRunTranscriptSerializer:
 
     def __init__(
         self,
-        output_dir: str | os.PathLike,
+        matrix_file: str | os.PathLike,
         template_path: str,
-        file_ext: str = "html",
-        matrix_base_name="index",
+        file_ext: str = "html"
     ):
-        self.output_dir = output_dir
+        self.matrix_file = matrix_file
         templates_base_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.template_path = [
             os.path.join(templates_base_dir, t) for t in template_path.split(",")
         ]
         self.file_ext = file_ext
-        self.matrix_base_name = matrix_base_name
+
 
     def write(self, transcript: TestRunTranscript):
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-
-        sessions_dir = os.path.join(self.output_dir, "sessions")
-        if not os.path.exists(sessions_dir):
-            os.makedirs(sessions_dir)
-
-        self._copy_static_files()
+        dir, base_matrix_file = os.path.split(self.matrix_file)
+        self._copy_static_files_to(dir)
 
         jinja2_env = self._init_jinja2_env()
 
         def session_file_path(plan_session):
-            return f"sessions/{plan_session.name}.{self.file_ext}"
+            last_dot = base_matrix_file.rfind('.')
+            if last_dot > 0:
+                ret = f'{ base_matrix_file[0:last_dot] }.{ plan_session.name }.{ self.file_ext }'
+            else:
+                ret = f'{ base_matrix_file }.{ plan_session.name }.{ self.file_ext }'
+            return ret
 
         context = dict(
             feditest=feditest,
@@ -571,20 +531,16 @@ class MultifileRunTranscriptSerializer:
             get_results_for=_get_results_for,
             remove_white=lambda s: re.sub("[ \t\n\a]", "_", str(s)),
             session_file_path=session_file_path,
+            matrix_file_path=base_matrix_file,
             permit_line_breaks_in_identifier=lambda s: re.sub(
                 r"(\.|::)", r"<wbr>\1", s
             ),
             local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
             format_timestamp=lambda ts: ts.isoformat() if ts else "",
-            # TODO not needed since it is default behavior?
-            format_duration=lambda s: str(s),
+            format_duration=lambda s: str(s), # makes it easier to change in the future
         )
 
-        matrix_filename = os.path.join(
-            self.output_dir, f"{self.matrix_base_name}.{self.file_ext}"
-        )
-
-        with open(matrix_filename, "w") as fp:
+        with open(self.matrix_file, "w") as fp:
             matrix_template = jinja2_env.get_template("test_matrix.jinja2")
             fp.write(matrix_template.render(**context))
 
@@ -596,14 +552,9 @@ class MultifileRunTranscriptSerializer:
                 summary=run_session.build_summary(),
             )
             plan_session = transcript.plan.sessions[run_session.plan_session_index]
-            with open(
-                os.path.join(
-                    self.output_dir,
-                    session_file_path(plan_session),
-                ),
-                "w",
-            ) as fp:
+            with open(os.path.join(dir, session_file_path(plan_session)), "w" ) as fp:
                 fp.write(session_template.render(**session_context))
+
 
     def _init_jinja2_env(self) -> jinja2.Environment:
         templates = jinja2.Environment(
@@ -614,7 +565,8 @@ class MultifileRunTranscriptSerializer:
         )
         return templates
 
-    def _copy_static_files(self):
+
+    def _copy_static_files_to(self, dir: str | os.PathLike):
         for path in reversed(self.template_path):
             static_dir = os.path.join(path, "static")
             if os.path.exists(static_dir):
@@ -622,7 +574,7 @@ class MultifileRunTranscriptSerializer:
                     if len(filenames) == 0:
                         continue
                     filedir_to = os.path.join(
-                        self.output_dir, os.path.relpath(dirpath, static_dir)
+                        dir, os.path.relpath(dirpath, static_dir)
                     )
                     if not os.path.exists(filedir_to):
                         os.makedirs(filedir_to, exist_ok=True)

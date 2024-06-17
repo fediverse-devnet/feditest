@@ -10,8 +10,7 @@
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
         >
         <!-- The page will be in sessions/(session).html -->
-        <link rel="stylesheet" href="../css/common.css">
-        <link rel="stylesheet" href="../css/feditest.css">
+        <link rel="stylesheet" href="feditest.css">
     </head>
     <body>
 {%  include "partials/test_session/title.jinja2" %}
@@ -24,7 +23,7 @@
         </nav>
         <div id="summary" class="feditest module summary">
             <h2>Test Run Summary</h2>
-{%  include "testrun-transcript-summary.jinja2" %}
+{%  include "partials/summary.jinja2" %}
         </div>
         <div id="results" class="feditest module results">
 {%  include "partials/test_session/results.jinja2" %}
@@ -33,6 +32,6 @@
             <h2>Test Run Metadata</h2>
 {%  include "partials/test_session/metadata.jinja2" %}
         </div>
-{%   include "standalone-report-footer.jinja2" %}
+{%   include "partials/footer.jinja2" %}
     </body>
 </html>

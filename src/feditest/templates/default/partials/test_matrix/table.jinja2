@@ -1,12 +1,4 @@
-    <div class="feditest tests">
-        <table class="tests">
-            <colgroup>
-                <col>
-{%- for run_session in run.sessions %}
-                <col class="session">
-{%- endfor %}
-            </colgroup>
-            <thead>
+{% macro column_headings() %}
                 <tr>
                     <th>Test (alphabetical order)</th>
 {%- for run_session in run.sessions %}
@@ -15,7 +7,7 @@
                     <th>
                         <div class="title">
 {%-     if session_links -%}
-                            <a href="#{{ remove_white(run_session) }}">
+                            <a href="{{ session_file_path(plan_session) }}">
 {%-     endif -%}
                             {{ constellation.name or "Unnamed" }}
 {%-     if session_links -%}
@@ -25,6 +17,18 @@
                     </th>
 {%- endfor %}
                 </tr>
+{% endmacro %}
+
+    <div class="feditest tests">
+        <table class="tests">
+            <colgroup>
+                <col>
+{%- for run_session in run.sessions %}
+                <col class="session">
+{%- endfor %}
+            </colgroup>
+            <thead>
+                {{ column_headings() }}
             </thead>
             <tbody>
 {%- for _, test_meta in sorted(run.test_meta.items()) %}
@@ -37,11 +41,14 @@
                     </td>
 {%-     for run_session in run.sessions %}
 {%-         for result in get_results_for(run, run_session, test_meta) %}
-{%              include "testresult-brief.jinja2" %}
+{%              include "partials/testresult-brief.jinja2" %}
 {%-         endfor %}
 {%-     endfor %}
                 </tr>
 {%- endfor %}
             </tbody>
+            <tfoot>
+                {{ column_headings() }}
+            </thead>
         </table>
     </div>
