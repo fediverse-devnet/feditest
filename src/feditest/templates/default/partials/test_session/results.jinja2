@@ -47,7 +47,7 @@
 {%-         endif %}
             <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }}</p>
 {%-         with result=run_test.worst_result %}
-{%-             include "testresult-full.jinja2" %}
+{%-             include "partials/testresult-full.jinja2" %}
 {%-         endwith %}
 {%-         for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
             <div class="step">
@@ -59,7 +59,7 @@
                 <p class="when">Started {{ format_timestamp(run_step.started) }}, ended {{ format_timestamp(run_step.ended) }}</p>
 
 {%-             with result=run_step.result, idmod='step' %}
-{%-                 include "testresult-full.jinja2" %}
+{%-                 include "partials/testresult-full.jinja2" %}
 {%-             endwith %}
             </div>
 {%-         endfor %}

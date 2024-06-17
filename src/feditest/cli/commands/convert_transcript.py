@@ -6,7 +6,6 @@ from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 from feditest.reporting import warning
 from feditest.testruntranscript import (
-    HtmlTestRunTranscriptSerializer,
     JsonTestRunTranscriptSerializer,
     MultifileRunTranscriptSerializer,
     SummaryTestRunTranscriptSerializer,
@@ -16,7 +15,7 @@ from feditest.testruntranscript import (
 )
 from feditest.utils import FEDITEST_VERSION
 
-SINGLE_FILE_DEFAULT_TEMPLATE = 'testrun-report-testmatrix-standalone.jinja2'
+DEFAULT_TEMPLATE = 'default'
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -33,8 +32,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         serializer.write(args.tap)
 
     if isinstance(args.html, str) or args.html:
-        serializer = HtmlTestRunTranscriptSerializer(transcript, args.template)
-        serializer.write(args.html)
+        multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template)
+        multifile_serializer.write(transcript)
 
     if isinstance(args.json, str) or args.json:
         serializer = JsonTestRunTranscriptSerializer(transcript)
@@ -43,17 +42,6 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if isinstance(args.summary, str) or args.summary:
         serializer = SummaryTestRunTranscriptSerializer(transcript)
         serializer.write(args.json)
-
-    if isinstance(args.multifile, str):
-        template = args.template
-        if template == SINGLE_FILE_DEFAULT_TEMPLATE:
-            template = "multifile,."
-        multifile_serializer = MultifileRunTranscriptSerializer(args.multifile, template)
-        try:
-            multifile_serializer.write(transcript)
-        except Exception:
-            import traceback
-            traceback.print_exc()
 
     return 0
 
@@ -69,14 +57,11 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--tap', nargs="?", const=True, default=False,
                         help="Write results in TAP format to stdout, or to the provided file (if given).")
     html_group = parser.add_argument_group('html', 'HTML options')
-    html_group.add_argument('--html', nargs="?", const=True, default=False,
-                        help="Write results in HTML format to stdout, or to the provided file (if given).")
-    html_group.add_argument('--template', default=SINGLE_FILE_DEFAULT_TEMPLATE,
-                        help="When specifying --html, use this HTML template (jinja2 format).")
+    html_group.add_argument('--html',
+                        help="Write results in HTML format to the provided file.")
+    html_group.add_argument('--template', default=DEFAULT_TEMPLATE,
+                        help=f"When specifying --html, use this template (defaults to '{ DEFAULT_TEMPLATE }').")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
-    parser.add_argument("--multifile", 
-        help="""Write results to a directory of files. A matrix and a file per session. 
-        The template argument refers to to a directory (path) of template directories""")
