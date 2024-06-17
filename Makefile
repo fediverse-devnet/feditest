@@ -42,6 +42,7 @@ test : venv
 release :
 	@which $(PYTHON) || echo 'No executable called "python". Run with "PYTHON=your-python"'
 	[[ -d venv.release ]] && rm -rf venv.release || true
+	[[ -d dist ]] && rm -rf dist || true
 	$(PYTHON) -mvenv venv.release
 	venv.release/bin/pip install twine
 	venv.release/bin/pip install --upgrade build
