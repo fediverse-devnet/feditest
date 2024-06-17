@@ -5,9 +5,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "feditest"
-version = "0.0.2"
+version = "0.2"
 authors = [
   { name="Johannes Ernst", email="git@j12t.org" },
+  { name="Steve Bate", email="svc-github@stevebate.net" }
 ]
 dependencies = [
   "httpx",

@@ -38,4 +38,16 @@ lint : venv
 test : venv
 	$(VENV)/bin/pytest -v
 
-.PHONY: venv build lint test
+
+release :
+	@which $(PYTHON) || echo 'No executable called "python". Run with "PYTHON=your-python"'
+	[[ -d venv.release ]] && rm -rf venv.release || true
+	$(PYTHON) -mvenv venv.release
+	venv.release/bin/pip install twine
+	venv.release/bin/pip install --upgrade build
+	venv.release/bin/python -m build
+	@echo WARNING: YOU ARE NOT DONE YET
+	@echo The actual push to pypi.org you need to do manually. Enter:
+	@echo venv.release/bin/twine upload dist/*
+
+.PHONY: venv build lint test release
