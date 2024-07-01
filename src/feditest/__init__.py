@@ -6,7 +6,7 @@ from collections.abc import Callable
 from enum import Enum
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
-from typing import Any,  Type, TypeVar, cast
+from typing import Any, Type, TypeVar, cast
 
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
@@ -184,6 +184,8 @@ def nodedriver(to_register: Type[Any]):
         if full_name in all_node_drivers:
             fatal('Cannot re-register NodeDriver', full_name )
         all_node_drivers[full_name] = to_register
+
+    return to_register
 
 
 class SpecLevel(Enum):
