@@ -19,12 +19,13 @@ from feditest.protocols.activitypub import ActivityPubNode
 # This kludge is needed because the node driver loader
 # will always try to load the current mastodon subpackage (relative)
 # instead of absolute package
-m = sys.modules.pop("mastodon")
-try:
-    mastodon_api = importlib.import_module("mastodon")
-    Mastodon = mastodon_api.Mastodon
-finally:
-    sys.modules["mastodon"] = m
+if "mastodon" in sys.modules:
+    m = sys.modules.pop("mastodon")
+    try:
+        mastodon_api = importlib.import_module("mastodon")
+        Mastodon = mastodon_api.Mastodon
+    finally:
+        sys.modules["mastodon"] = m
 
 
 def _dereference(uri: str) -> dict:
