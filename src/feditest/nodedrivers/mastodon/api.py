@@ -170,7 +170,7 @@ class MastodonNode(ActivityPubNode):
             )
             if response:
                 return
-            time.sleep(self._param("inbox_wait", "retry_count", default=1))
+            time.sleep(self._param("inbox_wait", "retry_interval", default=1))
         raise Exception(f"Can't map {note_uri} to Mastodon Status identifier")
 
     # Override
