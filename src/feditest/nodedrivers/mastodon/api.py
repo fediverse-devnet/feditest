@@ -4,16 +4,27 @@ Mastodon API Node
 See MastodonNode for a description of the supported/required node parameters.
 """
 
+import importlib
+import sys
 import time
 from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-from mastodon import Mastodon
 
-from feditest import nodedriver
+from feditest import AssertionFailure, InteropLevel, SpecLevel, nodedriver
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.activitypub import ActivityPubNode
+
+# This kludge is needed because the node driver loader
+# will always try to load the current mastodon subpackage (relative)
+# instead of absolute package
+m = sys.modules.pop("mastodon")
+try:
+    mastodon_api = importlib.import_module("mastodon")
+    Mastodon = mastodon_api.Mastodon
+finally:
+    sys.modules["mastodon"] = m
 
 
 def _dereference(uri: str) -> dict:
@@ -37,11 +48,12 @@ class Actor:
                 api_base_url=f"https://{hostname}", access_token=access_token
             )
             self.data = self.api.account_verify_credentials()
+            self.uri = self.data.uri
         else:
             self.api = None
             self.data = None
+            self.uri = params["uri"]
         self.role = role
-        self.uri = params["uri"]
         self.actor = _dereference(self.uri)
 
     @property
@@ -80,15 +92,25 @@ class MastodonNode(ActivityPubNode):
         self, rolename: str, parameters: dict[str, Any], node_driver: NodeDriver
     ):
         super().__init__(rolename, parameters, node_driver)
-        self.actors = [
-            Actor(role_name, self._param("hostname"), role_params)
-            for role_name, role_params in self._param("actors", "roles").items()
-        ]
+        if access_token := parameters.get("access_token"):
+            # Short config
+            self.actors = [
+                Actor("default", self._param("hostname"), {
+                    "access_token": access_token
+                })
+            ]
+            self.default_actor = self.actors[0]
+        else:
+            # Verbose config
+            self.actors = [
+                Actor(role_name, self._param("hostname"), role_params)
+                for role_name, role_params in self._param("actors", "roles").items()
+            ]
+            self.default_actor = next(
+                a for a in self.actors if a.role == self._param("actors", "default_role")
+            )
         self.actors_by_uri = {a.uri: a for a in self.actors}
         self.actors_by_role = {a.role: a for a in self.actors}
-        self.default_actor = next(
-            a for a in self.actors if a.role == self._param("actors", "default_role")
-        )
         self.uri_map: dict[str, dict] = dict()
 
     def _get_actor_or_default(self, actor_uri: str | None) -> Actor:
@@ -228,6 +250,11 @@ class MastodonNode(ActivityPubNode):
         )
         return collection_page[item_key]
 
+    @staticmethod
+    def _assert(condition: bool, message: str|None = None) -> None:
+        if not condition:
+            raise AssertionFailure(SpecLevel.UNSPECIFIED, InteropLevel.UNKNOWN, message)
+
     # Override
     def assert_member_of_collection_at(
         self, candidate_member_uri: str, collection_uri: str
@@ -236,9 +263,9 @@ class MastodonNode(ActivityPubNode):
         Raise an AssertionError if candidate_member_uri is a member of the 
         collection at collection_uri
         """
-        assert candidate_member_uri in self._collection_items(
+        self._assert(candidate_member_uri in self._collection_items(
             collection_uri
-        ), f"{candidate_member_uri} not in {collection_uri}"
+        ), f"{candidate_member_uri} not in {collection_uri}")
 
     # Override
     def assert_not_member_of_collection_at(
@@ -248,9 +275,9 @@ class MastodonNode(ActivityPubNode):
         Raise an AssertionError if candidate_member_uri is not a member of 
         the collection at collection_uri
         """
-        assert candidate_member_uri not in self._collection_items(
+        self._assert(candidate_member_uri not in self._collection_items(
             collection_uri
-        ), f"{candidate_member_uri} should not be in {collection_uri}"
+        ), f"{candidate_member_uri} should not be in {collection_uri}")
 
     # Test setup support
 

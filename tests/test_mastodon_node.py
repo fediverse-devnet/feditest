@@ -11,22 +11,23 @@ from feditest.nodedrivers.mastodon.api import MastodonNode  # noqa
 # To run these tests, you must create a file mastodon_parameters.json
 # in this test directory with parameters like the following.
 #
-# Example parameters
+# Example test config
 # {
 #     "hostname": "...",
 #     "actors": {
-#         "default_role": "primary",
+#         "default_role": "primary_actor",
 #         "roles": {
-#             "primary": {
-#               uri: "ACTOR_URI_1",
-#               access_token: "ACCESS_TOKEN"
+#             "primary_actor": {
+#                 "access_token": "TOKEN",
+#                 "uri": "https://MASTODON_HOSTNAME/users/tester"
 #             },
-#             "secondary": {
-#               uri: "ACTOR_URI_2",
+#             "secondary_actor": {
+#                 "uri": "https://MASTODON_HOSTNAME/users/tester2"
 #             },
-#             "external": {
-#               uri: "ACTOR_URI_2",
+#             "disabled_external_actor": {
+#                 "uri": "https://MASTODON_HOSTNAME/users/steve"
 #             }
+#         }
 #     }
 # }
 
