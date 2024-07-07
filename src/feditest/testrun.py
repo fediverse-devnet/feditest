@@ -10,7 +10,6 @@ from abc import ABC
 from datetime import UTC, datetime, timezone
 from typing import Any, Type, cast
 
-from feditest.tests import Test, TestFromTestClass
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
@@ -24,7 +23,6 @@ from feditest.testplan import (
 )
 from feditest.testruntranscript import (
     TestMetaTranscript,
-    TestStepMetaTranscript,
     TestRunConstellationTranscript,
     TestRunNodeTranscript,
     TestRunResultTranscript,
@@ -32,7 +30,9 @@ from feditest.testruntranscript import (
     TestRunTestStepTranscript,
     TestRunTestTranscript,
     TestRunTranscript,
+    TestStepMetaTranscript,
 )
+from feditest.tests import Test, TestFromTestClass
 
 
 class TestRunConstellation:
@@ -235,12 +235,15 @@ class TestRunClass(TestRunTest):
 
             plan_step_index = controller.determine_next_test_step_index()
             while plan_step_index>=0 and plan_step_index<len(self.test_from_test_class.steps):
-                plan_step : feditest.tests.TestStepInTestClass = self.test_from_test_class.steps[plan_step_index]
+                plan_step = self.test_from_test_class.steps[plan_step_index]
                 run_step = TestRunStepInClass(self, plan_step, plan_step_index)
                 self.run_steps.append(run_step)
 
                 run_step.run(test_instance, controller)
 
+                if run_step.exception:
+                    break
+                
                 plan_step_index = controller.determine_next_session_index(plan_step_index)
 
         except feditest.testruncontroller.AbortTestException as e: # User input
