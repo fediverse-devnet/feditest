@@ -12,8 +12,8 @@ from urllib.parse import urlparse
 
 import httpx
 
-from feditest import AssertionFailure, InteropLevel, SpecLevel, nodedriver
-from feditest.protocols import Node, NodeDriver
+from feditest import AssertionFailure, InteropLevel, SpecLevel
+from feditest.protocols import NodeDriver
 from feditest.protocols.activitypub import ActivityPubNode
 
 # This kludge is needed because the node driver loader
@@ -26,6 +26,8 @@ if "mastodon" in sys.modules:
         Mastodon = mastodon_api.Mastodon
     finally:
         sys.modules["mastodon"] = m
+else:
+    from mastodon import Mastodon
 
 
 def _dereference(uri: str) -> dict:
@@ -62,7 +64,7 @@ class Actor:
         return self.api is not None
 
 
-class MastodonNode(ActivityPubNode):
+class MastodonApiMixin:
     """
     Supported Parameters:
         {
@@ -108,7 +110,8 @@ class MastodonNode(ActivityPubNode):
                 for role_name, role_params in self._param("actors", "roles").items()
             ]
             self.default_actor = next(
-                a for a in self.actors if a.role == self._param("actors", "default_role")
+                a for a in self.actors 
+                if a.role == self._param("actors", "default_role")
             )
         self.actors_by_uri = {a.uri: a for a in self.actors}
         self.actors_by_role = {a.role: a for a in self.actors}
@@ -310,14 +313,6 @@ class MastodonNode(ActivityPubNode):
             self._ensure_actor(actor2).uri,
         )
 
-
-@nodedriver
-class MastodonNodeDriver(NodeDriver):
-    """
-    Knows how to instantiate Mastodon via UBOS.
-    """
-
-    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> Node:
-        return MastodonNode(rolename, parameters, self)
-
-    def _unprovision_node(self, node: Node) -> None: ...
+    @property
+    def server_version(self):
+        return self.default_actor.api.instance()["version"]
