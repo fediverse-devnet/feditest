@@ -1,12 +1,13 @@
 import json
 import os
+import re
 from datetime import datetime
 
 import pytest
 
 # Needed to override some of the static behaviors for test support
 os.environ["ALLOW_EXTERNAL_NODE_DRIVERS"] = "1"
-from feditest.nodedrivers.mastodon.api import MastodonNode  # noqa
+from feditest.nodedrivers.mastodon.manual import MastodonManualNode  # noqa
 
 # To run these tests, you must create a file mastodon_parameters.json
 # in this test directory with parameters like the following.
@@ -37,17 +38,17 @@ def node():
     cwd = os.path.dirname(__file__)
     with open(os.path.join(cwd, "mastodon_parameters.json")) as fp:
         parameters = json.load(fp)
-        return MastodonNode("client", parameters, None)
+        return MastodonManualNode("client", parameters, None)
 
 
 @pytest.fixture(autouse=True, scope="session")
-def session_setup(node: MastodonNode):
+def session_setup(node: MastodonManualNode):
     node.delete_follows()
     node.delete_statuses()
 
 
 @pytest.fixture(scope="session")
-def note_uri(node: MastodonNode):
+def note_uri(node: MastodonManualNode):
     note_uri = node.make_create_note(None, f"testing make_create_note {datetime.now()}")
     node.wait_for_object_in_inbox(None, note_uri)
     return note_uri
@@ -56,22 +57,25 @@ def note_uri(node: MastodonNode):
 # make_create_node is implied by other tests
 
 
-def test_announce_note(node: MastodonNode, note_uri: str):
+def test_announce_note(node: MastodonManualNode, note_uri: str):
     announce_uri = node.make_announce_object(None, note_uri)
     print(announce_uri)
 
 
-def test_reply_note(node: MastodonNode, note_uri: str):
+def test_reply_note(node: MastodonManualNode, note_uri: str):
     reply_uri = node.make_reply(None, note_uri, f"test_reply_note {datetime.now()}")
     print(reply_uri)
 
 
-def test_follow_local(node: MastodonNode):
+def test_follow_local(node: MastodonManualNode):
     node.follow("primary_actor", "secondary_actor")
 
 
-def test_follow_remote(node: MastodonNode):
+def test_follow_remote(node: MastodonManualNode):
     if "external_actor" in node.actors_by_role:
         node.follow("primary_actor", "external_actor")
     else:
         pytest.skip("No external actor is configured")
+
+def test_server_version(node: MastodonManualNode):
+    assert re.match(r'\d+\.\d+\.\d+', node.server_version), "Invalid version"
