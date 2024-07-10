@@ -424,3 +424,7 @@ nav.matrix ul {
 table.tests tfoot th:first-of-type {
     visibility: hidden;
 }
+
+.feditest .percentage {
+    font-weight: 200;
+}
