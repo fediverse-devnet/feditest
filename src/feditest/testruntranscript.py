@@ -274,7 +274,7 @@ class TestRunTestTranscript(msgspec.Struct):
         return ret
 
 
-    def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ):
+    def build_summary(self, augment_this: TestRunTranscriptSummary | None = None ) -> TestRunTranscriptSummary:
         ret = augment_this or TestRunTranscriptSummary()
 
         ret.add_test_result(self.worst_result)
@@ -408,9 +408,11 @@ class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
     def _write(self, fd: IO[str]):
         summary = self.transcript.build_summary()
 
-        print(f'Test summary: total={ len(summary.tests) }, passed={ summary.n_passed }'
-              + f', failed={ summary.n_failed } (hard={ summary.n_hard_failed }, soft={ summary.n_soft_failed }, degrade={ summary.n_degrade_failed })'
-              + f', skipped={ summary.n_skipped }, errors={ summary.n_errored }.',
+        print(f'Test summary: total={ summary.n_total }'
+              + f', passed={ summary.n_passed }'
+              + f', failed={ summary.n_failed }'
+              + f', skipped={ summary.n_skipped }'
+              + f', errors={ summary.n_errored }.',
               file=fd)
 
 
