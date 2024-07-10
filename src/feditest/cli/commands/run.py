@@ -17,6 +17,8 @@ from feditest.testruntranscript import (
     TapTestRunTranscriptSerializer,
     TestRunTranscriptSerializer,
 )
+from feditest.utils import FEDITEST_VERSION
+
 
 DEFAULT_TEMPLATE = 'default'
 
@@ -35,6 +37,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         feditest.load_node_drivers_from(default_node_drivers_dir)
 
     plan = TestPlan.load(args.testplan)
+    if not plan.has_compatible_version():
+        warning(f'Test plan was created by FediTest { plan.feditest_version }, you are running FediTest { FEDITEST_VERSION }: incompatibilities may occur.')
     plan.check_can_be_executed()
 
     test_run = TestRun(plan, args.who)
