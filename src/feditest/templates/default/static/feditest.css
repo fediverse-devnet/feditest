@@ -406,7 +406,8 @@ div.feditest.tests .namedesc > span.name {
 }
 
 @media (prefers-color-scheme: dark) {
-    table.feditest.summary td.status {
+    table.feditest.summary td.status,
+    .feditest table.tests td.status {
         color: black;
     }
 }
