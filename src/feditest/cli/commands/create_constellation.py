@@ -15,6 +15,10 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     roles : dict[str,TestPlanConstellationNode | None] = {}
 
+    if remaining:
+        parser.print_help() # Would be nice to print help for this sub-command but I can't figure out how to do it
+        return 0
+
     for nodepair in args.node:
         rolename, nodefile = nodepair.split('=', 1)
         if not rolename:
@@ -47,6 +51,6 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     parser = parent_parser.add_parser(cmd_name, help='Combine node definitions into a constellation')
     parser.add_argument('--name', default=None, required=False, help='Name of the generated constellation')
-    parser.add_argument('--node', action='append',
+    parser.add_argument('--node', action='append', required=True,
                         help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated constellation')
