@@ -17,6 +17,8 @@
 
     --feditest-color-status-skip: #D0F0FF;
     --feditest-color-status-error: #F6B1A1;
+
+    --feditest-error: #e04040;
 }
 
 @media only screen and (prefers-color-scheme: dark) {
@@ -39,6 +41,8 @@
 
         --feditest-color-status-skip: #D0F0FF;
         --feditest-color-status-error: #F6B1A1;
+
+        --feditest-error: #e04040;
     }
 }
 
@@ -49,6 +53,10 @@
 body {
     padding: 2rem;
 	background: var(--feditest-background-color);
+}
+
+header.feditest {
+    text-align: center;
 }
 
 footer {
@@ -141,10 +149,6 @@ div.feditest.session > h3::before {
 
 .feditest div.role > div.appversion::before {
     content: "App version: ";
-}
-
-.feditest.module.summary table.summary th:first-child {
-    width: 200px;
 }
 
 .feditest.module.summary table.failed {
@@ -399,8 +403,6 @@ div.feditest.tests .namedesc > span.name {
     font-size: 100%;
 }
 
-
-
 .feditest .session .test {
     margin-bottom: 2rem;;
 }
@@ -420,6 +422,31 @@ nav.matrix {
 nav.matrix ul {
     display: block;
     font-size: 1.4rem;
+}
+
+div.feditest.mobile {
+    display: none;
+}
+@media screen and (max-width: 800px) {
+    nav.feditest.matrix,
+    div.feditest.module {
+        display: none;
+    }
+    div.feditest.mobile {
+        display: block;
+        border: var(--feditest-error) 3px solid;
+        border-radius: 20px;
+        padding: 20px;
+    }
+    div.feditest.mobile > p {
+        margin: calc(var(--pico-typography-spacing-vertical) / 2) 0;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    .feditest.module.summary table.summary th:first-child {
+        width: 160px;
+    }
 }
 
 .feditest .percentage {

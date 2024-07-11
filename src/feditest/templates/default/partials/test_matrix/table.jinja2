@@ -41,7 +41,7 @@
                     </td>
 {%-     for run_session in run.sessions %}
 {%-         for result in get_results_for(run, run_session, test_meta) %}
-{%              include "partials/testresult-brief.jinja2" %}
+{%              include "partials/test_matrix/testresult.jinja2" %}
 {%-         endfor %}
 {%-     endfor %}
                 </tr>
