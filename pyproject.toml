@@ -10,6 +10,10 @@ authors = [
   { name="Johannes Ernst", email="git@j12t.org" },
   { name="Steve Bate", email="svc-github@stevebate.net" }
 ]
+maintainers = [
+  { name="Johannes Ernst", email="git@j12t.org" },
+  { name="Steve Bate", email="svc-github@stevebate.net" }
+]
 dependencies = [
   "httpx",
   "langcodes",
@@ -20,17 +24,16 @@ dependencies = [
   "pytest"
 ]
 description = "Testing federated protocols"
-readme = "README.md"
+readme = "README-PyPI.md"
 requires-python = ">=3.11" # type annotations changed in 3.9, @override in 3.12
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
-    "Framework :: Pytest",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Topic :: Internet",
     "Topic :: Software Development :: Testing"
 ]
 
@@ -40,10 +43,7 @@ feditest = "feditest.cli:main"
 
 
 [project.urls]
-"Fediverse Developer Network" = "https://fedidevs.org/"
-Documentation = "https://fedidevs.org/projects/testing/feditest/"
-Homepage = "https://github.com/fediverse-devnet/feditest"
-Issues = "https://github.com/fediverse-devnet/feditest/issues"
+Homepage = "https://feditest.org/"
 
 
 [tool.hatch.build.targets.sdist]
