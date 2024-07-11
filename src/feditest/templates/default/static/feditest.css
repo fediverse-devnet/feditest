@@ -177,12 +177,13 @@ div.feditest.session > h3::before {
 
 .feditest .status.moreinfo div:hover::after,
 .feditest .status.moreinfo label:hover::after {
-        padding: 10px;
+    padding: 10px;
     border: 1px solid #808080;
     position: absolute;
     z-index: 1;
     text-align: left;
     white-space: pre-wrap;
+    color: var(--pico-color);
     background-color: var(--pico-background-color);
 }
 
@@ -451,4 +452,20 @@ div.feditest.mobile {
 
 .feditest .percentage {
     font-weight: 200;
+}
+
+:target {
+    border: 2px solid black;
+    background: #ffffd0;
+    padding: 0 2ex;
+}
+
+@media (prefers-color-scheme: dark) {
+    table.feditest.summary td.status {
+        color: black;
+    }
+    :target {
+        border: 2px solid white;
+        background: #282828;
+    }
 }
