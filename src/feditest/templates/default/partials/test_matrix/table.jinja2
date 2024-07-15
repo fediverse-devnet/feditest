@@ -1,6 +1,6 @@
-{% macro column_headings() %}
+{% macro column_headings(first) %}
                 <tr>
-                    <th>Test (alphabetical order)</th>
+                    <th>{{ first }}</th>
 {%- for run_session in run.sessions %}
 {%-     set plan_session = run.plan.sessions[run_session.plan_session_index] %}
 {%-     set constellation = plan_session.constellation %}
@@ -28,10 +28,10 @@
 {%- endfor %}
             </colgroup>
             <thead>
-                {{ column_headings() }}
+                {{ column_headings("{0} tests in {1} sessions (alphabetical order)".format(len(run.test_meta), len(run.sessions))) }}
             </thead>
             <tbody>
-{%- for _, test_meta in sorted(run.test_meta.items()) %}
+{%- for test_index, ( _, test_meta ) in enumerate(sorted(run.test_meta.items())) %}
                 <tr>
                     <td class="namedesc">
                         <span class="name">{{ permit_line_breaks_in_identifier(test_meta.name) }}</span>
@@ -39,16 +39,16 @@
                         <span class="description">{{ test_meta.description }}</span>
 {%-     endif %}
                     </td>
-{%-     for run_session in run.sessions %}
+{%-     for session_index, run_session in enumerate(run.sessions) %}
 {%-         for result in get_results_for(run, run_session, test_meta) %}
-{%              include "partials/testresult-brief.jinja2" %}
+{%              include "partials/test_matrix/testresult.jinja2" %}
 {%-         endfor %}
 {%-     endfor %}
                 </tr>
 {%- endfor %}
             </tbody>
             <tfoot>
-                {{ column_headings() }}
+                {{ column_headings("") }}
             </thead>
         </table>
     </div>

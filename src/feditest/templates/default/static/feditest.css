@@ -17,6 +17,8 @@
 
     --feditest-color-status-skip: #D0F0FF;
     --feditest-color-status-error: #F6B1A1;
+
+    --feditest-error: #e04040;
 }
 
 @media only screen and (prefers-color-scheme: dark) {
@@ -39,6 +41,8 @@
 
         --feditest-color-status-skip: #D0F0FF;
         --feditest-color-status-error: #F6B1A1;
+
+        --feditest-error: #e04040;
     }
 }
 
@@ -49,6 +53,10 @@
 body {
     padding: 2rem;
 	background: var(--feditest-background-color);
+}
+
+header.feditest {
+    text-align: center;
 }
 
 footer {
@@ -143,10 +151,6 @@ div.feditest.session > h3::before {
     content: "App version: ";
 }
 
-.feditest.module.summary table.summary th:first-child {
-    width: 200px;
-}
-
 .feditest.module.summary table.failed {
     table-layout: fixed;
     --pico-table-border-color: #808080;
@@ -173,12 +177,13 @@ div.feditest.session > h3::before {
 
 .feditest .status.moreinfo div:hover::after,
 .feditest .status.moreinfo label:hover::after {
-        padding: 10px;
+    padding: 10px;
     border: 1px solid #808080;
     position: absolute;
     z-index: 1;
     text-align: left;
     white-space: pre-wrap;
+    color: var(--pico-color);
     background-color: var(--pico-background-color);
 }
 
@@ -399,14 +404,13 @@ div.feditest.tests .namedesc > span.name {
     font-size: 100%;
 }
 
-
-
 .feditest .session .test {
     margin-bottom: 2rem;;
 }
 
 @media (prefers-color-scheme: dark) {
-    table.feditest.summary td.status {
+    table.feditest.summary td.status,
+    .feditest table.tests td.status {
         color: black;
     }
 }
@@ -421,6 +425,47 @@ nav.matrix ul {
     font-size: 1.4rem;
 }
 
-table.tests tfoot th:first-of-type {
-    visibility: hidden;
+div.feditest.mobile {
+    display: none;
+}
+@media screen and (max-width: 800px) {
+    nav.feditest.matrix,
+    div.feditest.module {
+        display: none;
+    }
+    div.feditest.mobile {
+        display: block;
+        border: var(--feditest-error) 3px solid;
+        border-radius: 20px;
+        padding: 20px;
+    }
+    div.feditest.mobile > p {
+        margin: calc(var(--pico-typography-spacing-vertical) / 2) 0;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    .feditest.module.summary table.summary th:first-child {
+        width: 160px;
+    }
+}
+
+.feditest .percentage {
+    font-weight: 200;
+}
+
+:target {
+    border: 2px solid black;
+    background: #ffffd0;
+    padding: 0 2ex;
+}
+
+@media (prefers-color-scheme: dark) {
+    table.feditest.summary td.status {
+        color: black;
+    }
+    :target {
+        border: 2px solid white;
+        background: #282828;
+    }
 }

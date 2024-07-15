@@ -344,7 +344,10 @@ class TestRunSession(HasStartEndResults):
 
             self.ended = datetime.now(UTC)
             if self.exception:
-                error(f'Ended TestRunSession { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
+                if isinstance(self.exception, OSError):
+                    error(f'Ended TestRunSession { self } with Exception: {self.exception}')
+                else:
+                    error(f'Ended TestRunSession { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
                 info(f'Ended TestRunSession { self }')
 

@@ -1,0 +1,9 @@
+{%- if result %}
+<td class="status {{ result.css_classes() }} moreinfo" id="test-{{ session_index }}-{{ test_index }}">
+    <div>{{ result.short_title() }}</div>
+</td>
+{%- else %}
+<td class="status passed" id="test-{{ session_index }}-{{ test_index }}">
+    <div>Passed</div>
+</td>
+{%- endif %}

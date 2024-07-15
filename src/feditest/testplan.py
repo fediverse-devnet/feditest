@@ -8,7 +8,7 @@ from typing import Any
 import msgspec
 
 import feditest
-from feditest.utils import hostname_validate
+from feditest.utils import hostname_validate, FEDITEST_VERSION
 
 
 class TestPlanError(RuntimeError):
@@ -268,6 +268,7 @@ class TestPlan(msgspec.Struct):
     """
     sessions : list[TestPlanSession] = []
     name: str | None = None
+    feditest_version: str = FEDITEST_VERSION
 
 
     def simplify(self) -> None:
@@ -291,6 +292,12 @@ class TestPlan(msgspec.Struct):
 
     def __str__(self):
         return self.name if self.name else 'Unnamed'
+
+
+    def has_compatible_version(self):
+        if not self.feditest_version:
+            return True
+        return self.feditest_version == FEDITEST_VERSION
 
 
     def as_json(self) -> bytes:
