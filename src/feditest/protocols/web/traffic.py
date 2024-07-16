@@ -2,7 +2,7 @@
 Abstract data types that capture what is exchanged over HTTP.
 """
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 from dataclasses import dataclass
 from multidict import MultiDict
 
@@ -19,7 +19,7 @@ class HttpRequest:
     accept_header : str | None = None
     payload : bytes | None = None
     content_type : str | None = None
-    when_started: date = datetime.now(UTC)
+    when_started: date = datetime.now(timezone.utc)
 
 
 @dataclass
@@ -30,7 +30,7 @@ class HttpResponse:
     http_status : int
     response_headers: MultiDict # keys are lowercased
     payload : bytes | None = None
-    when_completed: date | None = datetime.now(UTC)
+    when_completed: date | None = datetime.now(timezone.utc)
 
 
     def content_type(self):

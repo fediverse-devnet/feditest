@@ -7,7 +7,7 @@ import platform
 import time
 import traceback
 from abc import ABC
-from datetime import UTC, datetime, timezone
+from datetime import datetime, timezone
 from typing import Any, Type, cast
 
 import feditest.testruncontroller
@@ -148,7 +148,7 @@ class TestRunFunction(TestRunTest):
 
 
     def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
-        self.started = datetime.now(UTC)
+        self.started = datetime.now(timezone.utc)
         info(f'Started test { self.str_in_session() }')
 
         args = {}
@@ -164,7 +164,7 @@ class TestRunFunction(TestRunTest):
         except Exception as e:
             self.exception = e
         finally:
-            self.ended = datetime.now(UTC)
+            self.ended = datetime.now(timezone.utc)
             if self.exception:
                 error(f'Ended test { self.str_in_session() } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
@@ -188,7 +188,7 @@ class TestRunStepInClass(HasStartEndResults):
 
 
     def run(self, test_instance: object, controller: feditest.testruncontroller.TestRunController) -> None:
-        self.started = datetime.now(UTC)
+        self.started = datetime.now(timezone.utc)
         info(f'Started step { self.str_in_session() }')
 
         try:
@@ -197,7 +197,7 @@ class TestRunStepInClass(HasStartEndResults):
         except Exception as e:
             self.exception = e
         finally:
-            self.ended = datetime.now(UTC)
+            self.ended = datetime.now(timezone.utc)
             if self.exception:
                 error(f'Ended step { self.str_in_session() } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
@@ -220,7 +220,7 @@ class TestRunClass(TestRunTest):
 
 
     def run(self, controller: feditest.testruncontroller.TestRunController) -> None:
-        self.started = datetime.now(UTC)
+        self.started = datetime.now(timezone.utc)
         info(f'Started test { self.str_in_session() }')
 
         args = {}
@@ -258,7 +258,7 @@ class TestRunClass(TestRunTest):
         except Exception as e: # This should not happen
             self.exception = e
         finally:
-            self.ended = datetime.now(UTC)
+            self.ended = datetime.now(timezone.utc)
             if self.exception:
                 error(f'Ended test { self.str_in_session() } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
@@ -289,7 +289,7 @@ class TestRunSession(HasStartEndResults):
 
         return: the number of tests run, or a negative number to signal that not all tests were run or completed
         """
-        self.started = datetime.now(UTC)
+        self.started = datetime.now(timezone.utc)
         info(f'Started TestRunSession for TestPlanSession { self }')
 
         try:
@@ -342,7 +342,7 @@ class TestRunSession(HasStartEndResults):
             else:
                 info(f'Skipping TestRunSession { self }: no tests')
 
-            self.ended = datetime.now(UTC)
+            self.ended = datetime.now(timezone.utc)
             if self.exception:
                 if isinstance(self.exception, OSError):
                     error(f'Ended TestRunSession { self } with Exception: {self.exception}')
@@ -379,7 +379,7 @@ class TestRun(HasStartEndResults):
         """
         Run a TestPlan.
         """
-        self.started = datetime.now(UTC)
+        self.started = datetime.now(timezone.utc)
         info(f'Started TestRun { self }')
 
         try:
@@ -400,7 +400,7 @@ class TestRun(HasStartEndResults):
         except Exception as e: # This should not happen
             self.exception = e
         finally:
-            self.ended = datetime.now(UTC)
+            self.ended = datetime.now(timezone.utc)
             if self.exception:
                 error(f'Ended TestRun { self } with Exception:\n' + ''.join(traceback.format_exception(self.exception)))
             else:
