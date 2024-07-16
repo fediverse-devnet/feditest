@@ -87,10 +87,8 @@ class Node(ABC):
 class NodeDriver(ABC):
     """
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
+    Any one subclass of NodeDriver is only instantiated once as a singleton
     """
-    def __init__(self, name: str):
-        self.name : str = name
-
 
     @final
     def provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
@@ -167,7 +165,7 @@ class NodeDriver(ABC):
 
 
     def __str__(self) -> str:
-        return f'"{ self.name }"'
+        return self.__class__.__name__
 
 
 class NotImplementedByNodeOrDriverError(SkipTestException):

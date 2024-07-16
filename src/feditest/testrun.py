@@ -35,6 +35,25 @@ from feditest.testruntranscript import (
 from feditest.tests import Test, TestFromTestClass
 
 
+all_node_driver_singletons : dict[str,Any] = {}
+""" Holds all NodeDriver singletons instantiated so far """
+
+
+def nodedriver_singleton(name: str) -> NodeDriver:
+    """
+    Smart factory function for nodedrivers.
+    """
+    ret = all_node_driver_singletons.get(name)
+    if ret is None:
+        trace('Instantiating nodedriver singleton for', name)
+        if name not in feditest.all_node_drivers:
+            fatal(f'Cannot find a nodedriver with name: \"{ name }\"')
+        node_driver_class = feditest.all_node_drivers[name]
+        ret : NodeDriver = node_driver_class()
+        all_node_driver_singletons[name] = ret
+    return ret
+
+
 class TestRunConstellation:
     """
     The instance of a TestPlanConstellation associated with a particular test run.
@@ -60,11 +79,8 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null node')
             if plan_node.nodedriver is None:
                 raise ValueError('Unexpected null nodedriver')
-            node_driver_class : Type[Any] = feditest.all_node_drivers[plan_node.nodedriver]
 
-            trace('Setting up role', plan_role_name, f'(node driver: {plan_node.nodedriver})')
-
-            node_driver : NodeDriver = node_driver_class(plan_role_name)
+            node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
             parameters = plan_node.parameters if plan_node.parameters else {}
             node : Node = node_driver.provision_node(plan_role_name, parameters)
             if node:
@@ -243,7 +259,7 @@ class TestRunClass(TestRunTest):
 
                 if run_step.exception:
                     break
-                
+
                 plan_step_index = controller.determine_next_session_index(plan_step_index)
 
         except feditest.testruncontroller.AbortTestException as e: # User input
