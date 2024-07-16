@@ -4,12 +4,11 @@
 from typing import Any
 
 from feditest import nodedriver
-from feditest.protocols import Node
 from feditest.protocols.fediverse import FediverseNode
 from feditest.ubos import UbosNodeDriver
 
 
-class WordPressPlusActivityPubPluginUbosNode(FediverseNode):
+class WordPressPlusActivityPubPluginNode(FediverseNode):
     """
     A Node running WordPress with the ActivityPub plugin, instantiated with UBOS.
     """
@@ -27,11 +26,5 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate WordPress with the ActivityPub plugin via UBOr.
     """
-    def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> WordPressPlusActivityPubPluginUbosNode:
-        pars = dict(parameters)
-        pars['app'] = 'WordPress + ActivityPub plugin'
-        return WordPressPlusActivityPubPluginUbosNode(rolename, pars, self)
-
-
-    def _unprovision_node(self, node: Node) -> None:
-        self._exec_shell(f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }")
+    def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> WordPressPlusActivityPubPluginNode:
+        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
