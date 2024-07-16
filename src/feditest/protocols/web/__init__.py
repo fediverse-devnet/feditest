@@ -1,7 +1,7 @@
 """
 """
 
-from datetime import date, datetime, UTC
+from datetime import date, datetime, timezone
 from typing import Any, Callable, List, final
 from feditest.protocols import Node, NotImplementedByNodeError
 from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, ParsedUri
@@ -11,7 +11,7 @@ class WebServerLog:
     """
     A list of logged HTTP requests to a web server.
     """
-    def __init__(self, time_started: date = datetime.now(UTC), entries: List[HttpRequestResponsePair] | None = None ):
+    def __init__(self, time_started: date = datetime.now(timezone.utc), entries: List[HttpRequestResponsePair] | None = None ):
         self._time_started : date = time_started
         self._web_log_entries : List[HttpRequestResponsePair] = entries or []
 
