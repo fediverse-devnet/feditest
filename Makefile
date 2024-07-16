@@ -18,7 +18,7 @@
 UNAME:=$(shell uname -s | tr [A-Z] [a-z])
 BRANCH:=$(shell git branch --show-current)
 VENV:=venv.$(UNAME).$(BRANCH)
-PYTHON:=python
+PYTHON?=python
 
 build : venv
 	$(VENV)/bin/pip install .
