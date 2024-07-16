@@ -99,7 +99,8 @@ class ActivityPubNode(WebServer):
         candidate_member_uri: str,
         collection_uri: str,
         spec_level: SpecLevel | None = None,
-        interop_level: InteropLevel | None= None):
+        interop_level: InteropLevel | None= None
+    ):
         """
         Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
         """
@@ -110,7 +111,8 @@ class ActivityPubNode(WebServer):
         candidate_member_uri: str,
         collection_uri: str,
         spec_level: SpecLevel | None = None,
-        interop_level: InteropLevel | None= None):
+        interop_level: InteropLevel | None= None
+    ):
         """
         Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
         """
