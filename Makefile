@@ -15,9 +15,9 @@
 # NOTE: This does not add the venv to your $PATH. You have to do that yourself if you want that.
 #
 
-UNAME:=$(shell uname -s | tr [A-Z] [a-z])
-BRANCH:=$(shell git branch --show-current)
-VENV:=venv.$(UNAME).$(BRANCH)
+UNAME?=$(shell uname -s | tr [A-Z] [a-z])
+BRANCH?=$(shell git branch --show-current)
+VENV?=venv.$(UNAME).$(BRANCH)
 PYTHON?=python
 
 build : venv
