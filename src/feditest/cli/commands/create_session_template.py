@@ -1,5 +1,5 @@
 """
-Generate a template for a test session. This is very similar to list-tests, but the output is to be used
+Create a template for a test session. This is very similar to list-tests, but the output is to be used
 as input for generate-testplan.
 """
 
@@ -60,8 +60,8 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parser = parent_parser.add_parser(cmd_name, help='Generate a template for a test session')
-    parser.add_argument('--name', default=None, required=False, help='Name of the generated session template')
+    parser = parent_parser.add_parser(cmd_name, help='Create a template for a test session')
+    parser.add_argument('--name', default=None, required=False, help='Name of the created test session template')
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
-    parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test session template')
-    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
+    parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the created test session template')
+    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')

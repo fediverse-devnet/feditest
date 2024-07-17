@@ -1,5 +1,5 @@
 """
-Generate a test plan
+Create a test plan.
 """
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
@@ -46,9 +46,9 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parser = parent_parser.add_parser(cmd_name, help='Generate a test plan by running all provided test sessions in all provided constellations')
+    parser = parent_parser.add_parser(cmd_name, help='Create a test plan by running all provided test sessions in all provided constellations')
     parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
     parser.add_argument('--constellation', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a constellation')
     parser.add_argument('--session', '--session-template', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a test session')
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test plan')
-    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find testsets and tests')
+    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
