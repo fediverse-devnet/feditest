@@ -26,7 +26,7 @@ build : venv
 venv : $(VENV)
 
 $(VENV) :
-	@which $(PYTHON) || echo 'No executable called "python". Run with "PYTHON=your-python"'
+	@which $(PYTHON) || ( echo 'No executable called "python". Append your python to the make command, like "make PYTHON=your-python"' && false )
 	$(PYTHON) -mvenv $(VENV)
 	$(VENV)/bin/pip install ruff mypy pylint
 
@@ -40,7 +40,7 @@ test : venv
 
 
 release :
-	@which $(PYTHON) || echo 'No executable called "python". Run with "PYTHON=your-python"'
+	@which $(PYTHON) || ( echo 'No executable called "python". Append your python to the make command, like "make PYTHON=your-python"' && false )
 	[[ -d venv.release ]] && rm -rf venv.release || true
 	[[ -d dist ]] && rm -rf dist || true
 	$(PYTHON) -mvenv venv.release
