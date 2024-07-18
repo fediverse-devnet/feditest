@@ -2,7 +2,6 @@
 Core module.
 """
 
-import os
 from collections.abc import Callable
 from enum import Enum
 from inspect import getmembers, getmodule, isfunction
@@ -12,6 +11,7 @@ from typing import Any,  Type, TypeVar, cast
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
 
+import feditest.protocols
 from feditest.reporting import fatal, warning
 from feditest.tests import (
     Test,
@@ -43,19 +43,31 @@ def _full_name_of_function( f: Callable[..., None]) -> str:
 
 def load_tests_from(dirs: list[str]) -> None:
     """
-    Load all tests found in the provided directories
+    Load all tests found in the provided directories. This is broken into two steps for easier testing.
     """
-    global all_tests
-    global _loading_tests
-    global _registered_as_test
-    global _registered_as_test_step
+    _load_tests_pass1(dirs)
+    _load_tests_pass2()
 
-    # Pass 1: let them all register without any error checking
+
+def _load_tests_pass1(dirs: list[str]) -> None:
+    """
+    Let all tests register themselves without error checking.
+    """
+    global _loading_tests
+
     _loading_tests = True
     load_python_from(dirs, True)
     _loading_tests = False
 
-    # Pass 2: make sense of what was being registered, error checking and connect them together
+
+def _load_tests_pass2() -> None:
+    """
+    Make sense of what was being registered, error checking and connect them together.
+    """
+    global all_tests
+    global _registered_as_test
+    global _registered_as_test_step
+
     for name, value in _registered_as_test.items():
         test : Test | None
         if isinstance(value, FunctionType):
@@ -173,11 +185,11 @@ def nodedriver(to_register: Type[Any]):
     global _loading_node_drivers
     global all_node_drivers
 
-    if not os.environ.get("ALLOW_EXTERNAL_NODE_DRIVERS") and not _loading_node_drivers:
+    if not _loading_node_drivers:
         fatal('Do not define NodeDrivers outside of nodedriversdir')
 
-    if not isinstance(to_register,type):
-        fatal('Cannot register a non-Class NodeDriver:', to_register.__name__)
+    if not issubclass(to_register,feditest.protocols.NodeDriver):
+        fatal('Cannot register an object as NodeDriver that isn\'t a subclass of NodeDriver:', to_register.__name__)
 
     module = getmodule(to_register)
     if module is not None:
@@ -277,16 +289,3 @@ def assert_that(
         if isinstance(actual_or_assertion, Matcher):
             warning("arg1 should be boolean, but was {}".format(type(actual_or_assertion)))
         _assert_bool(assertion=cast(bool, actual_or_assertion), reason=cast(str, matcher), spec_level=spec_level, interop_level=interop_level)
-
-
-class SkipTestException(Exception):
-    """
-    Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
-    the circumstances in which it should be run are not currently present.
-    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
-    """
-    def __init__(self, msg: str) :
-        """
-        Provide reasoning why this test was skipped.
-        """
-        super().__init__(msg)
