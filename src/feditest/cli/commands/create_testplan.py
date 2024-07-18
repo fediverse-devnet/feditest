@@ -25,13 +25,15 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     for session_file in args.session:
         session_templates.append(TestPlanSession.load(session_file))
 
-    test_plan = TestPlan([], args.name)
+    sessions = []
     for session_template in session_templates:
         for constellation in constellations:
             session = session_template.instantiate_with_constellation(constellation, constellation.name)
-            test_plan.sessions.append(session)
+            sessions.append(session)
 
+    test_plan = TestPlan(sessions, args.name)
     test_plan.simplify()
+
     if args.out:
         test_plan.save(args.out)
     else:

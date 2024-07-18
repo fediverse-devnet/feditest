@@ -6,7 +6,6 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
-from feditest import SkipTestException
 from feditest.reporting import warning
 
 
@@ -166,6 +165,19 @@ class NodeDriver(ABC):
 
     def __str__(self) -> str:
         return self.__class__.__name__
+
+
+class SkipTestException(Exception):
+    """
+    Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
+    the circumstances in which it should be run are not currently present.
+    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
+    """
+    def __init__(self, msg: str) :
+        """
+        Provide reasoning why this test was skipped.
+        """
+        super().__init__(msg)
 
 
 class NotImplementedByNodeOrDriverError(SkipTestException):

@@ -5,9 +5,22 @@ from datetime import datetime
 
 import pytest
 
-# Needed to override some of the static behaviors for test support
-os.environ["ALLOW_EXTERNAL_NODE_DRIVERS"] = "1"
-from feditest.nodedrivers.mastodon.manual import MastodonManualNode  # noqa
+import feditest
+from feditest import nodedriver
+from feditest.protocols import NodeDriver
+
+@pytest.fixture(scope="module")
+def mmnode_class():
+    """ Keep these isolated to this module """
+    feditest.all_node_drivers = {}
+    feditest._loading_node_drivers = True
+
+    from feditest.nodedrivers.mastodon.manual import MastodonManualNode  # noqa
+
+    feditest._loading_node_drivers = False
+
+    return MastodonManualNode
+
 
 # To run these tests, you must create a file mastodon_parameters.json
 # in this test directory with parameters like the following.
@@ -33,22 +46,22 @@ from feditest.nodedrivers.mastodon.manual import MastodonManualNode  # noqa
 # }
 
 
-@pytest.fixture(scope="session")
-def node():
+@pytest.fixture(scope="module")
+def node(mmnode_class):
     cwd = os.path.dirname(__file__)
     with open(os.path.join(cwd, "mastodon_parameters.json")) as fp:
         parameters = json.load(fp)
-        return MastodonManualNode("client", parameters, None)
+        return mmnode_class("client", parameters, None)
 
 
-@pytest.fixture(autouse=True, scope="session")
-def session_setup(node: MastodonManualNode):
+@pytest.fixture(autouse=True, scope="module")
+def session_setup(node):
     node.delete_follows()
     node.delete_statuses()
 
 
-@pytest.fixture(scope="session")
-def note_uri(node: MastodonManualNode):
+@pytest.fixture(scope="module")
+def note_uri(node):
     note_uri = node.make_create_note(None, f"testing make_create_note {datetime.now()}")
     node.wait_for_object_in_inbox(None, note_uri)
     return note_uri
@@ -57,25 +70,25 @@ def note_uri(node: MastodonManualNode):
 # make_create_node is implied by other tests
 
 
-def test_announce_note(node: MastodonManualNode, note_uri: str):
+def test_announce_note(node, note_uri: str):
     announce_uri = node.make_announce_object(None, note_uri)
     print(announce_uri)
 
 
-def test_reply_note(node: MastodonManualNode, note_uri: str):
+def test_reply_note(node, note_uri: str):
     reply_uri = node.make_reply(None, note_uri, f"test_reply_note {datetime.now()}")
     print(reply_uri)
 
 
-def test_follow_local(node: MastodonManualNode):
+def test_follow_local(node):
     node.follow("primary_actor", "secondary_actor")
 
 
-def test_follow_remote(node: MastodonManualNode):
+def test_follow_remote(node):
     if "external_actor" in node.actors_by_role:
         node.follow("primary_actor", "external_actor")
     else:
         pytest.skip("No external actor is configured")
 
-def test_server_version(node: MastodonManualNode):
+def test_server_version(node):
     assert re.match(r'\d+\.\d+\.\d+', node.server_version), "Invalid version"
