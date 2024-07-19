@@ -32,11 +32,6 @@ class Imp(WebFingerClient):
     # use superclass constructor
 
     @property
-    def app_name(self):
-        return 'Imp'
-
-
-    @property
     def app_version(self):
         return FEDITEST_VERSION
 
@@ -129,6 +124,7 @@ class ImpInProcessNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> Imp:
+        parameters['app'] = 'Imp'
         node = Imp(rolename, parameters, self)
         return node
 

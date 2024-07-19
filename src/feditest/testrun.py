@@ -8,7 +8,7 @@ import time
 import traceback
 from abc import ABC
 from datetime import UTC, datetime, timezone
-from typing import Any, Type, cast
+from typing import cast
 
 import feditest.testruncontroller
 import feditest.testruntranscript

@@ -15,16 +15,11 @@ class WordPressPlusActivityPubPluginNode(FediverseNode):
     def obtain_actor_document_uri(self, actor_rolename: str | None = None) -> str:
         return f"https://{self.hostname}/author/{ self.parameter('adminid') }/"
 
-
-    @property
-    def app_name(self):
-        return "WordPress + ActivityPub plugin"
-
-
 @nodedriver
 class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
     """
-    Knows how to instantiate WordPress with the ActivityPub plugin via UBOr.
+    Knows how to instantiate WordPress with the ActivityPub plugin via UBOS.
     """
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> WordPressPlusActivityPubPluginNode:
+        parameters['app'] = 'WordPress + ActivityPub plugin'
         return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
