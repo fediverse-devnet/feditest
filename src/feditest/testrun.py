@@ -8,7 +8,7 @@ import time
 import traceback
 from abc import ABC
 from datetime import UTC, datetime, timezone
-from typing import Any, Type, cast
+from typing import cast
 
 import feditest.testruncontroller
 import feditest.testruntranscript
@@ -35,7 +35,7 @@ from feditest.testruntranscript import (
 from feditest.tests import Test, TestFromTestClass
 
 
-all_node_driver_singletons : dict[str,Any] = {}
+all_node_driver_singletons : dict[str,NodeDriver] = {}
 """ Holds all NodeDriver singletons instantiated so far """
 
 
@@ -49,7 +49,7 @@ def nodedriver_singleton(name: str) -> NodeDriver:
         if name not in feditest.all_node_drivers:
             fatal(f'Cannot find a nodedriver with name: \"{ name }\"')
         node_driver_class = feditest.all_node_drivers[name]
-        ret : NodeDriver = node_driver_class()
+        ret = node_driver_class()
         all_node_driver_singletons[name] = ret
     return ret
 

@@ -21,11 +21,6 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
 
 
     @property
-    def app_name(self):
-        return 'SandboxMultClient_ImplementationA'
-
-
-    @property
     def app_version(self):
         return FEDITEST_VERSION
 
@@ -37,6 +32,7 @@ class SandboxMultClientDriver_ImplementationA(NodeDriver):
     test sessions.
     """
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SandboxMultClient_ImplementationA:
+        parameters['app'] = 'SandboxMultClient_ImplementationA'
         return SandboxMultClient_ImplementationA(rolename, parameters, self)
 
 
@@ -48,11 +44,6 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
     def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation1'):
         super().__init__(rolename, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
-
-
-    @property
-    def app_name(self):
-        return 'SandboxMultServer_Implementation1'
 
 
     @property
@@ -85,6 +76,7 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
     test sessions.
     """
     def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> SandboxMultServer_Implementation1:
+        parameters['app'] = 'SandboxMultServer_Implementation1'
         return SandboxMultServer_Implementation1(rolename, parameters, self)
 
 
@@ -96,11 +88,6 @@ class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
     def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
         super().__init__(rolename, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
-
-
-    @property
-    def app_name(self):
-        return 'SandboxMultServer_Implementation2Faulty'
 
 
     @property
@@ -136,4 +123,5 @@ class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
     test sessions.
     """
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SandboxMultServer_Implementation2Faulty:
+        parameters['app'] = 'SandboxMultServer_Implementation2Faulty'
         return SandboxMultServer_Implementation2Faulty(rolename, parameters, self)

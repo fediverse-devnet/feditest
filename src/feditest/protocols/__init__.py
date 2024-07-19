@@ -30,6 +30,15 @@ class Node(ABC):
         parameters: parameters for this Node. Always provided, even if empty
         node_driver: the NodeDriver that provisioned this Node
         """
+        if not rolename:
+            raise Exception('Required: rolename')
+        if not parameters:
+            raise Exception('Required: parameters')
+        if not node_driver:
+            raise Exception('Required: node_driver')
+        if not parameters.get('app'):
+            raise Exception('Required: parameters["app"]')
+
         self._rolename = rolename
         self._parameters = parameters
         self._node_driver = node_driver
@@ -52,7 +61,7 @@ class Node(ABC):
 
     @property
     def app_name(self):
-        ...
+        return self._parameters.get('app')
 
 
     @property

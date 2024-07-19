@@ -95,7 +95,8 @@ class ActivityPubNode(WebServer):
                 http_https_uri_validate))
 
 
-    def assert_member_of_collection_at(self,
+    def assert_member_of_collection_at(
+        self,
         candidate_member_uri: str,
         collection_uri: str,
         spec_level: SpecLevel | None = None,
@@ -107,7 +108,8 @@ class ActivityPubNode(WebServer):
         assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self), spec_level=spec_level, interop_level=interop_level)
 
 
-    def assert_not_member_of_collection_at(self,
+    def assert_not_member_of_collection_at(
+        self,
         candidate_member_uri: str,
         collection_uri: str,
         spec_level: SpecLevel | None = None,

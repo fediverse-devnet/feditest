@@ -8,7 +8,7 @@ from typing import Any
 
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInsufficientError, NodeSpecificationInvalidError
 from feditest.reporting import info
-from feditest.utils import hostname_validate, ssh_uri_validate
+from feditest.utils import hostname_validate
 
 """
 There is no UbosNode: it only needs to carry rshcmd (optional) and having an entire

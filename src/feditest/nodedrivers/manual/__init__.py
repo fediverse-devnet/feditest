@@ -10,18 +10,14 @@ from feditest.protocols.fediverse import FediverseNode
 from feditest.utils import appname_validate, hostname_validate
 
 
-class ManualFediverseNode(FediverseNode):
-    @property
-    def app_name(self):
-        return self._parameters.get('app')
-
-
-@nodedriver
-class ManualFediverseNodeDriver(NodeDriver):
+class AbstractManualWebServerNodeDriver(NodeDriver):
     """
-    A NodeDriver that supports all protocols but doesn't automate anything.
+    Abstract superclass of NodeDrivers that support all web server-side protocols but don't
+    automate anything.
+    This abstract class is needed because @nodedriver subclasses cannot subclass
+    another class marked as @nodedriver, apparently.
     """
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> ManualFediverseNode:
+    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
         hostname = parameters.get('hostname')
         if hostname:
             self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
@@ -39,8 +35,19 @@ class ManualFediverseNodeDriver(NodeDriver):
                                                  + f' at hostname { parameters["hostname"] }: ',
                                                  parse_validate=appname_validate)
 
-        return ManualFediverseNode(rolename, parameters, self)
+
+    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> FediverseNode:
+        self._fill_in_parameters(rolename, parameters)
+        return FediverseNode(rolename, parameters, self)
 
 
     def _unprovision_node(self, node: Node) -> None:
         self.prompt_user(f'Manually unprovision the Node for constellation role { node.rolename() } and hit return when done.')
+
+
+@nodedriver
+class ManualFediverseNodeDriver(AbstractManualWebServerNodeDriver):
+    """
+    A NodeDriver that supports all web server-side protocols but doesn't automate anything.
+    """
+    pass
