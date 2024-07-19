@@ -37,7 +37,7 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
 
 
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> FediverseNode:
-        self._ask_for_parameters(rolename, parameters)
+        self._fill_in_parameters(rolename, parameters)
         return FediverseNode(rolename, parameters, self)
 
 

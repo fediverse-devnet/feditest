@@ -23,11 +23,11 @@ if "mastodon" in sys.modules:
     m = sys.modules.pop("mastodon")
     try:
         mastodon_api = importlib.import_module("mastodon")
-        Mastodon = mastodon_api.Mastodon
+        Mastodon = mastodon_api.Mastodon # type: ignore
     finally:
         sys.modules["mastodon"] = m
 else:
-    from mastodon import Mastodon
+    from mastodon import Mastodon #
 
 
 def _dereference(uri: str) -> dict:
@@ -45,7 +45,7 @@ class Actor:
     without a Mastodon access_token, it has the uri and the AP actor document.
     """
 
-    def __init__(self, role: str, hostname: str, params: str):
+    def __init__(self, role: str, hostname: str, params: dict[str,str]):
         if access_token := params.get("access_token"):
             self.api = Mastodon(
                 api_base_url=f"https://{hostname}", access_token=access_token
@@ -110,7 +110,7 @@ class MastodonApiMixin:
                 for role_name, role_params in self._param("actors", "roles").items()
             ]
             self.default_actor = next(
-                a for a in self.actors 
+                a for a in self.actors
                 if a.role == self._param("actors", "default_role")
             )
         self.actors_by_uri = {a.uri: a for a in self.actors}
@@ -195,7 +195,7 @@ class MastodonApiMixin:
                 None,
             )
             if response:
-                return
+                return response
             time.sleep(self._param("inbox_wait", "retry_interval", default=1))
         raise Exception(f"Can't map {note_uri} to Mastodon Status identifier")
 
@@ -214,6 +214,7 @@ class MastodonApiMixin:
             )
             self.uri_map[reply.uri] = reply
             return reply.uri
+        return None
 
     # Override
     # The purpose of node_there isn't clear.
@@ -261,10 +262,14 @@ class MastodonApiMixin:
 
     # Override
     def assert_member_of_collection_at(
-        self, candidate_member_uri: str, collection_uri: str
+        self,
+        candidate_member_uri: str,
+        collection_uri: str,
+        spec_level: SpecLevel | None = None,
+        interop_level: InteropLevel | None= None
     ):
         """
-        Raise an AssertionError if candidate_member_uri is a member of the 
+        Raise an AssertionError if candidate_member_uri is a member of the
         collection at collection_uri
         """
         self._assert(candidate_member_uri in self._collection_items(
@@ -273,10 +278,14 @@ class MastodonApiMixin:
 
     # Override
     def assert_not_member_of_collection_at(
-        self, candidate_member_uri: str, collection_uri: str
+        self,
+        candidate_member_uri: str,
+        collection_uri: str,
+        spec_level: SpecLevel | None = None,
+        interop_level: InteropLevel | None= None
     ):
         """
-        Raise an AssertionError if candidate_member_uri is not a member of 
+        Raise an AssertionError if candidate_member_uri is not a member of
         the collection at collection_uri
         """
         self._assert(candidate_member_uri not in self._collection_items(
