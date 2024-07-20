@@ -73,6 +73,10 @@ class Node(ABC):
         return self._parameters.get(name)
 
 
+    def set_parameter(self, name:str, value:Any) -> None:
+        return self._parameters.update({name: value})
+
+
     def __str__(self) -> str:
         return f'"{ type(self).__name__}" in constellation role "{self.rolename}"'
 
