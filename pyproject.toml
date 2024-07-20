@@ -15,6 +15,7 @@ maintainers = [
   { name="Steve Bate", email="svc-github@stevebate.net" }
 ]
 dependencies = [
+  "cryptography",
   "httpx",
   "langcodes",
   "msgspec",

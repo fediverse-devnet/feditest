@@ -1,44 +1,180 @@
 """
-Hostname registry and certificate authority on UBOS.
+Registry and certificate authority for locally-allocated hostnames and their
+certificates.
 """
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat, load_pem_private_key
+from datetime import datetime, timedelta, UTC
+import json
+import msgspec
 import random
+import re
 
-from feditest.ca import CertificateAuthority
-from feditest.dns import DnsRegistry
+from feditest.utils import FEDITEST_VERSION
 
-class UbosLocalRegistry(CertificateAuthority, DnsRegistry):
+
+class RegistryRoot(msgspec.Struct):
+    """
+    What we know about the root certificate of the CA
+    """
+    domain: str
+    key: str | None = None # PEM format
+    cert: str | None = None # PEM format
+
+
+class RegistryHost(msgspec.Struct):
+    """
+    What we know about a particular host
+    """
+    host: str
+    key: str | None = None # PEM format
+    cert: str | None = None # PEM format
+
+
+class Registry(msgspec.Struct):
     """
     Given a root domain (say '123.lan'), this manages hostnames
     and corresponding certificates.
-
-    UBOS Gears already appends hostnames of locally deployed sites to /etc/hosts,
-    so we don't need to do this.
     """
+    ca: RegistryRoot
+    hosts: dict[str,RegistryHost] = {}
+    type: str = 'feditest-registry'
+    feditest_version: str = FEDITEST_VERSION
 
-    def __init__(self, root_domain: str | None = None):
-        if root_domain:
-            self._root_domain = root_domain
-        else:
-            self.root_domain = f'{ random.randint(1000, 9999) }.lan'
-        self._index_by_app = {}
+
+    @staticmethod
+    def load(filename: str) -> 'Registry':
+        """
+        Read a file, and instantiate a Registry from what we find.
+        """
+        with open(filename, 'r', encoding='utf-8') as f:
+            registry_json = json.load(f)
+
+        ret = msgspec.convert(registry_json, type=Registry)
+        return ret
+
+
+    @staticmethod
+    def create(rootdomain: str | None = None) -> 'Registry':
+        if not rootdomain:
+            rootdomain = f'{ random.randint(1000, 9999) }.lan'
+
+        ret = Registry(ca=RegistryRoot(domain=rootdomain))
+        return ret
+
+
+    def is_compatible_type(self):
+        return self.type is None or self.type == 'feditest-registry'
+
+
+    def has_compatible_version(self):
+        if not self.feditest_version:
+            return True
+        return self.feditest_version == FEDITEST_VERSION
+
+
+    def as_json(self) -> bytes:
+        ret = msgspec.json.encode(self)
+        ret = msgspec.json.format(ret, indent=4)
+        return ret
+
+
+    def save(self, filename: str) -> None:
+        with open(filename, 'wb') as f:
+            f.write(self.as_json())
+
+
+    def obtain_full_registry_root(self) -> RegistryRoot:
+        if not self.ca.key:
+            self.ca.cert = None # That is now invalid, too
+            ca_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+            self.ca.key = ca_key.private_bytes(
+                encoding=Encoding.PEM,
+                format=PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=NoEncryption()).decode('utf-8')
+
+        if not self.ca.cert:
+            ca_subject = x509.Name([
+                x509.NameAttribute(x509.NameOID.COMMON_NAME, "feditest-user.example"),
+            ])
+            ca_key = load_pem_private_key(self.ca.key.encode('utf-8'), password=None)
+            now = datetime.now(UTC)
+            ca_cert = x509.CertificateBuilder().subject_name(ca_subject
+                ).issuer_name(ca_subject
+                ).public_key(ca_key.public_key()
+                ).serial_number(x509.random_serial_number()
+                ).not_valid_before(now
+                ).not_valid_after(now + timedelta(days=365)
+                ).add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True,
+                ).sign(ca_key, hashes.SHA256())
+
+            self.ca.cert = ca_cert.public_bytes(Encoding.PEM).decode('utf-8')
+
+            # also erase all certs in case the user deleted the root cert but did not delete the host certs
+            for host in self.hosts:
+                self.hosts[host] = RegistryHost(host=host)
+
+        return self.ca
+
+    def obtain_new_host_and_hostinfo(self, appname: str | None = None ) -> RegistryHost:
+        host = self.obtain_new_hostname(appname)
+        return self.obtain_full_hostinfo(host)
 
 
     def obtain_new_hostname(self, appname: str | None = None) -> str:
         """
-        Give out sequentially indexed hostnames for each app
+        Give out a new hostname in the root domain. Does not create a cert
+        This implementation will return sequentially indexed hostnames for each app
         """
         if not appname:
             appname = 'unnamed'
 
-        index = self._index_by_app.get(appname)
-        if not index:
-            index = 1
-        self._index_by_app[appname] = index+1
+        current = 0
+        for host in self.hosts:
+            if m := re.search(f'^{ appname }-(\\d+)\\.{ self.ca.domain }$', host):
+                index = int(m.group(1))
+                current = max(current, index)
 
-        return f'{ appname }-{ index }.{ self.root_domain }'
+        new_hostname = f'{ appname }-{ current+1 }.{ self.ca.domain }'
+        self.hosts[new_hostname] = RegistryHost(host=new_hostname)
+        return new_hostname
 
 
-    def obtain_keys_and_cert(self, hostname: str) -> tuple[str,str]:
-        pass
+    def obtain_full_hostinfo(self, host: str) -> RegistryHost:
+        ret = self.hosts.get(host)
+        if ret is None:
+            raise Exception(f'Unknown host: {host}')
 
+        if ret.key is None:
+            ret.cert = None # That is now invalid, too
+            host_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+            ret.key = host_key.private_bytes(
+                encoding=Encoding.PEM,
+                format=PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=NoEncryption()).decode('utf-8')
+
+        if ret.cert is None:
+            host_key = load_pem_private_key(ret.key.encode('utf-8'), password=None)
+            host_subject = x509.Name([
+                x509.NameAttribute(x509.NameOID.COMMON_NAME, host),
+            ])
+            host_csr = x509.CertificateSigningRequestBuilder().subject_name(host_subject
+                ).sign(host_key, hashes.SHA256())
+
+            self.obtain_full_registry_root() # make sure we have it
+            ca_cert = x509.load_pem_x509_certificate(self.ca.cert.encode('utf-8'))
+            ca_key = load_pem_private_key(self.ca.key.encode('utf-8'), password=None)
+            now = datetime.now(UTC)
+            host_cert = x509.CertificateBuilder().subject_name(host_csr.subject
+                ).issuer_name(ca_cert.subject
+                ).public_key(host_csr.public_key()
+                ).serial_number(x509.random_serial_number()
+                ).not_valid_before(now
+                ).not_valid_after(now + timedelta(days=365)  # Expires after 1 year
+                ).sign(ca_key, hashes.SHA256())
+            ret.cert = host_cert.public_bytes(Encoding.PEM).decode('utf-8')
+
+        return ret

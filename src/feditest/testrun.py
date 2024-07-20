@@ -13,7 +13,6 @@ from typing import cast
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
-from feditest.device import all_devices
 from feditest.protocols import Node, NodeDriver
 from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (
@@ -89,7 +88,6 @@ class TestRunConstellation:
                 'app' : node.app_name,
                 'app_version' : node.app_version
             }
-            all_devices.add(node.parameter('rshcmd')) # rshcmd value may be None, which is fine
             if 'start-delay' in parameters:
                 wait_time = max(wait_time, int(parameters['start-delay']))
 
