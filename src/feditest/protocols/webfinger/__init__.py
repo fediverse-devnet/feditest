@@ -34,6 +34,7 @@ class WebFingerServer(WebServer):
                     self.parameter('existing-account-uri'),
                     http_https_acct_uri_validate)
         assert ret
+        self.set_parameter('existing-account-uri', ret)
         return ret
 
 
@@ -56,6 +57,7 @@ class WebFingerServer(WebServer):
                     self.parameter('nonexisting-account-uri'),
                     http_https_acct_uri_validate)
         assert ret
+        self.set_parameter('nonexisting-account-uri', ret)
         return ret
 
 
