@@ -37,6 +37,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         feditest.load_node_drivers_from(default_node_drivers_dir)
 
     plan = TestPlan.load(args.testplan)
+    if not plan.is_compatible_type():
+        warning(f'Test plan has unexpected type { plan.type }: incompatibilities may occur.')
     if not plan.has_compatible_version():
         warning(f'Test plan was created by FediTest { plan.feditest_version }, you are running FediTest { FEDITEST_VERSION }: incompatibilities may occur.')
     plan.check_can_be_executed()
