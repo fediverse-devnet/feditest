@@ -3,11 +3,11 @@ import os
 import re
 from datetime import datetime
 
-import pytest
-
 import feditest
+import pytest
 from feditest import nodedriver
 from feditest.protocols import NodeDriver
+
 
 @pytest.fixture(scope="module")
 def mmnode_class():
@@ -49,9 +49,13 @@ def mmnode_class():
 @pytest.fixture(scope="module")
 def node(mmnode_class):
     cwd = os.path.dirname(__file__)
-    with open(os.path.join(cwd, "mastodon_parameters.json")) as fp:
-        parameters = json.load(fp)
-        return mmnode_class("client", parameters, None)
+    try:
+        with open(os.path.join(cwd, "mastodon_parameters.json")) as fp:
+            parameters = json.load(fp)
+            parameters["app"] = "?"
+            return mmnode_class("client", parameters, object())
+    except FileNotFoundError:
+        pytest.skip("No Mastodon test configuration")
 
 
 @pytest.fixture(autouse=True, scope="module")
