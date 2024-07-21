@@ -2,11 +2,14 @@
 Nodes managed via UBOS https://ubos.net/
 """
 import json
+import random
 import secrets
 import subprocess
 import shutil
+import string
 from typing import Any
 
+from feditest import registry
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInsufficientError, NodeSpecificationInvalidError
 from feditest.reporting import info
 from feditest.utils import hostname_validate
@@ -20,7 +23,6 @@ Instead we keep this value in the parameters dict, where it comes from anyway.
 """
 
 ADMIN_USER = 'feditestadmin' # Note: 'admin' is not permitted by Mastodon
-ADMIN_CREDENTIAL = 'secret'
 DOES_NOT_EXIST_USER = 'does-not-exist'
 
 
@@ -39,13 +41,10 @@ class UbosNodeDriver(NodeDriver):
         * `sudo machinectl shell ubosdev@container`
         * Because of its generality, the syntax of this parameter is not validated.
         """
-        if not parameters:
-            raise NodeSpecificationInsufficientError(self, 'No parameters given')
-
-        if 'hostname' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Needs parameter hostname for now') # FIXME: should get it from the JSON file
-        if not hostname_validate(parameters['hostname']):
-            raise NodeSpecificationInvalidError(self, 'hostname', parameters['hostname'])
+        if parameters:
+            parameters = dict(parameters)
+        else:
+            parameters = {}
 
         rshcmd = parameters.get('rshcmd')
         if rshcmd:
@@ -55,13 +54,12 @@ class UbosNodeDriver(NodeDriver):
             if not shutil.which('ubos-admin'):
                 raise OSError(f'{ type(self).__name__ } without an rshcmd requires a local system running UBOS Gears (see ubos.net).')
 
-        parameters = dict(parameters)
+        if parameters.get('hostname') and not hostname_validate(parameters['hostname']):
+            raise NodeSpecificationInvalidError(self, 'hostname', parameters['hostname'])
 
-        # We currently have 3 modes. We want to get rid of the sitejsonfile one
-        if 'backupfile' in parameters:
+        # We currently have 2 modes
+        if parameters and 'backupfile' in parameters:
             self._provision_node_from_backupfile(rolename, parameters)
-        elif 'sitejsonfile' in parameters:
-            self._provision_node_from_sitejson(rolename, parameters)
         else:
             self._provision_node_with_generated_sitejson(rolename, parameters)
 
@@ -91,29 +89,13 @@ class UbosNodeDriver(NodeDriver):
         self._exec_shell(cmd)
 
 
-    def _provision_node_from_sitejson(self,  rolename: str, parameters: dict[str,Any]) -> None:
-        # FIXME: reconcile provided hostname with what's in the site json / backup
-        cmd = None
-        if 'siteid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Need parameter siteid for now') # FIXME: should get it from the JSON file
-        if 'adminid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Need parameter adminid for now') # FIXME: should get it from the JSON file
-        if 'hostname' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Needs parameter hostname for now') # FIXME: should get it from the JSON file
-        if not hostname_validate(parameters['hostname']):
-            raise NodeSpecificationInvalidError(self, 'hostname', parameters['hostname'])
-        if 'sitejsonfile' in parameters:
-            cmd = f"sudo ubos-admin deploy --file {parameters['sitejsonfile']}"
-        else:
-            raise NodeSpecificationInsufficientError(self, 'Need parameter sitejsonfile or backupfile')
-
-        parameters['existing-account-uri'] = f"acct:{ parameters['adminid'] }@{ parameters['hostname'] }"
-        parameters['nonexisting-account-uri'] = f"acct:does-not-exist@{ parameters['hostname'] }"
-
-        self._exec_shell(cmd, parameters.get('rshcmd'))
-
-
     def _provision_node_with_generated_sitejson(self,  rolename: str, parameters: dict[str,Any]) -> None:
+            if 'hostname' in parameters:
+                info = registry.obtain_hostinfo(parameters['hostname'])
+            else:
+                info = registry.obtain_new_hostinfo(parameters.get('app'))
+                parameters['hostname'] = info.host
+
             parameters['existing-account-uri'] = f"acct:{ ADMIN_USER }@{ parameters['hostname'] }"
             parameters['nonexisting-account-uri'] = f"acct:{ DOES_NOT_EXIST_USER }@{ parameters['hostname'] }"
             parameters['siteid'] = self._generate_siteid()
@@ -126,17 +108,19 @@ class UbosNodeDriver(NodeDriver):
                     'email' : f'{ ADMIN_USER }@{ parameters["hostname"] }',
                     'username' : ADMIN_USER,
                     'userid' : ADMIN_USER,
-                    'credential' : ADMIN_CREDENTIAL
+                    'credential' : self._generate_credential()
                 },
-                # 'tls' : { FIXME
-                # },
+                'tls' : {
+                    'key' : info.key,
+                    'crt' : info.cert
+                },
             }
-            siteJson['appconfigs'] = self._getAppConfigsJson()
+            siteJson['appconfigs'] = self._getAppConfigsJson(parameters)
             if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(siteJson)):
                 raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy failed')
 
 
-    def _getAppConfigsJson(self):
+    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> dict[str,Any]:
         raise Exception( 'AppConfigs fragment for the Site JSON file must be defined in a subclass')
 
 
@@ -184,4 +168,10 @@ class UbosNodeDriver(NodeDriver):
         ret = 'a'
         for i in range(40):
             ret += format(secrets.randbelow(16), 'x')
+        return ret
+
+
+    def _generate_credential(self):
+        chars = string.ascii_letters + string.digits + string.punctuation
+        ret = ''.join(random.choice(chars) for i in range(16))
         return ret

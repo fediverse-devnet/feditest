@@ -4,7 +4,7 @@ Test the UBOS host registry / CA
 
 import tempfile
 
-from feditest.ubos.registry import Registry, RegistryHost, RegistryRoot
+from feditest.registry import Registry, RegistryHostInfo, RegistryRoot
 
 
 def test_allocates_domain():
@@ -20,7 +20,7 @@ def test_uses_domain():
 
 def test_root_ca():
     r = Registry.create()
-    rr = r.obtain_full_registry_root()
+    rr = r.obtain_registry_root()
     assert 'PRIVATE KEY' in rr.key
     assert 'CERTIFICATE' in rr.cert
     assert isinstance(rr.key, str)
@@ -54,7 +54,7 @@ def test_new_host_and_cert():
     D = 'something.example'
     r = Registry.create( D )
 
-    h1info = r.obtain_new_host_and_hostinfo('')
+    h1info = r.obtain_new_hostinfo('')
 
     assert h1info.host.startswith('unnamed')
     assert h1info.host.endswith('.' + D)
@@ -69,7 +69,7 @@ def test_save_restore():
     r1 = Registry.create( D )
 
     for i in range(5):
-         r1.obtain_new_host_and_hostinfo('')
+         r1.obtain_new_hostinfo('')
 
     file = tempfile.NamedTemporaryFile(delete=True, delete_on_close=False).name
     r1.save(file)

@@ -2,8 +2,6 @@
 A NodeDriver that supports all protocols but doesn't automate anything.
 """
 
-from typing import Any
-
 from feditest import nodedriver
 from feditest.nodedrivers import AbstractManualWebServerNodeDriver
 

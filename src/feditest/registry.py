@@ -12,6 +12,7 @@ import json
 import msgspec
 import random
 import re
+from typing import cast
 
 from feditest.utils import FEDITEST_VERSION
 
@@ -25,7 +26,7 @@ class RegistryRoot(msgspec.Struct):
     cert: str | None = None # PEM format
 
 
-class RegistryHost(msgspec.Struct):
+class RegistryHostInfo(msgspec.Struct):
     """
     What we know about a particular host
     """
@@ -40,7 +41,7 @@ class Registry(msgspec.Struct):
     and corresponding certificates.
     """
     ca: RegistryRoot
-    hosts: dict[str,RegistryHost] = {}
+    hosts: dict[str,RegistryHostInfo] = {}
     type: str = 'feditest-registry'
     feditest_version: str = FEDITEST_VERSION
 
@@ -87,7 +88,8 @@ class Registry(msgspec.Struct):
             f.write(self.as_json())
 
 
-    def obtain_full_registry_root(self) -> RegistryRoot:
+    def obtain_registry_root(self) -> RegistryRoot:
+        ca_key: rsa.RSAPrivateKey
         if not self.ca.key:
             self.ca.cert = None # That is now invalid, too
             ca_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -100,7 +102,7 @@ class Registry(msgspec.Struct):
             ca_subject = x509.Name([
                 x509.NameAttribute(x509.NameOID.COMMON_NAME, "feditest-user.example"),
             ])
-            ca_key = load_pem_private_key(self.ca.key.encode('utf-8'), password=None)
+            ca_key = cast(rsa.RSAPrivateKey, load_pem_private_key(self.ca.key.encode('utf-8'), password=None))
             now = datetime.now(UTC)
             ca_cert = x509.CertificateBuilder().subject_name(ca_subject
                 ).issuer_name(ca_subject
@@ -115,13 +117,13 @@ class Registry(msgspec.Struct):
 
             # also erase all certs in case the user deleted the root cert but did not delete the host certs
             for host in self.hosts:
-                self.hosts[host] = RegistryHost(host=host)
+                self.hosts[host] = RegistryHostInfo(host=host)
 
         return self.ca
 
-    def obtain_new_host_and_hostinfo(self, appname: str | None = None ) -> RegistryHost:
+    def obtain_new_hostinfo(self, appname: str | None = None ) -> RegistryHostInfo:
         host = self.obtain_new_hostname(appname)
-        return self.obtain_full_hostinfo(host)
+        return self.obtain_hostinfo(host)
 
 
     def obtain_new_hostname(self, appname: str | None = None) -> str:
@@ -139,15 +141,16 @@ class Registry(msgspec.Struct):
                 current = max(current, index)
 
         new_hostname = f'{ appname }-{ current+1 }.{ self.ca.domain }'
-        self.hosts[new_hostname] = RegistryHost(host=new_hostname)
+        self.hosts[new_hostname] = RegistryHostInfo(host=new_hostname)
         return new_hostname
 
 
-    def obtain_full_hostinfo(self, host: str) -> RegistryHost:
+    def obtain_hostinfo(self, host: str) -> RegistryHostInfo:
         ret = self.hosts.get(host)
         if ret is None:
             raise Exception(f'Unknown host: {host}')
 
+        host_key: rsa.RSAPrivateKey
         if ret.key is None:
             ret.cert = None # That is now invalid, too
             host_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
@@ -157,16 +160,16 @@ class Registry(msgspec.Struct):
                 encryption_algorithm=NoEncryption()).decode('utf-8')
 
         if ret.cert is None:
-            host_key = load_pem_private_key(ret.key.encode('utf-8'), password=None)
+            host_key =  cast(rsa.RSAPrivateKey, load_pem_private_key(ret.key.encode('utf-8'), password=None))
             host_subject = x509.Name([
                 x509.NameAttribute(x509.NameOID.COMMON_NAME, host),
             ])
             host_csr = x509.CertificateSigningRequestBuilder().subject_name(host_subject
                 ).sign(host_key, hashes.SHA256())
 
-            self.obtain_full_registry_root() # make sure we have it
-            ca_cert = x509.load_pem_x509_certificate(self.ca.cert.encode('utf-8'))
-            ca_key = load_pem_private_key(self.ca.key.encode('utf-8'), password=None)
+            self.obtain_registry_root() # make sure we have it
+            ca_cert = x509.load_pem_x509_certificate(cast(str,self.ca.cert).encode('utf-8'))
+            ca_key = cast(rsa.RSAPrivateKey, load_pem_private_key(cast(str,self.ca.key).encode('utf-8'), password=None))
             now = datetime.now(UTC)
             host_cert = x509.CertificateBuilder().subject_name(host_csr.subject
                 ).issuer_name(ca_cert.subject

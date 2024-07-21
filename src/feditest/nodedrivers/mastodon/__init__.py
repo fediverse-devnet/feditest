@@ -5,7 +5,6 @@ from typing import Any
 from feditest import nodedriver
 from feditest.nodedrivers import AbstractManualWebServerNodeDriver
 from feditest.protocols.fediverse import FediverseNode
-from feditest.ubos import UbosNodeDriver
 
 
 class NodeWithMastodonAPI(FediverseNode):

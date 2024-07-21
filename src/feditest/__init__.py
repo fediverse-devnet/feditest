@@ -19,6 +19,7 @@ from feditest.tests import (
     TestFromTestFunction,
     TestStepInTestClass,
 )
+from feditest.registry import Registry
 from feditest.utils import load_python_from
 
 T = TypeVar("T")
@@ -198,6 +199,9 @@ def nodedriver(to_register: Type[Any]):
         if full_name in all_node_drivers:
             fatal('Cannot re-register NodeDriver', full_name )
         all_node_drivers[full_name] = to_register
+
+
+registry = Registry.create() # Currently no persistence
 
 
 class SpecLevel(Enum):

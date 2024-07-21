@@ -15,3 +15,18 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
         parameters['app'] = 'Mastodon'
         return MastodonNode(rolename, parameters, self)
+
+
+    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> dict[str,Any]:
+        return [{
+            "appid" : "mastodon",
+            "appconfigid" : parameters['appconfigid'],
+            "context" : "",
+            "customizationpoints" : {
+                "mastodon" : {
+                    "singleusermode" : {
+                        "value" : False
+                    }
+                }
+            }
+        }]
