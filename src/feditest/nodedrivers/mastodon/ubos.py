@@ -14,6 +14,7 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     """
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
         parameters['app'] = 'Mastodon'
+        parameters['start-delay'] = 10
         return MastodonNode(rolename, parameters, self)
 
 
