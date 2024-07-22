@@ -59,65 +59,102 @@ class UbosNodeDriver(NodeDriver):
 
         # We currently have 2 modes
         if parameters and 'backupfile' in parameters:
-            self._provision_node_from_backupfile(rolename, parameters)
+            self._provision_node_from_backupfile(parameters)
         else:
-            self._provision_node_with_generated_sitejson(rolename, parameters)
+            self._provision_node_with_generated_sitejson(parameters)
+
+        parameters['existing-account-uri'] = f"acct:{ ADMIN_USER }@{ parameters['hostname'] }"
+        parameters['nonexisting-account-uri'] = f"acct:{ DOES_NOT_EXIST_USER }@{ parameters['hostname'] }"
 
         ret = self._instantiate_ubos_node(rolename, parameters)
         return ret
 
 
-    def _provision_node_from_backupfile(self,  rolename: str, parameters: dict[str,Any]) -> None:
-        # FIXME: reconcile provided hostname with what's in the site json / backup
-        cmd = None
-        if 'siteid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Need parameter siteid for now') # FIXME: should get it from the JSON file
-        if 'adminid' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Need parameter adminid for now') # FIXME: should get it from the JSON file
-        if 'hostname' not in parameters:
-            raise NodeSpecificationInsufficientError(self, 'Needs parameter hostname for now') # FIXME: should get it from the JSON file
-        if not hostname_validate(parameters['hostname']):
-            raise NodeSpecificationInvalidError(self, 'hostname', parameters['hostname'])
-        if 'backupfile' in parameters:
-            cmd = f"sudo ubos-admin restore --in {parameters['backupfile']}"
+    def _provision_node_from_backupfile(self, parameters: dict[str,Any]) -> None:
+        """
+        We deploy a new, empty site.
+        Then we add one AppConfig to it from backup.
+        With this approach, we get to specify our own TLS data.
+        """
+        if 'backup-appconfigid' not in parameters:
+            raise NodeSpecificationInsufficientError(self, 'Need parameter "backup-appconfigid" to identify the to-be-restored AppConfigId in the backup file')
+
+        if 'hostname' in parameters:
+            info = registry.obtain_hostinfo(parameters['hostname'])
         else:
-            raise NodeSpecificationInsufficientError(self, 'Need parameter sitejsonfile or backupfile')
+            info = registry.obtain_new_hostinfo(parameters.get('app'))
+            parameters['hostname'] = info.host
 
-        parameters['existing-account-uri'] = f"acct:{ parameters['adminid'] }@{ parameters['hostname'] }"
-        parameters['nonexisting-account-uri'] = f"acct:does-not-exist@{ parameters['hostname'] }"
+        parameters['siteid'] = self._generate_siteid()
+        parameters['appconfigid'] = self._generate_appconfigid()
 
-        self._exec_shell(cmd)
+        emptySiteJson = {
+            'hostname' : parameters['hostname'],
+            'siteid' : parameters['siteid'],
+            'admin' : {
+                'email' : f'{ ADMIN_USER }@{ parameters["hostname"] }',
+                'username' : ADMIN_USER,
+                'userid' : ADMIN_USER,
+                'credential' : self._generate_credential()
+            },
+            'tls' : {
+                'key' : info.key,
+                'crt' : info.cert
+            },
+        }
+        if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(emptySiteJson)):
+            raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy of empty site failed')
+
+        # From `ubos-admin restore --help`:
+        #    ubos-admin restore --appconfigid <appconfigid> --tositeid <tositeid> --createnew [--newappconfigid <newid>] [--newcontext <context>] --in <backupfile>
+        #         Restore only one AppConfiguration identified by its appconfigid
+        #         <appconfigid> from local UBOS backup file <backupfile>, or from the
+        #         UBOS backup file downloaded from URL <backupurl>, by adding it as a
+        #         new AppConfiguration to a currently deployed site identified by its
+        #         site id <tositeid>. However, use new appconfigid <newid> for it (or,
+        #         if not provided, generate a new one). Optionally, if --newcontext
+        #         <context> is provided, deploy the AppConfiguration to a different
+        #         context path.
+
+        cmd = 'sudo ubos-admin restore'
+        cmd += f' --appconfigid "{ parameters["backup-appconfigid"] }"'
+        cmd += f' --tositeid "{ parameters["siteid"] }"'
+        cmd += ' --createnew'
+        cmd += f' --newappconfigid "{ parameters["appconfigid"] }"'
+        cmd += ' --newcontext ""'
+        cmd += f' --in "{ parameters["backupfile"] }"'
+
+        if self._exec_shell(cmd):
+            raise NodeSpecificationInsufficientError(self, 'ubos-admin restore of WordPress AppConfig failed')
 
 
-    def _provision_node_with_generated_sitejson(self,  rolename: str, parameters: dict[str,Any]) -> None:
-            if 'hostname' in parameters:
-                info = registry.obtain_hostinfo(parameters['hostname'])
-            else:
-                info = registry.obtain_new_hostinfo(parameters.get('app'))
-                parameters['hostname'] = info.host
+    def _provision_node_with_generated_sitejson(self,  parameters: dict[str,Any]) -> None:
+        if 'hostname' in parameters:
+            info = registry.obtain_hostinfo(parameters['hostname'])
+        else:
+            info = registry.obtain_new_hostinfo(parameters.get('app'))
+            parameters['hostname'] = info.host
 
-            parameters['existing-account-uri'] = f"acct:{ ADMIN_USER }@{ parameters['hostname'] }"
-            parameters['nonexisting-account-uri'] = f"acct:{ DOES_NOT_EXIST_USER }@{ parameters['hostname'] }"
-            parameters['siteid'] = self._generate_siteid()
-            parameters['appconfigid'] = self._generate_appconfigid()
+        parameters['siteid'] = self._generate_siteid()
+        parameters['appconfigid'] = self._generate_appconfigid()
 
-            siteJson = {
-                'hostname' : parameters['hostname'],
-                'siteid' : parameters['siteid'],
-                'admin' : {
-                    'email' : f'{ ADMIN_USER }@{ parameters["hostname"] }',
-                    'username' : ADMIN_USER,
-                    'userid' : ADMIN_USER,
-                    'credential' : self._generate_credential()
-                },
-                'tls' : {
-                    'key' : info.key,
-                    'crt' : info.cert
-                },
-            }
-            siteJson['appconfigs'] = self._getAppConfigsJson(parameters)
-            if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(siteJson)):
-                raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy failed')
+        siteJson = {
+            'hostname' : parameters['hostname'],
+            'siteid' : parameters['siteid'],
+            'admin' : {
+                'email' : f'{ ADMIN_USER }@{ parameters["hostname"] }',
+                'username' : ADMIN_USER,
+                'userid' : ADMIN_USER,
+                'credential' : self._generate_credential()
+            },
+            'tls' : {
+                'key' : info.key,
+                'crt' : info.cert
+            },
+        }
+        siteJson['appconfigs'] = self._getAppConfigsJson(parameters)
+        if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(siteJson)):
+            raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy failed')
 
 
     def _getAppConfigsJson(self, parameters: dict[str,Any]) -> list[dict[str,Any]]:
