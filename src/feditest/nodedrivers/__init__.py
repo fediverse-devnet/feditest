@@ -18,17 +18,15 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
     The @nodedriver there gets registered twice under different names
     """
     def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+        parameters = dict(parameters)
         hostname = parameters.get('hostname')
         if hostname:
             self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
                              + f' with hostname "{ hostname }" and hit return when done.')
         else:
-            hostname = self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
+            parameters['hostname'] = self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
                                         + ' and enter the hostname when done: ',
                                         parse_validate=hostname_validate)
-        parameters = dict(parameters)
-        parameters['hostname'] = hostname
-
         app = parameters.get('app')
         if not app:
             parameters['app'] = self.prompt_user('Enter the name of the app you just provisioned'

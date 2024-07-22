@@ -120,7 +120,7 @@ class UbosNodeDriver(NodeDriver):
                 raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy failed')
 
 
-    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> dict[str,Any]:
+    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> list[dict[str,Any]]:
         raise Exception( 'AppConfigs fragment for the Site JSON file must be defined in a subclass')
 
 

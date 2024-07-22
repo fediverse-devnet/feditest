@@ -18,7 +18,7 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
         return MastodonNode(rolename, parameters, self)
 
 
-    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> dict[str,Any]:
+    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> list[dict[str,Any]]:
         return [{
             "appid" : "mastodon",
             "appconfigid" : parameters['appconfigid'],
