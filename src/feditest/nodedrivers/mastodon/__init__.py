@@ -6,7 +6,6 @@ import re
 import sys
 from typing import Any, cast
 
-from feditest import nodedriver
 from feditest.nodedrivers import AbstractManualWebServerNodeDriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.fediverse import FediverseNode
@@ -123,8 +122,6 @@ class MastodonNode(NodeWithMastodonAPI):
     pass
 
 
-
-@nodedriver
 class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
     """
     Create a manually provisioned Mastodon Node

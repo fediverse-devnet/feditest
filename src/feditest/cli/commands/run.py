@@ -5,7 +5,6 @@ Run one or more tests
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
-from feditest.cli import default_node_drivers_dir
 from feditest.reporting import warning
 from feditest.testplan import TestPlan
 from feditest.testrun import TestRun
@@ -33,8 +32,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     feditest.load_tests_from(args.testsdir)
     if args.nodedriversdir:
         feditest.load_node_drivers_from(args.nodedriversdir)
-    else:
-        feditest.load_node_drivers_from(default_node_drivers_dir)
+    feditest.load_default_node_drivers()
 
     plan = TestPlan.load(args.testplan)
     if not plan.is_compatible_type():

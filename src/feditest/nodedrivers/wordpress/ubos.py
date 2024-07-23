@@ -3,12 +3,10 @@
 
 from typing import Any
 
-from feditest import nodedriver
 from feditest.nodedrivers.wordpress import WordPressPlusActivityPubPluginNode
 from feditest.ubos import UbosNodeDriver
 
 
-@nodedriver
 class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate WordPress with the ActivityPub plugin via UBOS.

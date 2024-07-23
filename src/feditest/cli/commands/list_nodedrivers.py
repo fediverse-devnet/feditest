@@ -17,8 +17,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     if args.nodedriversdir:
         feditest.load_node_drivers_from(args.nodedriversdir)
-    else:
-        feditest.load_node_drivers_from(feditest.cli.default_node_drivers_dir)
+    feditest.load_default_node_drivers()
 
     for name in sorted(feditest.all_node_drivers.keys()):
         print(name)

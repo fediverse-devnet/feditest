@@ -7,7 +7,6 @@ from typing import Any, cast
 import httpx
 from multidict import MultiDict
 
-from feditest import nodedriver
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
@@ -115,7 +114,6 @@ class Imp(WebFingerClient):
             return WebFingerQueryResponse(ret_pair, jrd, None)
 
 
-@nodedriver
 class ImpInProcessNodeDriver(NodeDriver):
     """
     Knows how to instantiate an Imp.

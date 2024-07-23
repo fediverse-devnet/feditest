@@ -4,7 +4,6 @@
 import re
 from typing import Any
 
-from feditest import nodedriver
 from feditest.nodedrivers import AbstractManualWebServerNodeDriver
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
 
@@ -35,7 +34,6 @@ class WordPressPlusActivityPubPluginNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-@nodedriver
 class WordPressPlusActivityPubPluginManualNodeDriver(AbstractManualWebServerNodeDriver):
     """
     Create a manually provisioned WordPress + ActivityPubPlugin Node

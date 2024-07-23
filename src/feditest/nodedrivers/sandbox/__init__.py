@@ -5,7 +5,6 @@
 
 from typing import Any, List
 
-from feditest import nodedriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
 from feditest.utils import FEDITEST_VERSION
@@ -25,7 +24,6 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
         return FEDITEST_VERSION
 
 
-@nodedriver
 class SandboxMultClientDriver_ImplementationA(NodeDriver):
     """
     Driver for the client implementation, so the client can be provisioned and unprovisioned for
@@ -69,7 +67,6 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
         return ret
 
 
-@nodedriver
 class SandboxMultServerDriver_Implementation1(NodeDriver):
     """
     Driver for the first server implementation, so this server implementation can be provisioned and unprovisioned for
@@ -116,7 +113,6 @@ class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
         return ret
 
 
-@nodedriver
 class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
     """
     Driver for the second server implementation, so this server implementation can be provisioned and unprovisioned for
