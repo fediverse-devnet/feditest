@@ -132,15 +132,19 @@ class Registry(msgspec.Struct):
         This implementation will return sequentially indexed hostnames for each app
         """
         if not appname:
-            appname = 'unnamed'
+            safe_appname = 'unnamed'
+        elif m := re.match('^([0-9A-Za-z]*)', appname):
+            safe_appname = m.group(1).lower()
+        else:
+            safe_appname = 'other'
 
         current = 0
         for host in self.hosts:
-            if m := re.search(f'^{ appname }-(\\d+)\\.{ self.ca.domain }$', host):
+            if m := re.search(f'^{ safe_appname }-(\\d+)\\.{ self.ca.domain }$', host):
                 index = int(m.group(1))
                 current = max(current, index)
 
-        new_hostname = f'{ appname }-{ current+1 }.{ self.ca.domain }'
+        new_hostname = f'{ safe_appname }-{ current+1 }.{ self.ca.domain }'
         self.hosts[new_hostname] = RegistryHostInfo(host=new_hostname)
         return new_hostname
 
