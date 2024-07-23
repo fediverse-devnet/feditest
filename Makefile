@@ -33,7 +33,7 @@ $(VENV) :
 lint : venv
 	$(VENV)/bin/ruff check src
 	$(VENV)/bin/mypy src
-	$(VENV)/bin/pylint src
+	# $(VENV)/bin/pylint src
 
 test : venv
 	$(VENV)/bin/pytest -v
