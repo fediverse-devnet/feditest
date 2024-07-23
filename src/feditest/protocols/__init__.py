@@ -6,7 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
-from feditest.reporting import warning
+from feditest.reporting import warning, trace
 
 
 class Node(ABC):
@@ -109,8 +109,8 @@ class NodeDriver(ABC):
         rolename: the name of this Node in the constellation
         parameters: parameters for this Node
         """
-        if rolename is None:
-            raise NodeSpecificationInvalidError(self, 'rolename', 'rolename must be given')
+        self._fill_in_parameters(rolename, parameters)
+        trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
         ret = self._provision_node(rolename, parameters)
         return ret
 
@@ -124,6 +124,13 @@ class NodeDriver(ABC):
         if node.node_driver != self :
             raise Exception(f"Node does not belong to this NodeDriver: { node.node_driver } vs { self }") # pylint: disable=broad-exception-raised
         self._unprovision_node(node)
+
+
+    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+        """
+        Let our subclasses fill in additional / default parameters before the node gets provisioned
+        """
+        pass
 
 
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:

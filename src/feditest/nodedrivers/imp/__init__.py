@@ -7,7 +7,7 @@ from typing import Any, cast
 import httpx
 from multidict import MultiDict
 
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import NodeDriver
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,
@@ -118,16 +118,12 @@ class ImpInProcessNodeDriver(NodeDriver):
     """
     Knows how to instantiate an Imp.
     """
-    # use superclass constructor
+    # Python 3.12 @override
+    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, parameters)
+        parameters['app'] = 'Imp'
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> Imp:
-        parameters['app'] = 'Imp'
-        node = Imp(rolename, parameters, self)
-        return node
-
-
-    # Python 3.12 @override
-    def _unprovision_node(self, node: Node) -> None:
-        pass
+        return Imp(rolename, parameters, self)
 

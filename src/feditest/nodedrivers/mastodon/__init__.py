@@ -6,7 +6,7 @@ import re
 import sys
 from typing import Any, cast
 
-from feditest.nodedrivers import AbstractManualWebServerNodeDriver
+from feditest.nodedrivers.manual import AbstractManualWebServerNodeDriver
 from feditest.protocols import NodeDriver
 from feditest.protocols.fediverse import FediverseNode
 
@@ -126,14 +126,7 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
     """
     Create a manually provisioned Mastodon Node
     """
-    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
-        self._fill_in_parameters(rolename, parameters)
-        parameters['app'] = 'Mastodon'
-
-        return MastodonNode(rolename, parameters, self)
-
-
-    # Override
+    # Python 3.12 @override
     def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
         super()._fill_in_parameters(rolename, parameters)
 
@@ -142,3 +135,9 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
             parameters['access_token'] = self.prompt_user('Enter the client API access token for the app'
                                                  + f' in role { rolename } at hostname { parameters["hostname"] }: ',
                                                  parse_validate=_token_validate)
+        parameters['app'] = 'Mastodon'
+
+
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
+        return MastodonNode(rolename, parameters, self)

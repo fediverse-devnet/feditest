@@ -4,7 +4,7 @@
 import re
 from typing import Any
 
-from feditest.nodedrivers import AbstractManualWebServerNodeDriver
+from feditest.nodedrivers.manual import AbstractManualWebServerNodeDriver
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
 
 
@@ -38,18 +38,20 @@ class WordPressPlusActivityPubPluginManualNodeDriver(AbstractManualWebServerNode
     """
     Create a manually provisioned WordPress + ActivityPubPlugin Node
     """
-    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        parameters['app'] = 'WordPress + ActivityPub plugin'
-
-        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
-
-
-    # Override
+    # Python 3.12 @override
     def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
         super()._fill_in_parameters(rolename, parameters)
-
         access_token = parameters.get('access_token')
         if not access_token:
             parameters['access_token'] = self.prompt_user('Enter the client API access token for the app'
                                                  + f' in role { rolename } at hostname { parameters["hostname"] }: ',
                                                  parse_validate=_token_validate)
+
+        parameters['app'] = 'WordPress + ActivityPub plugin'
+
+
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
+        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
+
+

@@ -1,6 +1,7 @@
 """
 Nodes managed via UBOS https://ubos.net/
 """
+from abc import abstractmethod
 import json
 import random
 import secrets
@@ -30,6 +31,7 @@ class UbosNodeDriver(NodeDriver):
     """
     A general-purpose NodeDriver for Nodes provisioned through UBOS Gears.
     """
+    # Python 3.12 @override
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
         """
         The UBOS driver knows how to provision a node either by deploying a UBOS Site JSON file
@@ -41,11 +43,6 @@ class UbosNodeDriver(NodeDriver):
         * `sudo machinectl shell ubosdev@container`
         * Because of its generality, the syntax of this parameter is not validated.
         """
-        if parameters:
-            parameters = dict(parameters)
-        else:
-            parameters = {}
-
         rshcmd = parameters.get('rshcmd')
         if rshcmd:
             if self._exec_shell('which ubos-admin', rshcmd):
@@ -161,6 +158,7 @@ class UbosNodeDriver(NodeDriver):
         raise Exception( 'AppConfigs fragment for the Site JSON file must be defined in a subclass')
 
 
+    @abstractmethod
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
         """
         This needs to be subclassed to control/observe the running UBOS Node programmatically.
