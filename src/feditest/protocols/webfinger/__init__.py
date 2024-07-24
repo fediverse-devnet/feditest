@@ -92,25 +92,45 @@ class WebFingerClient(WebClient):
         """
         raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
 
+    def construct_webfinger_query_for(
+        self,
+        server_prefix: str,
+        resource_uri: str,
+        rels: list[str] | None = None,
+    ) -> str:
+        query = (
+            f"{server_prefix}/.well-known/webfinger?resource={quote(resource_uri)}"
+        )
+        if query:
+            query += "&rel=" + "&rel=".join(quote(rel) for rel in rels)
+        return query
 
-    def construct_webfinger_uri_for(self, resource_uri: str, rels: list[str] | None = None) -> str:
+    def construct_webfinger_uri_for(
+        self,
+        resource_uri: str,
+        rels: list[str] | None = None,
+        hostname: str | None = None,
+    ) -> str:
         """
         Helper method to construct the WebFinger URI from a resource URI, and an optional list
         of rels to ask for
         """
-        parsed_resource_uri = urlparse(resource_uri)
-        match parsed_resource_uri.scheme:
-            case 'acct':
-                _, hostname = parsed_resource_uri.path.split('@', maxsplit=1) # 1: number of splits, not number of elements
+        if not hostname:
+            parsed_resource_uri = urlparse(resource_uri)
+            match parsed_resource_uri.scheme:
+                case "acct":
+                    _, hostname = parsed_resource_uri.path.split(
+                        "@", maxsplit=1
+                    )  # 1: number of splits, not number of elements
 
-            case 'http':
-                hostname = parsed_resource_uri.netloc
+                case 'http':
+                    hostname = parsed_resource_uri.netloc
 
-            case 'https':
-                hostname = parsed_resource_uri.netloc
+                case 'https':
+                    hostname = parsed_resource_uri.netloc
 
-            case _:
-                raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
+                case _:
+                    raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
 
         if not hostname:
             raise WebFingerClient.CannotDetermineWebfingerHostError(resource_uri)
@@ -121,14 +141,12 @@ class WebFingerClient(WebClient):
 
         return uri
 
-
     class UnsupportedUriSchemeError(RuntimeError):
         """
         Raised when a WebFinger resource uses a scheme other than http, https, acct
         """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
-
 
     class CannotDetermineWebfingerHostError(RuntimeError):
         """

@@ -15,7 +15,7 @@ from feditest.protocols.web.traffic import (
     HttpRequestResponsePair,
     HttpResponse,
 )
-from feditest.protocols.webfinger import WebFingerClient
+from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 from feditest.reporting import trace
 from feditest.utils import FEDITEST_VERSION
@@ -34,7 +34,6 @@ class Imp(WebFingerClient):
     @property
     def app_version(self):
         return FEDITEST_VERSION
-
 
     # @override # from WebClient
     def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
@@ -55,13 +54,22 @@ class Imp(WebFingerClient):
             return ret
         raise WebClient.HttpUnsuccessfulError(request)
 
-
     # @override # from WebFingerClient
-    def perform_webfinger_query(self, resource_uri: str, rels: list[str] | None = None) -> WebFingerQueryResponse:
-        uri = self.construct_webfinger_uri_for(resource_uri, rels)
-        parsed_uri = ParsedUri.parse(uri)
+    def perform_webfinger_query(
+        self,
+        server: WebFingerServer,
+        resource_uri: str|None = None,
+        rels: list[str] | None = None,
+    ) -> WebFingerQueryResponse:
+        if resource_uri is None:
+            resource_uri = server.parameter("existing-account-uri")
+        if server_prefix := server.parameter("server-prefix"):
+            query_url = self.construct_webfinger_query_for(server_prefix, resource_uri, rels)
+        else:
+            query_url = self.construct_webfinger_uri_for(resource_uri, rels, server.parameter("hostname"))
+        parsed_uri = ParsedUri.parse(query_url)
         if not parsed_uri:
-            raise ValueError('Not a valid URI:', uri) # can't avoid this
+            raise ValueError('Not a valid URI:', query_url) # can't avoid this
         first_request = HttpRequest(parsed_uri)
         current_request = first_request
         pair : HttpRequestResponsePair | None = None
@@ -72,7 +80,7 @@ class Imp(WebFingerClient):
                     return WebFingerQueryResponse(pair, None, WebClient.TooManyRedirectsError(current_request))
                 parsed_location_uri = ParsedUri.parse(pair.response.location())
                 if not parsed_location_uri:
-                    return WebFingerQueryResponse(pair, None, ValueError('Location header is not a valid URI:', uri, '(from', resource_uri, ')'))
+                    return WebFingerQueryResponse(pair, None, ValueError('Location header is not a valid URI:', query_url, '(from', resource_uri, ')'))
                 current_request = HttpRequest(parsed_location_uri)
             break
 
@@ -132,4 +140,3 @@ class ImpInProcessNodeDriver(NodeDriver):
     # Python 3.12 @override
     def _unprovision_node(self, node: Node) -> None:
         pass
-
