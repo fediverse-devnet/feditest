@@ -219,7 +219,7 @@ def load_default_node_drivers() -> None:
             all_node_drivers[class_name] = getattr(importlib.import_module(module_name), class_name)
 
 
-registry = Registry.create() # Currently no persistence
+registry = Registry.create() # May be re-assigned by cli.run
 
 
 class SpecLevel(Enum):

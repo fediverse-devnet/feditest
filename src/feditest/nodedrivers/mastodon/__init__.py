@@ -102,6 +102,9 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     def _provision_new_user(self):
+        """
+        Make sure a new user exists. This should be overridden in subclasses if at all possible.
+        """
         ret = self.prompt_user('Create a new user account on the app'
                                 + f' in role { self._rolename } at hostname { self._parameters["hostname"] }'
                                 + ' and enter its user handle: ',
@@ -129,7 +132,6 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
     # Python 3.12 @override
     def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
         super()._fill_in_parameters(rolename, parameters)
-
         access_token = parameters.get('access_token')
         if not access_token:
             parameters['access_token'] = self.prompt_user('Enter the client API access token for the app'

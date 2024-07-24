@@ -5,6 +5,7 @@ Run one or more tests
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
+from feditest.registry import Registry
 from feditest.reporting import warning
 from feditest.testplan import TestPlan
 from feditest.testrun import TestRun
@@ -16,7 +17,7 @@ from feditest.testruntranscript import (
     TapTestRunTranscriptSerializer,
     TestRunTranscriptSerializer,
 )
-from feditest.utils import FEDITEST_VERSION
+from feditest.utils import FEDITEST_VERSION, hostname_validate
 
 
 DEFAULT_TEMPLATE = 'default'
@@ -33,6 +34,9 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if args.nodedriversdir:
         feditest.load_node_drivers_from(args.nodedriversdir)
     feditest.load_default_node_drivers()
+
+    if args.domain:
+        feditest.registry = Registry.create(args.domain) # overwrite
 
     plan = TestPlan.load(args.testplan)
     if not plan.is_compatible_type():
@@ -84,6 +88,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
     parser.add_argument('--testplan', default='feditest-default.json', help='Name of the file that contains the test plan to run')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find extra drivers for nodes that can be tested')
+    parser.add_argument('--domain', type=hostname_validate, help='Local-only DNS domain for the DNS hostnames that are auto-generated for nodes')
     parser.add_argument('--interactive', action="store_true",
                         help="Run the tests interactively")
     parser.add_argument('--who', action='store_true',

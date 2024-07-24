@@ -2,6 +2,7 @@
 Nodes managed via UBOS https://ubos.net/
 """
 from abc import abstractmethod
+import hashlib
 import json
 import random
 import secrets
@@ -12,7 +13,7 @@ from typing import Any
 
 from feditest import registry
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInsufficientError, NodeSpecificationInvalidError
-from feditest.reporting import info
+from feditest.reporting import error, info
 from feditest.utils import hostname_validate
 
 """
@@ -183,7 +184,7 @@ class UbosNodeDriver(NodeDriver):
             fullcmd = cmd
 
         if stdin_content:
-            info( f"Executing '{fullcmd}' with some stdin content")
+            info( f"Executing '{fullcmd}' with some stdin content" )
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, input=stdin_content)
         else:
             info( f"Executing '{fullcmd}'")
@@ -210,3 +211,44 @@ class UbosNodeDriver(NodeDriver):
         chars = string.ascii_letters + string.digits + string.punctuation
         ret = ''.join(random.choice(chars) for i in range(16))
         return ret
+
+
+    def _generate_unique_cert_filename(self,root_cert: str) -> str:
+        """
+        Helper to generate a unique filename for a cert.
+        """
+        alg = hashlib.sha256()
+        alg.update(root_cert.encode('utf-8'))
+        unique = alg.hexdigest()[:8] # just take a few bytes, good enough
+        ret = f'/etc/ca-certificates/trust-source/anchors/feditest-{ unique }.pem'
+        return ret
+
+
+    def add_cert_to_trust_store(self, root_cert: str, rshcmd: str | None = None) -> None:
+        """
+        On behalf of the UbosNode (which isn't a class, by conceptually is a thing), save this
+        root_cert in PEM format to the Device's trust store.
+
+        Note: This may be invoked more than once on the same Device with the same data. We are
+        lazy and simply overwrite.
+
+        From "man update-ca-trust":
+         • add it as a new file to directory /etc/ca-certificates/trust-source/anchors/
+         • run update-ca-trust extract
+        """
+        filename = self._generate_unique_cert_filename(root_cert)
+        # Sorry for the trickery, this allows us to avoid having to have an extra parameter for scp-equivalent or such
+        cmd = f'sudo bash -c "cat > { filename } && update-ca-trust refresh"'
+        if self._exec_shell(cmd, rshcmd, root_cert):
+            error(f'Failed to execute cmd {cmd}')
+
+
+    def remove_cert_from_trust_store(self, root_cert: str, rshcmd: str | None = None) -> None:
+        """
+        Note: This may be invoked more than once on the same Device with the same data. We are
+        lazy, delete it the first time and silently do nothing after.
+        """
+        filename = self._generate_unique_cert_filename(root_cert)
+        cmd = f'sudo bash -c "[[ ! -e { filename } ]] || rm { filename } && update-ca-trust refresh"'
+        if self._exec_shell(cmd, rshcmd, root_cert):
+            error(f'Failed to execute cmd {cmd}')

@@ -114,6 +114,19 @@ class Imp(WebFingerClient):
             return WebFingerQueryResponse(ret_pair, jrd, None)
 
 
+    # Python 3.12 @override
+    def add_cert_to_trust_store(self, root_cert: str) -> None:
+        """
+        On the Imp, we don't do this (for now?)
+        """
+        return
+
+
+    # Python 3.12 @override
+    def remove_cert_from_trust_store(self, root_cert: str) -> None:
+        return
+
+
 class ImpInProcessNodeDriver(NodeDriver):
     """
     Knows how to instantiate an Imp.

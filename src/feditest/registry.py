@@ -88,6 +88,12 @@ class Registry(msgspec.Struct):
             f.write(self.as_json())
 
 
+    def root_cert_for_trust_root(self):
+        if self.ca:
+            return self.ca.cert
+        return None
+
+
     def obtain_registry_root(self) -> RegistryRoot:
         ca_key: rsa.RSAPrivateKey
         if not self.ca.key:

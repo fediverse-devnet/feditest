@@ -10,6 +10,7 @@ from abc import ABC
 from datetime import UTC, datetime, timezone
 from typing import cast
 
+from feditest import registry
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
@@ -96,6 +97,11 @@ class TestRunConstellation:
             time.sleep(wait_time) # Apparently some applications take some time
                                   # after deployment before they are ready to communicate.
 
+        root_cert = registry.root_cert_for_trust_root()
+        if root_cert:
+            for node in self._nodes.values():
+                node.add_cert_to_trust_store(root_cert)
+
 
     def teardown(self) -> None:
         if self._plan_constellation.name:
@@ -103,11 +109,18 @@ class TestRunConstellation:
         else:
             trace('Tearing down constellation')
 
+        root_cert = registry.root_cert_for_trust_root()
         for plan_role_name in self._plan_constellation.roles:
             if plan_role_name in self._nodes: # setup may never have succeeded
+                trace('Tearing down role', plan_role_name)
+                node = self._nodes[plan_role_name]
+                if root_cert:
+                    try:
+                        node.remove_cert_from_trust_store(root_cert)
+                    except Exception as e:
+                        warning(f'Problem removing temporary CA cert from trust store on {node}', e)
+
                 try:
-                    trace('Tearing down role', plan_role_name)
-                    node = self._nodes[plan_role_name]
                     node.node_driver.unprovision_node(node)
                     del self._nodes[plan_role_name]
 
