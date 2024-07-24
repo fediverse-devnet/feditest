@@ -15,7 +15,7 @@ from feditest.testruntranscript import (
 )
 from feditest.utils import FEDITEST_VERSION
 
-DEFAULT_TEMPLATE = 'default'
+DEFAULT_TEMPLATE_PATH = "default"
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -32,7 +32,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         serializer.write(args.tap)
 
     if isinstance(args.html, str) or args.html:
-        multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template)
+        multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template_path)
         multifile_serializer.write(transcript)
 
     if isinstance(args.json, str) or args.json:
@@ -59,8 +59,8 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     html_group = parser.add_argument_group('html', 'HTML options')
     html_group.add_argument('--html',
                         help="Write results in HTML format to the provided file.")
-    html_group.add_argument('--template', default=DEFAULT_TEMPLATE,
-                        help=f"When specifying --html, use this template (defaults to '{ DEFAULT_TEMPLATE }').")
+    html_group.add_argument('--template-path', default=DEFAULT_TEMPLATE_PATH,
+                        help="When specifying --html, use this template path override (comma separated directory names)")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
