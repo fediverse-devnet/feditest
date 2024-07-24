@@ -1,10 +1,15 @@
 """
 """
 
-from datetime import date, datetime, UTC
+from datetime import UTC, date, datetime
 from typing import Any, Callable, List, final
+
 from feditest.protocols import Node, NodeDriver, NotImplementedByNodeError
-from feditest.protocols.web.traffic import HttpRequest, HttpRequestResponsePair, ParsedUri
+from feditest.protocols.web.traffic import (
+    HttpRequest,
+    HttpRequestResponsePair,
+    ParsedUri,
+)
 
 
 class WebServerLog:
@@ -98,23 +103,25 @@ class WebClient(Node):
     """
     Abstract class used for Nodes that speak HTTP as client.
     """
-    def http(self, request: HttpRequest, follow_redirects: bool = True) -> HttpRequestResponsePair:
+    def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         """
         Make this WebClient perform an HTTP request.
         """
         raise NotImplementedByNodeError(self, WebClient.http, request.method)
         # Unlikely that there is a manual action the user could take, so no prompt here
 
-
-    def http_get(self, uri: str, follow_redirects: bool = True) -> HttpRequestResponsePair:
+    def http_get(self, uri: str, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         """
         Make this WebClientperform an HTTP get on the provided uri.
         """
         parsed = ParsedUri.parse(uri)
         if not parsed:
             raise ValueError('Invalid URI:', uri)
-        return self.http(HttpRequest(parsed, 'GET' ), follow_redirects=follow_redirects)
-
+        return self.http(
+            HttpRequest(parsed, "GET"),
+            follow_redirects=follow_redirects,
+            verify=verify,
+        )
 
     class TooManyRedirectsError(RuntimeError):
         """
@@ -127,10 +134,8 @@ class WebClient(Node):
             """
             self._request = request
 
-
         def __str__(self):
             f'Too many redirects: { self._request.uri.get_uri() }'
-
 
     class HttpUnsuccessfulError(RuntimeError):
         """
@@ -143,10 +148,8 @@ class WebClient(Node):
             """
             self._request = request
 
-
         def __str__(self):
             f'Unsuccessful HTTP request: { self._request.uri.get_uri() }'
-
 
     class WrongHttpStatusError(RuntimeError):
         """
@@ -155,11 +158,9 @@ class WebClient(Node):
         def __init__(self, http_request_response_pair: HttpRequestResponsePair):
             self._http_request_response_pair = http_request_response_pair
 
-
         def __str__(self):
             return 'Wrong HTTP status code.' \
                    + f'\n -> { self._http_request_response_pair.response.http_status }'
-
 
     class WrongContentTypeError(RuntimeError):
         """
@@ -167,7 +168,6 @@ class WebClient(Node):
         """
         def __init__(self, http_request_response_pair: HttpRequestResponsePair):
             self._http_request_response_pair = http_request_response_pair
-
 
         def __str__(self):
             return 'Wrong HTTP content type.' \

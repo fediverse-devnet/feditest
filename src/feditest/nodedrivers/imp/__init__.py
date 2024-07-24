@@ -37,12 +37,12 @@ class Imp(WebFingerClient):
 
 
     # @override # from WebClient
-    def http(self, request: HttpRequest, follow_redirects: bool = True) -> HttpRequestResponsePair:
+    def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         trace( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
 
         httpx_response = None
         # Do not follow redirects automatically, we need to know whether there are any
-        with httpx.Client(verify=False, follow_redirects=follow_redirects) as httpx_client:  # FIXME disable TLS cert verification for now
+        with httpx.Client(verify=verify, follow_redirects=follow_redirects) as httpx_client:  # FIXME disable TLS cert verification for now
             httpx_request = httpx.Request(request.method, request.uri.get_uri(), headers=_HEADERS) # FIXME more arguments
             httpx_response = httpx_client.send(httpx_request)
 
