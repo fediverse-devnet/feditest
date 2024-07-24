@@ -43,7 +43,7 @@ class WebServer(Node):
         """
         super().__init__(rolename, parameters, node_driver)
 
-        if not parameters.get('hostname'):
+        if not parameters.get("server-prefix") and not parameters.get('hostname'):
             raise Exception('Required: parameters["hostname"]')
 
 
