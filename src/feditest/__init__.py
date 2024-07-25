@@ -6,7 +6,7 @@ from collections.abc import Callable
 from enum import Enum
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
-from typing import Any,  Type, TypeVar, cast
+from typing import Any, Type, TypeVar, cast
 
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
@@ -174,8 +174,9 @@ def load_node_drivers_from(dirs: list[str]) -> None:
 # Holds all node drivers
 all_node_drivers : dict[str,Type[Any]]= {}
 
+TDriver = TypeVar('NodeDriver')
 
-def nodedriver(to_register: Type[Any]):
+def nodedriver(to_register: Type[TDriver]) -> Type[TDriver]:
     """
     Used as decorator of NodeDriver classes, like this:
 
@@ -199,6 +200,7 @@ def nodedriver(to_register: Type[Any]):
             fatal('Cannot re-register NodeDriver', full_name )
         all_node_drivers[full_name] = to_register
 
+    return to_register
 
 class SpecLevel(Enum):
     MUST = 1
