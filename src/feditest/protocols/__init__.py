@@ -69,8 +69,11 @@ class Node(ABC):
         return None # by default we don't know
 
 
-    def parameter(self, name:str) -> str | None:
-        return self._parameters.get(name)
+    def parameter(self, name:str, default: str | None = None) -> str | None:
+        ret = self._parameters.get(name)
+        if not ret:
+            ret = default
+        return ret
 
 
     def set_parameter(self, name:str, value:Any) -> None:
