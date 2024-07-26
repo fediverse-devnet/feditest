@@ -4,6 +4,7 @@
 from typing import Any, cast
 
 from feditest.nodedrivers.mastodon import MastodonNode
+from feditest.reporting import error, trace
 from feditest.ubos import UbosNodeDriver
 
 
@@ -44,6 +45,7 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
 
     # Python 3.12 @override
     def _instantiate_ubos_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
+        trace('Instantiating MastodonUbosNode')
         return MastodonUbosNode(rolename, parameters, self)
 
 

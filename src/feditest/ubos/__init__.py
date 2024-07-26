@@ -13,7 +13,7 @@ from typing import Any
 
 from feditest import registry
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInsufficientError, NodeSpecificationInvalidError
-from feditest.reporting import error, info
+from feditest.reporting import error, info, trace, warning
 from feditest.utils import hostname_validate
 
 """
@@ -44,6 +44,7 @@ class UbosNodeDriver(NodeDriver):
         * `sudo machinectl shell ubosdev@container`
         * Because of its generality, the syntax of this parameter is not validated.
         """
+        trace(f'UbosNodeDriver provision node {rolename}')
         rshcmd = parameters.get('rshcmd')
         if rshcmd:
             if self._exec_shell('which ubos-admin', rshcmd).returncode:
@@ -85,15 +86,18 @@ class UbosNodeDriver(NodeDriver):
 
         parameters['siteid'] = self._generate_siteid()
         parameters['appconfigid'] = self._generate_appconfigid()
+        parameters['adminid'] = ADMIN_USER
+        parameters['adminemail'] = f'{ ADMIN_USER }@{ parameters["hostname"] }'
+        parameters['adminpass'] = self._generate_credential()
 
         emptySiteJson = {
             'hostname' : parameters['hostname'],
             'siteid' : parameters['siteid'],
             'admin' : {
-                'email' : f'{ ADMIN_USER }@{ parameters["hostname"] }',
-                'username' : ADMIN_USER,
-                'userid' : ADMIN_USER,
-                'credential' : self._generate_credential()
+                'email' : parameters['adminemail'],
+                'username' : parameters['adminid'],
+                'userid' : parameters['adminid'],
+                'credential' : parameters['adminpass']
             },
             'tls' : {
                 'key' : info.key,
@@ -135,15 +139,18 @@ class UbosNodeDriver(NodeDriver):
 
         parameters['siteid'] = self._generate_siteid()
         parameters['appconfigid'] = self._generate_appconfigid()
+        parameters['adminid'] = ADMIN_USER
+        parameters['adminemail'] = f'{ ADMIN_USER }@{ parameters["hostname"] }'
+        parameters['adminpass'] = self._generate_credential()
 
         siteJson = {
             'hostname' : parameters['hostname'],
             'siteid' : parameters['siteid'],
             'admin' : {
-                'email' : f'{ ADMIN_USER }@{ parameters["hostname"] }',
-                'username' : ADMIN_USER,
-                'userid' : ADMIN_USER,
-                'credential' : self._generate_credential()
+                'email' : parameters['adminemail'],
+                'username' : parameters['adminid'],
+                'userid' : parameters['adminid'],
+                'credential' : parameters['adminpass']
             },
             'tls' : {
                 'key' : info.key,
@@ -168,6 +175,7 @@ class UbosNodeDriver(NodeDriver):
 
 
     def _unprovision_node(self, node: Node) -> None:
+        trace(f'UbosNodeDriver unprovision node { node.rolename }')
         if self._exec_shell( f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }", node.parameter('rshcmd')).returncode:
             error('ubos-admin undeploy failed')
 
@@ -239,6 +247,7 @@ class UbosNodeDriver(NodeDriver):
          • run update-ca-trust extract
         """
         filename = self._generate_unique_cert_filename(root_cert)
+        trace(f'Add cert to trust store with filename {filename}')
         # Sorry for the trickery, this allows us to avoid having to have an extra parameter for scp-equivalent or such
         cmd = f'sudo bash -c "cat > { filename } && update-ca-trust refresh"'
         if self._exec_shell(cmd, rshcmd, root_cert).returncode:
@@ -251,6 +260,7 @@ class UbosNodeDriver(NodeDriver):
         lazy, delete it the first time and silently do nothing after.
         """
         filename = self._generate_unique_cert_filename(root_cert)
+        trace(f'Remove cert from trust store with filename {filename}')
         cmd = f'sudo bash -c "[[ ! -e { filename } ]] || rm { filename } && update-ca-trust refresh"'
         if self._exec_shell(cmd, rshcmd, root_cert).returncode:
             error(f'Failed to execute cmd {cmd}')
