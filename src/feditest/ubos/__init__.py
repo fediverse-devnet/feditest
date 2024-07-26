@@ -46,7 +46,7 @@ class UbosNodeDriver(NodeDriver):
         """
         rshcmd = parameters.get('rshcmd')
         if rshcmd:
-            if self._exec_shell('which ubos-admin', rshcmd):
+            if self._exec_shell('which ubos-admin', rshcmd).returncode:
                 raise OSError(f'{ type(self).__name__ } with an rshcmd requires UBOS Gears on the remote system (see ubos.net).')
         else:
             if not shutil.which('ubos-admin'):
@@ -100,7 +100,7 @@ class UbosNodeDriver(NodeDriver):
                 'crt' : info.cert
             },
         }
-        if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(emptySiteJson)):
+        if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(emptySiteJson)).returncode:
             raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy of empty site failed')
 
         # From `ubos-admin restore --help`:
@@ -122,7 +122,7 @@ class UbosNodeDriver(NodeDriver):
         cmd += ' --newcontext ""'
         cmd += f' --in "{ parameters["backupfile"] }"'
 
-        if self._exec_shell(cmd):
+        if self._exec_shell(cmd).returncode:
             raise NodeSpecificationInsufficientError(self, 'ubos-admin restore of WordPress AppConfig failed')
 
 
@@ -151,7 +151,7 @@ class UbosNodeDriver(NodeDriver):
             },
         }
         siteJson['appconfigs'] = self._getAppConfigsJson(parameters)
-        if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(siteJson)):
+        if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(siteJson)).returncode:
             raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy failed')
 
 
@@ -168,14 +168,16 @@ class UbosNodeDriver(NodeDriver):
 
 
     def _unprovision_node(self, node: Node) -> None:
-        self._exec_shell( f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }", node.parameter('rshcmd'))
+        if self._exec_shell( f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }", node.parameter('rshcmd')).returncode:
+            error('ubos-admin undeploy failed')
 
 
-    def _exec_shell(self, cmd: str, rshcmd: str | None = None, stdin_content: str | None = None):
+    def _exec_shell(self, cmd: str, rshcmd: str | None = None, stdin_content: str | None = None, capture_output : bool = False) -> subprocess.CompletedProcess:
         """
         Invoke a shell command either locally or remotely over rshcmd.
         This is defiend on UbosNodeDriver, not UbosNode, so we can invoke it before attempting to
         instantiate the UbosNode.
+        This returns the Python CompletedProcess type
         """
         if rshcmd:
             fullcmd = rshcmd
@@ -185,10 +187,10 @@ class UbosNodeDriver(NodeDriver):
 
         if stdin_content:
             info( f"Executing '{fullcmd}' with some stdin content" )
-            ret = subprocess.run(fullcmd, shell=True, check=False, text=True, input=stdin_content)
+            ret = subprocess.run(fullcmd, shell=True, check=False, text=True, input=stdin_content, capture_output=capture_output)
         else:
             info( f"Executing '{fullcmd}'")
-            ret = subprocess.run(fullcmd, shell=True, check=False, text=True)
+            ret = subprocess.run(fullcmd, shell=True, check=False, text=True, capture_output=capture_output)
 
         return ret.returncode
 
@@ -239,7 +241,7 @@ class UbosNodeDriver(NodeDriver):
         filename = self._generate_unique_cert_filename(root_cert)
         # Sorry for the trickery, this allows us to avoid having to have an extra parameter for scp-equivalent or such
         cmd = f'sudo bash -c "cat > { filename } && update-ca-trust refresh"'
-        if self._exec_shell(cmd, rshcmd, root_cert):
+        if self._exec_shell(cmd, rshcmd, root_cert).returncode:
             error(f'Failed to execute cmd {cmd}')
 
 
@@ -250,5 +252,5 @@ class UbosNodeDriver(NodeDriver):
         """
         filename = self._generate_unique_cert_filename(root_cert)
         cmd = f'sudo bash -c "[[ ! -e { filename } ]] || rm { filename } && update-ca-trust refresh"'
-        if self._exec_shell(cmd, rshcmd, root_cert):
+        if self._exec_shell(cmd, rshcmd, root_cert).returncode:
             error(f'Failed to execute cmd {cmd}')
