@@ -56,18 +56,18 @@ class ActivityPubNode(WebServer):
     """
     A Node that can speak ActivityPub.
     """
-    # Use superclass constructor
-
-    def obtain_actor_document_uri(self, actor_rolename: str | None = None) -> str:
+    def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
         """
-        Return the URI that leads to an Actor document that either exists already or is
-        newly created.
-        rolename: refer to this actor by this rolename; used to disambiguate multiple actors on the same server
+        Smart factory method to return the URI to an Actor document on this Node that
+        either exists already or is newly created. Different rolenames produce different
+        results; the same rolename produces the same result.
+        rolename: refer to this Actor by this rolename; used to disambiguate multiple
+           Actors on the same server by how they are used in tests
         return: the URI
         """
-        if actor_rolename:
+        if rolename:
             return cast(str, self.prompt_user(
-                    f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{actor_rolename}": ',
+                    f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{rolename}": ',
                     self.parameter('node-uri'),
                     http_https_uri_validate))
 
@@ -103,7 +103,7 @@ class ActivityPubNode(WebServer):
         interop_level: InteropLevel | None= None
     ):
         """
-        Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
+        Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
         """
         assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self), spec_level=spec_level, interop_level=interop_level)
 
@@ -116,6 +116,6 @@ class ActivityPubNode(WebServer):
         interop_level: InteropLevel | None= None
     ):
         """
-        Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
+        Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
         """
         assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)), spec_level=spec_level, interop_level=interop_level)

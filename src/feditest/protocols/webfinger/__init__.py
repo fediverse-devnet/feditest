@@ -5,7 +5,7 @@ Abstractions for the WebFinger protocol
 from typing import Any, Callable
 from urllib.parse import quote, urlparse
 
-from feditest.protocols import NotImplementedByNodeError
+from feditest.protocols import NodeDriver, NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
 from feditest.utils import http_https_acct_uri_validate
@@ -14,18 +14,23 @@ from feditest.utils import http_https_acct_uri_validate
 class WebFingerServer(WebServer):
     """
     A Node that acts as a WebFinger server.
+
+    The implementation code in this class is here entirely for fallback purposes. Given this,
+    we are not trying to manage the collection behind the smart factory methods.
     """
-    def obtain_account_identifier(self, nickname: str | None = None) -> str:
+    def obtain_account_identifier(self, rolename: str | None = None) -> str:
         """
-        Return the identifier of an existing or newly created account on this
-        Node that a client is supposed to be able to perform WebFinger resolution on.
+        Smart factory method to return the identifier to an account on this Node that
+        a client is supposed to be able to perform WebFinger resolution on. Different
+        rolenames produce different results; the same rolename produces the same result.
         The identifier is of the form ``acct:foo@bar.com``.
-        nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
+        rolename: refer to this account by this rolename; used to disambiguate multiple
+           accounts on the same server by how they are used in tests
         return: the identifier
         """
-        if nickname:
+        if rolename:
             ret = self.prompt_user(
-                    f'Please enter the URI of an existing or new account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
+                    f'Please enter the URI of an existing or new account for role "{rolename}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
                     self.parameter('existing-account-uri'),
                     http_https_acct_uri_validate)
         else:
@@ -38,17 +43,19 @@ class WebFingerServer(WebServer):
         return ret
 
 
-    def obtain_non_existing_account_identifier(self, nickname: str | None = None ) -> str:
+    def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
         """
-        Return the identifier of an account that does not exist on this Node, but that
-        nevertheless follows the rules for identifiers of this Node.
+        Smart factory method to return the identifier of an account that does not exist on this Node,
+        but that nevertheless follows the rules for identifiers of this Node. Different rolenames
+        produce different results; the same rolename produces the same result.
         The identifier is of the form ``acct:foo@bar.com``.
-        nickname: refer to this account by this nickname; used to disambiguate multiple accounts on the same server
+        rolename: refer to this account by this rolename; used to disambiguate multiple
+           accounts on the same server by how they are used in tests
         return: the identifier
         """
-        if nickname:
+        if rolename:
             ret = self.prompt_user(
-                    f'Please enter the URI of an non-existing account for role "{nickname}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
+                    f'Please enter the URI of an non-existing account for role "{rolename}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
                     self.parameter('nonexisting-account-uri'),
                     http_https_acct_uri_validate)
         else:
@@ -63,8 +70,10 @@ class WebFingerServer(WebServer):
 
     def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
         """
-        Return the identifier of an existing or newly created account on this Node that contains characters
-        that require percent-encoding when provided as resource in a WebFinger query.
+        Smart factory method to return the identifier of an existing or newly created account on this
+        Node that contains characters that require percent-encoding when provided as resource in a WebFinger
+        query. Different rolenames produce different results; the same rolename produces the same result.
+
         If the Node does not ever issue such identifiers, raise NotImplementedByNodeException
         """
         raise NotImplementedByNodeError(self, WebFingerServer.obtain_account_identifier_requiring_percent_encoding)
