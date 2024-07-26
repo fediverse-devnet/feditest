@@ -3,6 +3,7 @@ Registry and certificate authority for locally-allocated hostnames and their
 certificates.
 """
 
+import certifi
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -10,10 +11,13 @@ from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption,
 from datetime import datetime, timedelta, UTC
 import json
 import msgspec
+import os.path
 import random
 import re
+import shutil
 from typing import cast
 
+from feditest.reporting import error, warning
 from feditest.utils import FEDITEST_VERSION
 
 
@@ -191,3 +195,44 @@ class Registry(msgspec.Struct):
             ret.cert = host_cert.public_bytes(Encoding.PEM).decode('utf-8')
 
         return ret
+
+
+    def memoize_system_trust_root(self) -> None:
+        """
+        Turns out that Python virtual environments use their own snapshot of the trusted root certificates
+        and ignore subsequent system updates.
+        In non-virtual environments it appears to use the system store (at least on Arch
+        it's a symlink: /usr/lib/python3.12/site-packages/certifi/cacert.pem -> /etc/ssl/certs/ca-certificates.crt)
+        The heuristic to look for /usr/ at the start of the path may not work on all OSs (FIXME?)
+        So this and the following methods are a way to get around this.
+        """
+        cacert_file = certifi.where()
+        if cacert_file.startswith('/usr/'):
+            return # Not in a venv, nothing to do
+
+        cacert_backup = cacert_file + ".feditest-backup"
+        if os.path.exists(cacert_backup):
+            warning(f'cacert backup file exists already, not overwriting: { cacert_backup }')
+            return
+        shutil.copy2(cacert_file, cacert_backup)
+
+
+    def add_to_system_trust_root(self, root_cert: str) -> None:
+        cacert_file = certifi.where()
+        if cacert_file.startswith('/usr/'):
+            return # Not in a venv, nothing to do
+
+        with open(cacert_file, 'a') as f:
+            f.write(root_cert)
+
+
+    def reset_system_trust_root(self) -> None:
+        cacert_file = certifi.where()
+        if cacert_file.startswith('/usr/'):
+            return # Not in a venv, nothing to do
+
+        cacert_backup = cacert_file + ".feditest-backup"
+        if os.path.exists(cacert_backup):
+            shutil.move(cacert_backup, cacert_file)
+            return
+        error(f'No cacert backup file, cannot restore: { cacert_backup }')
