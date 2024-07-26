@@ -19,7 +19,7 @@ FEDITEST_VERSION = version('feditest')
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
 ACCT_REGEX = re.compile(r"acct:([-a-zA-Z0-9\._~][-a-zA-Z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-zA-Z0-9\.:]+)")
 SSH_REGEX = re.compile(r"ssh://([-a-z-A-Z0-9\._~!$&'\(\)\*\+,;=%:]+@)?([-a-zA-Z0-9\.:]+)(:[0-9]+)?")
-
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
 
 class ParsedUri(ABC):
     """
@@ -280,6 +280,12 @@ def ssh_uri_validate(candidate: str) -> str | None:
     Form ssh://[user@]hostname[:port] per 'man ssh'
     """
     if SSH_REGEX.match(candidate):
+        return candidate
+    return None
+
+
+def email_validate(candidate: str) -> str | None:
+    if EMAIL_REGEX.match(candidate):
         return candidate
     return None
 
