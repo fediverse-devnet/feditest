@@ -35,7 +35,6 @@ from feditest.testruntranscript import (
 )
 from feditest.tests import Test, TestFromTestClass
 
-
 all_node_driver_singletons : dict[str,NodeDriver] = {}
 """ Holds all NodeDriver singletons instantiated so far """
 
@@ -353,6 +352,9 @@ class TestRunSession(HasStartEndResults):
                 except feditest.testruncontroller.AbortTestException as e:
                     self.exception = e
                     break
+
+            if len(self.run_tests) == 0:
+                fatal("No test results. Check for test errors. No transcript written.")
 
         except feditest.testruncontroller.AbortTestRunSessionException as e: # User input
             self.exception = e

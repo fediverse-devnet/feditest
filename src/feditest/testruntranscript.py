@@ -1,5 +1,4 @@
-from abc import ABC, abstractmethod
-from datetime import datetime
+import contextlib
 import json
 import os
 import os.path
@@ -7,6 +6,8 @@ import re
 import shutil
 import sys
 import traceback
+from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import IO, Iterator, Optional
 
 import jinja2
@@ -547,20 +548,28 @@ class MultifileRunTranscriptSerializer:
             len=len
         )
 
-        with open(self.matrix_file, "w") as fp:
-            matrix_template = jinja2_env.get_template("test_matrix.jinja2")
-            fp.write(matrix_template.render(**context))
+        try:
+            with open(self.matrix_file, "w") as fp:
+                matrix_template = jinja2_env.get_template("test_matrix.jinja2")
+                fp.write(matrix_template.render(**context))
 
-        session_template = jinja2_env.get_template("test_session.jinja2")
-        for run_session in transcript.sessions:
-            session_context = dict(context)
-            session_context.update(
-                run_session=run_session,
-                summary=run_session.build_summary(),
-            )
-            plan_session = transcript.plan.sessions[run_session.plan_session_index]
-            with open(os.path.join(dir, session_file_path(plan_session)), "w" ) as fp:
-                fp.write(session_template.render(**session_context))
+            session_template = jinja2_env.get_template("test_session.jinja2")
+            for run_session in transcript.sessions:
+                session_context = dict(context)
+                session_context.update(
+                    run_session=run_session,
+                    summary=run_session.build_summary(),
+                )
+                plan_session = transcript.plan.sessions[run_session.plan_session_index]
+                with open(os.path.join(dir, session_file_path(plan_session)), "w" ) as fp:
+                    fp.write(session_template.render(**session_context))
+        except jinja2.exceptions.TemplateNotFound as ex:
+            with contextlib.redirect_stdout(sys.stderr):
+                print(f"ERROR: template '{ex}' not found")
+                print("Searched in the following directories:")
+                for entry in self.template_path:
+                    print(f"  {entry}")
+            sys.exit(1)
 
 
     def _init_jinja2_env(self) -> jinja2.Environment:
