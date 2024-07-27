@@ -18,11 +18,12 @@ class SaasFediverseNodeDriver(NodeDriver):
     Node under test exists as a website that we don't have/can provision/unprovision.
     """
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> FediverseNode:
-        hostname = parameters.get('hostname')
-        if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', parse_validate=hostname_validate)
-            parameters= dict(parameters)
-            parameters['hostname'] = hostname
+        if not parameters.get("server-prefix"):
+            hostname = parameters.get('hostname')
+            if not hostname:
+                hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', parse_validate=hostname_validate)
+                parameters= dict(parameters)
+                parameters['hostname'] = hostname
 
         app = parameters.get('app')
         if not app:
