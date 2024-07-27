@@ -65,8 +65,14 @@ class UbosNodeDriver(NodeDriver):
         parameters['existing-account-uri'] = f"acct:{ ADMIN_USER }@{ parameters['hostname'] }"
         parameters['nonexisting-account-uri'] = f"acct:{ DOES_NOT_EXIST_USER }@{ parameters['hostname'] }"
 
-        ret = self._instantiate_ubos_node(rolename, parameters)
-        return ret
+        try:
+            ret = self._instantiate_ubos_node(rolename, parameters)
+            return ret
+
+        except Exception as e:
+            warning('Something went wrong during instantiation of UbosNode, undeploying', e)
+            self._cleanup_node(parameters['siteid'], parameters.get('rshcmd'))
+            raise e
 
 
     def _provision_node_from_backupfile(self, parameters: dict[str,Any]) -> None:
@@ -180,6 +186,11 @@ class UbosNodeDriver(NodeDriver):
             error('ubos-admin undeploy failed')
 
 
+    def _cleanup_node(self, siteid: str, rshcmd: str | None = None):
+        trace('Cleaning up UbosNode')
+        self._exec_shell( f"sudo ubos-admin undeploy --siteid { siteid }", rshcmd ) # ignore errors
+
+
     def _exec_shell(self, cmd: str, rshcmd: str | None = None, stdin_content: str | None = None, capture_output : bool = False) -> subprocess.CompletedProcess:
         """
         Invoke a shell command either locally or remotely over rshcmd.
@@ -200,7 +211,7 @@ class UbosNodeDriver(NodeDriver):
             info( f"Executing '{fullcmd}'")
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, capture_output=capture_output)
 
-        return ret.returncode
+        return ret
 
 
     def _generate_siteid(self):
