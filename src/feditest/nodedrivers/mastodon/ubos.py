@@ -1,49 +1,98 @@
+"""
+"""
 
-from typing import Any
+import re
+import secrets
+import string
+from typing import Any, cast
 
-from feditest import nodedriver
-from feditest.nodedrivers.mastodon.mixin import MastodonApiMixin
-from feditest.protocols import Node, NodeDriver
-from feditest.protocols.fediverse import FediverseNode
+from feditest.nodedrivers.mastodon import MastodonNode, UserRecord
+from feditest.reporting import error, trace
 from feditest.ubos import UbosNodeDriver
 
 
-class MastodonUbosNode(MastodonApiMixin, FediverseNode):
+class MastodonUbosNode(MastodonNode):
     """
-    A Node running Mastodon, instantiated with UBOS.
+    A Mastodon Node running on UBOS. This means we know how to interact with it exactly.
     """
+    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'MastodonUbosNodeDriver'):
+        super().__init__(rolename, parameters, node_driver)
 
-    def __init__(self, rolename: str, parameters: dict[str, Any], node_driver: NodeDriver):
-        # TODO Automatic actor provisioning
-        # Use parameters to determine which actors to provision 
-        # with UBOS with which information
-        # Copy and modify the parameters for usage by the MastodonApiMixin
-        # Must invoke base class constructors explicitly since Python will
-        # normally only call the first __init__ it finds in the MRO.
-        # super().__init__(rolename, parameters, node_driver)
-        MastodonApiMixin.__init__(self, rolename, parameters, node_driver)
-        FediverseNode.__init__(self, rolename, parameters, node_driver)
-
-    def obtain_actor_document_uri(self, actor_rolename: str | None = None) -> str:
-        return f"https://{self.hostname}/users/{self.parameter('adminid') }"
-
-    @property
-    def app_name(self):
-        return "Mastodon"
+        self._local_users_by_role[None] = UserRecord(
+            cast(str,parameters.get('adminid')),
+            cast(str,parameters.get('adminemail')),
+            cast(str,parameters.get('adminpass')))
+        # Note: We use the site admin user as the default user, which may or may not be a good idea.
 
 
-@nodedriver
+    # Python 3.12 @override
+    def _provision_new_user(self) -> UserRecord:
+        trace('Provisioning new user')
+        chars = string.ascii_letters + string.digits
+        userid = ''.join(secrets.choice(chars) for i in range(8))
+        useremail = f'{ userid }@localhost' # Mastodon checks that the host exists, so we pick localhost
+
+        appconfigid = self.parameter('appconfigid')
+        cmd = f'cd /ubos/lib/mastodon/{ appconfigid }/mastodon'
+        cmd += ' && sudo RAILS_ENV=production bin/tootctl' # This needs to be run as root, because .env.production is not world-readable
+        cmd += f' accounts create { userid } --email { useremail }'
+
+        node_driver = cast(MastodonUbosNodeDriver, self._node_driver)
+        result = node_driver._exec_shell(cmd, self.parameter('rshcmd' ), capture_output=True)
+        if result.returncode:
+            error(f'Provisioniong new user { userid } on Mastodon Node { self._rolename } failed.')
+
+        m = re.search( r'password:\s+([a-z0-9]+)', result.stdout )
+        if m:
+            passwd = m.group(1)
+            return UserRecord(userid, useremail, passwd)
+
+        raise Exception('Failed to parse tootctl accounts create output:' + result.stdout)
+
+
+    # Python 3.12 @override
+    def add_cert_to_trust_store(self, root_cert: str) -> None:
+        # We ask our UbosNodeDriver, so we don't have to have a UbosNode class
+        rshcmd = self.parameter('rshcmd')
+        real_node_driver = cast(MastodonUbosNodeDriver, self._node_driver)
+        real_node_driver.add_cert_to_trust_store(root_cert, rshcmd)
+
+
+    # Python 3.12 @override
+    def remove_cert_from_trust_store(self, root_cert: str) -> None:
+        rshcmd = self.parameter('rshcmd')
+        real_node_driver = cast(MastodonUbosNodeDriver, self._node_driver)
+        real_node_driver.remove_cert_from_trust_store(root_cert, rshcmd)
+
+
 class MastodonUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate Mastodon via UBOS.
     """
+    # Python 3.12 @override
+    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, parameters)
+        parameters['app'] = 'Mastodon'
+        parameters['start-delay'] = 10
 
-    def _instantiate_ubos_node(
-        self, rolename: str, parameters: dict[str, Any]
-    ) -> MastodonUbosNode:
+
+    # Python 3.12 @override
+    def _instantiate_ubos_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
+        trace('Instantiating MastodonUbosNode')
         return MastodonUbosNode(rolename, parameters, self)
 
-    def _unprovision_node(self, node: Node) -> None:
-        self._exec_shell(
-            f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }"
-        )  # pylint: disable=protected-access
+
+    # Python 3.12 @override
+    def _getAppConfigsJson(self, parameters: dict[str,Any]) -> list[dict[str,Any]]:
+        return [{
+            "appid" : "mastodon",
+            "appconfigid" : parameters['appconfigid'],
+            "context" : "",
+            "customizationpoints" : {
+                "mastodon" : {
+                    "singleusermode" : {
+                        "value" : False
+                    }
+                }
+            }
+        }]

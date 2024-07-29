@@ -366,6 +366,10 @@ class TestRunTranscript(msgspec.Struct):
         return msgspec.convert(transcript_json, type=TestRunTranscript)
 
 
+    def is_compatible_type(self):
+        return self.type is None or self.type == 'feditest-testrun-transcript'
+
+
     def has_compatible_version(self):
         if not self.feditest_version:
             return True
@@ -392,7 +396,7 @@ class TestRunTranscriptSerializer(ABC):
         """
         if dest and isinstance(dest,str):
             with open(dest, "w", encoding="utf8") as out:
-               self._write(out)
+                self._write(out)
         else:
             self._write(sys.stdout)
 

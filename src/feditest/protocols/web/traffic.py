@@ -62,8 +62,6 @@ class HttpResponse:
         return self.http_status in [301, 302, 303, 307, 308]
 
 
-
-
 @dataclass
 class HttpRequestResponsePair:
     request: HttpRequest # the original request, in case of redirects

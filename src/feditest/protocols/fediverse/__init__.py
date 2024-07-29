@@ -11,25 +11,34 @@ from feditest.protocols.webfinger import WebFingerServer
 class FediverseNode(WebFingerServer, ActivityPubNode):
     """
     A Node that can participate in today's Fediverse.
+    The methods defined on FediverseNode reflect -- well, try to start reflecting, we are only
+    learning what those are -- what users expect of the Fediverse.
     """
 
-    def make_create_note(self, actor_uri: str, content: str) -> str:
+    def make_create_note(self, actor_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
         """"
         Perform whatever actions are necessary to the actor with actor_uri will have created a Note
-        on this Node. Determine the various Note and Activity properties as per this Node's defaults.
+        on this Node. The optional arguments allow the creation of variations.
+        deliver_to: make sure the Node is delivered to these Actors (i.e. in arrives in their inbox)
         """
+        if deliver_to :
+            return cast(str, self.prompt_user(
+                    f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
+                    + ' to be delivered to ' + ", ".join(deliver_to)
+                    + ' and enter its URI when created.'
+                    + f' Note content:"""\n{ content }\n"""' ))
         return cast(str, self.prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
                 + ' and enter its URI when created.'
                 + f' Note content:"""\n{ content }\n"""' ))
 
 
-    def wait_for_object_in_inbox(self, actor_uri: str, note_uri: str) -> str:
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
         """
         """
         return cast(str, self.prompt_user(
                 f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
-                + f' Note with URI "{ note_uri }" has appeared and enter its local URI:'))
+                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:'))
 
 
     def make_announce_object(self, actor_uri, note_uri: str) -> str:

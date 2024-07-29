@@ -268,6 +268,7 @@ class TestPlan(msgspec.Struct):
     """
     sessions : list[TestPlanSession] = []
     name: str | None = None
+    type: str = 'feditest-testplan'
     feditest_version: str = FEDITEST_VERSION
 
 
@@ -292,6 +293,10 @@ class TestPlan(msgspec.Struct):
 
     def __str__(self):
         return self.name if self.name else 'Unnamed'
+
+
+    def is_compatible_type(self):
+        return self.type is None or self.type == 'feditest-testplan'
 
 
     def has_compatible_version(self):

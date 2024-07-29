@@ -7,7 +7,6 @@ from typing import Any, cast
 import httpx
 from multidict import MultiDict
 
-from feditest import nodedriver
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
@@ -123,18 +122,32 @@ class Imp(WebFingerClient):
             return WebFingerQueryResponse(ret_pair, jrd, None)
 
 
-@nodedriver
+    # Python 3.12 @override
+    def add_cert_to_trust_store(self, root_cert: str) -> None:
+        """
+        On the Imp, we don't do this (for now?)
+        """
+        return
+
+
+    # Python 3.12 @override
+    def remove_cert_from_trust_store(self, root_cert: str) -> None:
+        return
+
+
 class ImpInProcessNodeDriver(NodeDriver):
     """
     Knows how to instantiate an Imp.
     """
-    # use superclass constructor
+    # Python 3.12 @override
+    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, parameters)
+        parameters['app'] = 'Imp'
+
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> Imp:
-        parameters['app'] = 'Imp'
-        node = Imp(rolename, parameters, self)
-        return node
+        return Imp(rolename, parameters, self)
 
 
     # Python 3.12 @override

@@ -6,7 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
-from feditest.reporting import warning
+from feditest.reporting import warning, trace
 
 
 class Node(ABC):
@@ -69,12 +69,23 @@ class Node(ABC):
         return None # by default we don't know
 
 
-    def parameter(self, name:str) -> str | None:
-        return self._parameters.get(name)
+    def parameter(self, name:str, default: str | None = None) -> str | None:
+        ret = self._parameters.get(name)
+        if not ret:
+            ret = default
+        return ret
 
 
     def set_parameter(self, name:str, value:Any) -> None:
         return self._parameters.update({name: value})
+
+
+    def add_cert_to_trust_store(self, root_cert: str) -> None:
+        self.prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n' + root_cert)
+
+
+    def remove_cert_from_trust_store(self, root_cert: str) -> None:
+        self.prompt_user(f'Please remove this previously-added temporary certificate from the trust store of node { self } and hit return when done:\n' + root_cert)
 
 
     def __str__(self) -> str:
@@ -109,8 +120,8 @@ class NodeDriver(ABC):
         rolename: the name of this Node in the constellation
         parameters: parameters for this Node
         """
-        if rolename is None:
-            raise NodeSpecificationInvalidError(self, 'rolename', 'rolename must be given')
+        self._fill_in_parameters(rolename, parameters)
+        trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
         ret = self._provision_node(rolename, parameters)
         return ret
 
@@ -124,6 +135,13 @@ class NodeDriver(ABC):
         if node.node_driver != self :
             raise Exception(f"Node does not belong to this NodeDriver: { node.node_driver } vs { self }") # pylint: disable=broad-exception-raised
         self._unprovision_node(node)
+
+
+    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+        """
+        Let our subclasses fill in additional / default parameters before the node gets provisioned
+        """
+        pass
 
 
     def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
@@ -231,3 +249,11 @@ class NodeSpecificationInvalidError(RuntimeError):
     """
     def __init__(self, node_driver: NodeDriver, parameter: str, details: str ):
         super().__init__(f"Node specification is invalid for {node_driver}, parameter {parameter}: {details}" )
+
+
+class TimeoutException(RuntimeError):
+    """
+    A result has not arrived within the expected time period.
+    """
+    def __init__(self, msg: str, timeout: int):
+        super().__init__(f'{ msg } (timeout: { timeout })')

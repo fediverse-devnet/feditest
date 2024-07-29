@@ -23,6 +23,9 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
 
     transcript = TestRunTranscript.load(args.in_file)
+    if not transcript.is_compatible_type():
+        warning(f'Transcript has unexpected type { transcript.type }: incompatibilities may occur.')
+
     if not transcript.has_compatible_version():
         warning(f'Transcript was created by FediTest { transcript.feditest_version }, you are running FediTest { FEDITEST_VERSION }: incompatibilities may occur.')
 

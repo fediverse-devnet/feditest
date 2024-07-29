@@ -4,6 +4,7 @@ Core module.
 
 from collections.abc import Callable
 from enum import Enum
+import importlib
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
 from typing import Any, Type, TypeVar, cast
@@ -19,6 +20,7 @@ from feditest.tests import (
     TestFromTestFunction,
     TestStepInTestClass,
 )
+from feditest.registry import Registry
 from feditest.utils import load_python_from
 
 T = TypeVar("T")
@@ -201,6 +203,26 @@ def nodedriver(to_register: Type[TDriver]) -> Type[TDriver]:
         all_node_drivers[full_name] = to_register
 
     return to_register
+
+def load_default_node_drivers() -> None:
+    for d in [ 'feditest.nodedrivers.manual.ManualFediverseNodeDriver',
+               'feditest.nodedrivers.imp.ImpInProcessNodeDriver',
+               'feditest.nodedrivers.mastodon.MastodonManualNodeDriver',
+               'feditest.nodedrivers.mastodon.ubos.MastodonUbosNodeDriver',
+               'feditest.nodedrivers.saas.SaasFediverseNodeDriver',
+               'feditest.nodedrivers.sandbox.SandboxMultClientDriver_ImplementationA',
+               'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation1',
+               'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation2Faulty',
+               'feditest.nodedrivers.wordpress.WordPressPlusActivityPubPluginManualNodeDriver',
+               'feditest.nodedrivers.wordpress.ubos.WordPressPlusActivityPubPluginUbosNodeDriver']:
+
+        module_name, class_name = d.rsplit('.', 1)
+        if class_name not in all_node_drivers:
+            all_node_drivers[class_name] = getattr(importlib.import_module(module_name), class_name)
+
+
+registry = Registry.create() # May be re-assigned by cli.run
+
 
 class SpecLevel(Enum):
     MUST = 1
