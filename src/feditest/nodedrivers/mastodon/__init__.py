@@ -1,6 +1,7 @@
 """
 """
 
+from dataclasses import dataclass
 import importlib
 import os
 import re
@@ -45,15 +46,15 @@ def _token_validate(candidate: str) -> str | None:
     return candidate if len(candidate)>10 else None
 
 
+@dataclass
 class UserRecord:
     """
     Collects what we know of a user at a NodeWithMastodonAPI
     """
-    def __init__(self, userid: str, email: str, passwd: str):
-        self._userid = userid
-        self._email = email
-        self._passwd = passwd
-        self._mastodon_user_client = None
+    _userid : str
+    _email : str
+    _passwd: str
+    _mastodon_user_client = None
 
 
     def mastodon_user_client(self, mastodon_app_client):
