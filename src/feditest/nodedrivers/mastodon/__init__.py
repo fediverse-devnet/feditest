@@ -128,8 +128,8 @@ class NodeWithMastodonAPI(FediverseNode):
                 ),
                 None,
             ),
-            cast(int,self.parameter('inbox_wait_retry_count', '5')),
-            cast(int, self.parameter('inbox_wait_retry_interval', '1')),
+            int(self.parameter('inbox_wait_retry_count') or '5'),
+            int(self.parameter('inbox_wait_retry_interval') or '1'),
             f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }')
         trace(f'wait_for_object_in_inbox returns with { response }')
         return response
@@ -182,8 +182,8 @@ class NodeWithMastodonAPI(FediverseNode):
 
                 self._poll_until_result( # may throw
                     f,
-                    cast(int, self.parameter('follow_wait_retry_count', '5')),
-                    cast(int, self.parameter('follow_wait_retry_interval', '1')),
+                    int(self.parameter('follow_wait_retry_count') or '5'),
+                    int(self.parameter('follow_wait_retry_interval') or '1'),
                     f'Expected follow relationship was not established between { a_uri_here } and { b_uri_there }')
                 trace('make_a_follow_b returns')
         raise ValueError(f'Actor URI not found: { b_uri_there }')
