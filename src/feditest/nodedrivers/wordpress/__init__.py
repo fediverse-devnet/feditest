@@ -22,12 +22,12 @@ class WordPressPlusActivityPubPluginNode(NodeWithMastodonAPI):
     """
     # implementation override -- WordPress has a different scheme than Mastodon
     def _userid_to_actor_uri(self, userid: str) -> str:
-        return f'https://{ self.parameter("hostname") }/author/{ userid }'
+        return f'https://{ self.parameter("hostname") }/author/{ userid }/'
 
 
     # implementation override -- WordPress has a different scheme than Mastodon
     def _actor_uri_to_userid(self, actor_uri: str) -> str:
-        if m:= re.match('^https://([^/]+)/author/(.+)$', actor_uri):
+        if m:= re.match('^https://([^/]+)/author/([^/]+)/?$', actor_uri):
             if m.group(1) == self.parameter('hostname'):
                 return m.group(2)
 
