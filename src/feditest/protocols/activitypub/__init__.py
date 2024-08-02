@@ -28,7 +28,7 @@ class AnyObject:
         self._json : Any | None = None
 
 
-    def _ensure_fetched(self):
+    def _ensure_fetched(self) -> None:
         """
         Make sure the uri has been dereferenced.
 
@@ -36,11 +36,15 @@ class AnyObject:
         we'd have to figure out when to expire the cache and that has some time.
         """
         if not self._json:
-            self._json = httpx.get(
+             # FIXME: this needs better error handling
+            r : httpx.Response = httpx.get(
                 self._uri,
                 follow_redirects=True,
                 verify=False,
                 headers={"Accept": "application/activity+json"})
+            if r.status_code != 200:
+                raise Exception(f'Not HTTP 200: { self._uri }, was: { r.status_code }')
+            self._json = r.json()
 
 
     def check_is_valid_object(self) -> bool:
