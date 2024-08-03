@@ -2,9 +2,9 @@
 Core module.
 """
 
+import importlib
 from collections.abc import Callable
 from enum import Enum
-import importlib
 from inspect import getmembers, getmodule, isfunction
 from types import FunctionType
 from typing import Any, Type, TypeVar, cast
@@ -13,6 +13,7 @@ from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
 
 import feditest.protocols
+from feditest.registry import Registry
 from feditest.reporting import fatal, warning
 from feditest.tests import (
     Test,
@@ -20,7 +21,6 @@ from feditest.tests import (
     TestFromTestFunction,
     TestStepInTestClass,
 )
-from feditest.registry import Registry
 from feditest.utils import load_python_from
 
 T = TypeVar("T")
@@ -176,9 +176,9 @@ def load_node_drivers_from(dirs: list[str]) -> None:
 # Holds all node drivers
 all_node_drivers : dict[str,Type[Any]]= {}
 
-TDriver = TypeVar('NodeDriver')
+TNodeDriver = TypeVar('TNodeDriver')
 
-def nodedriver(to_register: Type[TDriver]) -> Type[TDriver]:
+def nodedriver(to_register: Type[TNodeDriver]) -> Type[TNodeDriver]:
     """
     Used as decorator of NodeDriver classes, like this:
 
