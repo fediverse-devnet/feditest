@@ -198,7 +198,7 @@ class NodeWithMastodonAPI(FediverseNode):
         if not user:
             user = self._provision_new_user()
             self._local_users_by_role[rolename] = user
-        return self._userid_to_actor_uri(user._userid)
+        return self._userid_to_actor_uri(user.userid)
 
 
     # Python 3.12 @override
@@ -241,7 +241,7 @@ class NodeWithMastodonAPI(FediverseNode):
         if not user:
             user = self._provision_new_user()
             self._local_users_by_role[rolename] = user
-        return f'acct:{ user._userid }@{ self.parameter( "hostname" )}'
+        return f'acct:{ user.userid }@{ self.parameter( "hostname" )}'
 
 
     # Python 3.12 @override
