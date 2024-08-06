@@ -226,7 +226,10 @@ class Registry(msgspec.Struct):
             f.write(root_cert)
 
 
-    def reset_system_trust_root(self) -> None:
+    def reset_system_trust_root_if_needed(self) -> None:
+        if not self.ca.cert:
+            return # Wasn't ever used
+
         cacert_file = certifi.where()
         if cacert_file.startswith('/usr/'):
             return # Not in a venv, nothing to do

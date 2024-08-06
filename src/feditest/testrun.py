@@ -97,9 +97,9 @@ class TestRunConstellation:
                                   # after deployment before they are ready to communicate.
 
         root_cert = registry.root_cert_for_trust_root()
-        registry.memoize_system_trust_root()
-        registry.add_to_system_trust_root(root_cert)
         if root_cert:
+            registry.memoize_system_trust_root()
+            registry.add_to_system_trust_root(root_cert)
             for node in self._nodes.values():
                 node.add_cert_to_trust_store(root_cert)
 
@@ -127,7 +127,7 @@ class TestRunConstellation:
 
                 except Exception as e:
                     warning(f'Problem unprovisioning node {node}', e)
-        registry.reset_system_trust_root()
+        registry.reset_system_trust_root_if_needed()
 
 
     def get_node(self, role_name: str) -> Node | None:
