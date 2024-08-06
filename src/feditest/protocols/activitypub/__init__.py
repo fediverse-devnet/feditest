@@ -42,8 +42,7 @@ class AnyObject:
                 follow_redirects=True,
                 verify=False,
                 headers={"Accept": "application/activity+json"})
-            if r.status_code != 200:
-                raise Exception(f'Not HTTP 200: { self._uri }, was: { r.status_code }')
+            r.raise_for_status() # May throw. No need for our own exceptions
             self._json = r.json()
 
 
