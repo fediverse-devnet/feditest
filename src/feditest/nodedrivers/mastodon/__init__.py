@@ -1,6 +1,7 @@
 """
 """
 
+from dataclasses import dataclass
 import importlib
 import os
 import re
@@ -45,22 +46,22 @@ def _token_validate(candidate: str) -> str | None:
     return candidate if len(candidate)>10 else None
 
 
+@dataclass
 class UserRecord:
     """
     Collects what we know of a user at a NodeWithMastodonAPI
     """
-    def __init__(self, userid: str, email: str, passwd: str):
-        self._userid = userid
-        self._email = email
-        self._passwd = passwd
-        self._mastodon_user_client = None
+    userid : str
+    email : str
+    passwd: str
+    mastodon_user_client = None
 
 
     def mastodon_user_client(self, mastodon_app_client):
-        if not self._mastodon_user_client:
-            self._mastodon_user_client = mastodon_app_client.copy()
-            self._mastodon_user_client.log_in(self._email, self._passwd)
-        return self._mastodon_user_client
+        if not self.mastodon_user_client:
+            self.mastodon_user_client = mastodon_app_client.copy()
+            self.mastodon_user_client.log_in(self.email, self.passwd)
+        return self.mastodon_user_client
 
 
 class NodeWithMastodonAPI(FediverseNode):
@@ -128,8 +129,8 @@ class NodeWithMastodonAPI(FediverseNode):
                 ),
                 None,
             ),
-            cast(int,self.parameter('inbox_wait_retry_count', '5')),
-            cast(int, self.parameter('inbox_wait_retry_interval', '1')),
+            int(self.parameter('inbox_wait_retry_count') or '5'),
+            int(self.parameter('inbox_wait_retry_interval') or '1'),
             f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }')
         trace(f'wait_for_object_in_inbox returns with { response }')
         return response
@@ -182,8 +183,8 @@ class NodeWithMastodonAPI(FediverseNode):
 
                 self._poll_until_result( # may throw
                     f,
-                    cast(int, self.parameter('follow_wait_retry_count', '5')),
-                    cast(int, self.parameter('follow_wait_retry_interval', '1')),
+                    int(self.parameter('follow_wait_retry_count') or '5'),
+                    int(self.parameter('follow_wait_retry_interval') or '1'),
                     f'Expected follow relationship was not established between { a_uri_here } and { b_uri_there }')
                 trace('make_a_follow_b returns')
         raise ValueError(f'Actor URI not found: { b_uri_there }')
