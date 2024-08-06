@@ -51,17 +51,17 @@ class UserRecord:
     """
     Collects what we know of a user at a NodeWithMastodonAPI
     """
-    _userid : str
-    _email : str
-    _passwd: str
-    _mastodon_user_client = None
+    userid : str
+    email : str
+    passwd: str
+    mastodon_user_client = None
 
 
     def mastodon_user_client(self, mastodon_app_client):
-        if not self._mastodon_user_client:
-            self._mastodon_user_client = mastodon_app_client.copy()
-            self._mastodon_user_client.log_in(self._email, self._passwd)
-        return self._mastodon_user_client
+        if not self.mastodon_user_client:
+            self.mastodon_user_client = mastodon_app_client.copy()
+            self.mastodon_user_client.log_in(self.email, self.passwd)
+        return self.mastodon_user_client
 
 
 class NodeWithMastodonAPI(FediverseNode):
