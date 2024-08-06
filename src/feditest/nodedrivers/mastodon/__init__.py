@@ -247,7 +247,7 @@ class NodeWithMastodonAPI(FediverseNode):
     # Python 3.12 @override
     def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
         trace(f'obtain_non_existing_account_identifier for role {rolename}')
-        userid = self._non_existing_userids_by_role[rolename]
+        userid = self._non_existing_userids_by_role.get(rolename)
         if not userid:
             userid = self._create_non_existing_user()
             self._non_existing_userids_by_role[rolename] = userid
