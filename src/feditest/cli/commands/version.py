@@ -24,4 +24,6 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
-    parent_parser.add_parser( cmd_name, help='Show feditest version')
+    parser = parent_parser.add_parser( cmd_name, help='Show feditest version')
+
+    return parser

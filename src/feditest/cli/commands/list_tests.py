@@ -33,3 +33,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser = parent_parser.add_parser(cmd_name, help='List the available tests')
     parser.add_argument('--filter-regex', default=None, help='Only list tests whose name matches this regular expression')
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
+
+    return parser

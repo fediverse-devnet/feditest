@@ -12,9 +12,7 @@ TEMPLATES = [
 ]
 
 
-def run(_: ArgumentParser, __: Namespace, remaining: list[str]) -> int:
-    global command_parser
-
+def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     # TODO This should be a utility method that all commands can use
     if len(remaining):
         print(
@@ -22,7 +20,7 @@ def run(_: ArgumentParser, __: Namespace, remaining: list[str]) -> int:
             f"{' '.join(remaining)}",
             file=sys.stderr,
         )
-        command_parser.print_help()
+        parser.print_help()
         return 1
 
     print("\n".join(TEMPLATES))
@@ -31,6 +29,7 @@ def run(_: ArgumentParser, __: Namespace, remaining: list[str]) -> int:
 
 
 def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
-    global command_parser
     help = "List the available templates"
-    command_parser = parent_parser.add_parser(cmd_name, help=help, description=help)
+    parser = parent_parser.add_parser(cmd_name, help=help, description=help)
+
+    return parser
