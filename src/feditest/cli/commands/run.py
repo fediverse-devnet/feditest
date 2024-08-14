@@ -100,7 +100,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
                         help="Write results in HTML format to the provided file.")
     html_group.add_argument('--template', default=DEFAULT_TEMPLATE,
                         help=f"When specifying --html, use this template (defaults to '{ DEFAULT_TEMPLATE }').")
-    parser.add_argument('--json', nargs="?", const=True, default=False,
+    parser.add_argument('--json', '--testresult', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
