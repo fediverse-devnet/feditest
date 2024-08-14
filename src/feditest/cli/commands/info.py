@@ -76,3 +76,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     type_group = parser.add_mutually_exclusive_group(required=True)
     type_group.add_argument('--test',  help='Provide information about a test.')
     type_group.add_argument('--nodedriver',  help='Provide information about a driver for a node to be tested.')
+
+    return parser

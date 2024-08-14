@@ -104,3 +104,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
+
+    return parser

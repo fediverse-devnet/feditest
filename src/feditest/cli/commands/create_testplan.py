@@ -54,3 +54,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--session', '--session-template', required=True, nargs='+', help='File(s) each containing a JSON fragment defining a test session')
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test plan')
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
+
+    return parser

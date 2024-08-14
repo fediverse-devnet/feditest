@@ -24,9 +24,10 @@ def main() -> None:
     parser.add_argument('-v', '--verbose', action='count', default=0,
             help='Display extra output. May be repeated for even more output' )
     cmd_parsers : Action = parser.add_subparsers(dest='command', required=True)
+    cmd_sub_parsers : dict[str,ArgumentParser] = {}
 
     for cmd_name, cmd in cmds.items():
-        cmd.add_sub_parser(cmd_parsers, cmd_name)
+        cmd_sub_parsers[cmd_name] = cmd.add_sub_parser(cmd_parsers, cmd_name)
 
     args,remaining = parser.parse_known_args(sys.argv[1:])
     cmd_name = args.command
@@ -35,7 +36,7 @@ def main() -> None:
 
     if cmd_name in cmds:
         try :
-            ret = cmds[cmd_name].run(parser, args, remaining)
+            ret = cmds[cmd_name].run(cmd_sub_parsers[cmd_name], args, remaining)
             sys.exit( ret )
 
         except Exception as e: # pylint: disable=broad-exception-caught
