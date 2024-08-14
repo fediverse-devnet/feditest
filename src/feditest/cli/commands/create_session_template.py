@@ -22,6 +22,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     pattern = re.compile(args.filter_regex) if args.filter_regex else None
 
+    feditest.load_default_tests()
     feditest.load_tests_from(args.testsdir)
 
     test_plan_specs : list[TestPlanTestSpec]= []

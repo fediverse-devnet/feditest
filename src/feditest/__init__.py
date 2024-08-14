@@ -112,6 +112,18 @@ def _load_tests_pass2() -> None:
               + '\n    '.join( _registered_as_test_step.keys() ))
 
 
+def load_default_tests() -> None:
+    """
+    Load built-in tests. These don't really test anything, but are convenient when building feditest.
+    """
+    global all_tests
+
+    all_tests['noop2'] = TestFromTestFunction('noop2', 'This denegerate 2-node test does nothing', lambda node1, node2: None )
+    all_tests['noop3'] = TestFromTestFunction('noop3', 'This denegerate 3-node test does nothing', lambda node1, node2, node3: None )
+    all_tests['noop4'] = TestFromTestFunction('noop4', 'This denegerate 4-node test does nothing', lambda node1, node2, node3, node4: None )
+    # Do not replace those lambda parameters with _: we need to look up their names for role mapping
+
+
 def test(to_register: type[Any]) -> type[Any]:
     """
     Use as a decorator to register a supposed test. Use either on a function (running of which constitutes the entire test)
