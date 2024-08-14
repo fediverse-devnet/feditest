@@ -71,7 +71,7 @@ def test_save_restore():
     for i in range(5):
          r1.obtain_new_hostinfo('')
 
-    file = tempfile.NamedTemporaryFile(delete=True, delete_on_close=False).name
+    file = tempfile.NamedTemporaryFile(delete=True).name
     r1.save(file)
     r2 = Registry.load(file)
 
