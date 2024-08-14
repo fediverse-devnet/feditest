@@ -27,7 +27,14 @@ dependencies = [
 ]
 description = "Testing federated protocols"
 readme = "README-PyPI.md"
-requires-python = ">=3.11" # type annotations changed in 3.9, @override in 3.12
+
+# We develop on 3.11, so we can support debian 12 (including Raspberry PI OS) systems,
+# which have not been upgraded to 3.12 yet.
+requires-python = ">=3.11.2, <3.12.0"
+# For production, we'd like to say this, but there does not seem to be a syntax for that
+# requires-python = ">=3.11"
+# We really want 3.12 so we can use @override
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
