@@ -1,4 +1,5 @@
 import contextlib
+import io
 import json
 import os
 import os.path
@@ -169,6 +170,7 @@ class TestRunTranscriptSummary:
         self.interaction_controls : list[TestRunResultTranscript] = []
         self.errors : list[TestRunResultTranscript] = []
         self.tests : list[TestRunTestTranscript] = []
+        self.errors_outside_tests : list[TestRunResultTranscript] = []
 
 
     def count_failures_for(self, spec_level: feditest.SpecLevel | None, interop_level: feditest.InteropLevel | None):
@@ -197,7 +199,7 @@ class TestRunTranscriptSummary:
 
     @property
     def n_errored(self):
-        return len(self.errors)
+        return len(self.errors) + len(self.errors_outside_tests)
 
 
     @property
@@ -219,11 +221,15 @@ class TestRunTranscriptSummary:
 
 
     def add_session_result(self, result: TestRunResultTranscript | None):
-        pass # FIXME
+        if result is None:
+            return
+        self.errors_outside_tests.append(result)
 
 
     def add_run_result(self, result: TestRunResultTranscript | None):
-        pass # FIXME
+        if result is None:
+            return
+        self.errors_outside_tests.append(result)
 
 
     def add_run_test(self, run_test: Optional['TestRunTestTranscript']):
@@ -399,6 +405,15 @@ class TestRunTranscriptSerializer(ABC):
                 self._write(out)
         else:
             self._write(sys.stdout)
+
+
+    def write_to_string(self):
+        """
+        Return the written content as a string; this is for testing.
+        """
+        string_io = io.StringIO()
+        self._write(string_io)
+        return string_io.getvalue()
 
 
     @abstractmethod

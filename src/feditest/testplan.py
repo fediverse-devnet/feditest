@@ -20,7 +20,7 @@ class TestPlanError(RuntimeError):
 
 
 class TestPlanConstellationNode(msgspec.Struct):
-    nodedriver: str | None = None
+    nodedriver: str | None = None # if we allow this to be None, we can do better error reporting
     parameters: dict[str,Any] | None = None
 
 
