@@ -27,6 +27,18 @@ Instead we keep this value in the parameters dict, where it comes from anyway.
 ADMIN_USER = 'feditestadmin' # Note: 'admin' is not permitted by Mastodon
 DOES_NOT_EXIST_USER = 'does-not-exist'
 
+class UbosAdminException(Exception):
+    """
+    Thrown if a `ubos-admin` operation failed.
+    """
+    def __init__(self, node_driver: 'UbosNodeDriver', cmd: str, indata: str | None = None, out: str | None = None):
+        msg = f'node_driver: { node_driver }, cmd: "{ cmd }"'
+        if indata:
+            msg += f'\ninput data: { indata }'
+        if out:
+            msg += f'\nout: { out }'
+        super().__init__(msg)
+
 
 class UbosNodeDriver(NodeDriver):
     """
@@ -111,7 +123,7 @@ class UbosNodeDriver(NodeDriver):
             },
         }
         if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(emptySiteJson)).returncode:
-            raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy of empty site failed')
+            raise UbosAdminException(self, 'sudo ubos-admin deploy --stdin', json.dumps(emptySiteJson))
 
         # From `ubos-admin restore --help`:
         #    ubos-admin restore --appconfigid <appconfigid> --tositeid <tositeid> --createnew [--newappconfigid <newid>] [--newcontext <context>] --in <backupfile>
@@ -133,7 +145,7 @@ class UbosNodeDriver(NodeDriver):
         cmd += f' --in "{ parameters["backupfile"] }"'
 
         if self._exec_shell(cmd).returncode:
-            raise NodeSpecificationInsufficientError(self, 'ubos-admin restore of WordPress AppConfig failed')
+            raise UbosAdminException(self, cmd)
 
 
     def _provision_node_with_generated_sitejson(self,  parameters: dict[str,Any]) -> None:
@@ -165,7 +177,7 @@ class UbosNodeDriver(NodeDriver):
         }
         siteJson['appconfigs'] = self._getAppConfigsJson(parameters)
         if self._exec_shell('sudo ubos-admin deploy --stdin', parameters.get('rshcmd'), json.dumps(siteJson)).returncode:
-            raise NodeSpecificationInsufficientError(self, 'ubos-admin deploy failed')
+            raise UbosAdminException(self, 'sudo ubos-admin deploy --stdin', json.dumps(siteJson))
 
 
     def _getAppConfigsJson(self, parameters: dict[str,Any]) -> list[dict[str,Any]]:
@@ -183,7 +195,7 @@ class UbosNodeDriver(NodeDriver):
     def _unprovision_node(self, node: Node) -> None:
         trace(f'UbosNodeDriver unprovision node { node.rolename }')
         if self._exec_shell( f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }", node.parameter('rshcmd')).returncode:
-            error('ubos-admin undeploy failed')
+            raise UbosAdminException(self, f"sudo ubos-admin undeploy --siteid { node.parameter('siteid') }")
 
 
     def _cleanup_node(self, siteid: str, rshcmd: str | None = None):
