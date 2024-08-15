@@ -9,7 +9,7 @@
    1. In `pyproject.toml`, change `project` / `version` to the new version `VERSION` (needed so the generated files have the right version in them before check-in)
    1. Clean rebuild:
       1. `rm -rf venv.*`
-      1. `make venv PYTHON=python3`
+      1. `make venv PYTHON=python3.11`
       1. `make lint`: ruff and mypy show no errors
       1. `make`
    1. Repo `feditest-tests-sandbox`: `git checkout main`
@@ -45,15 +45,17 @@
       1. `git push`
       1. `git push --tags`
    1. Update repo `feditest`:
+      1. Change the `python-version` value in `pyproject.toml` to the "production value" that permits Python 3.11 and greater
       1. `git commit` to `main`
       1. `git tag -a vVERSION -m vVERSION`
       1. `git push`
       1. `git push --tags`
    1. Release to PyPi
-      1. `make release PYTHON=python3`
+      1. `make release PYTHON=python3.11`
       1. `venv.release/bin/twine upload dist/*`
       1. `pip install --upgrade feditest`
       1. `feditest version` now shows `VERSION`
+   1. Return `python-version` value in `pyproject.toml` to the "development value" that only permits Python 3.11
 
 1. On UBOS:
    1. Build `feditest` for the UBOS package repos so it can be installed with `pacman -S feditest`
