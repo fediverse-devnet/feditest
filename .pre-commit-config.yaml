@@ -53,11 +53,11 @@ repos:
 #       # though tests might be invalidated if you were to say change a data file
 #       always_run: true
 
-# - repo: local
-#   hooks:
-#   -   id: nocommit
-#       name: NOCOMMIT check
-#       entry: NOCOMMIT
-#       language: pygrep
-#       exclude: .pre-commit-config.yaml
-#       types: [text]
+- repo: local
+  hooks:
+  -   id: nocommit
+      name: NOCOMMIT check
+      entry: NOCOMMIT
+      language: pygrep
+      exclude: .pre-commit-config.yaml
+      types: [text]
