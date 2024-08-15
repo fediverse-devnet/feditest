@@ -86,7 +86,7 @@ def test_all_unnamed(unnamed_constellations: list[TestPlanConstellation], unname
     Only test the naming.
     """
     test_plan = construct_testplan(unnamed_constellations, unnamed_session_templates, None)
-    assert test_plan.name == None
+    assert test_plan.name is None
     assert str(test_plan) == "Unnamed"
 
 

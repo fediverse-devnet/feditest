@@ -74,20 +74,20 @@ def named() -> TestPlanSession:
 
 
 def test_session_template_unnamed(unnamed: TestPlanSession) -> None:
-    assert unnamed.name == None
+    assert unnamed.name is None
     assert str(unnamed) == 'Unnamed'
     assert len(unnamed.tests) == 3
     assert unnamed.constellation
-    assert unnamed.constellation.name == None
+    assert unnamed.constellation.name is None
     assert str(unnamed.constellation) == 'Unnamed'
     assert unnamed.constellation.is_template()
     assert len(unnamed.constellation.roles) == 3
     assert 'role_a' in unnamed.constellation.roles
     assert 'role_b' in unnamed.constellation.roles
     assert 'role_c' in unnamed.constellation.roles
-    assert unnamed.constellation.roles['role_a'] == None
-    assert unnamed.constellation.roles['role_b'] == None
-    assert unnamed.constellation.roles['role_c'] == None
+    assert unnamed.constellation.roles['role_a'] is None
+    assert unnamed.constellation.roles['role_b'] is None
+    assert unnamed.constellation.roles['role_c'] is None
 
 
 def test_session_template_named(named: TestPlanSession) -> None:
@@ -95,13 +95,13 @@ def test_session_template_named(named: TestPlanSession) -> None:
     assert str(named) == SESSION_TEMPLATE_NAME
     assert len(named.tests) == 3
     assert named.constellation
-    assert named.constellation.name == None
+    assert named.constellation.name is None
     assert str(named.constellation) == 'Unnamed'
     assert named.constellation.is_template()
     assert len(named.constellation.roles) == 3
     assert 'role_a' in named.constellation.roles
     assert 'role_b' in named.constellation.roles
     assert 'role_c' in named.constellation.roles
-    assert named.constellation.roles['role_a'] == None
-    assert named.constellation.roles['role_b'] == None
-    assert named.constellation.roles['role_c'] == None
+    assert named.constellation.roles['role_a'] is None
+    assert named.constellation.roles['role_b'] is None
+    assert named.constellation.roles['role_c'] is None
