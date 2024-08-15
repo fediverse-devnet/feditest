@@ -8,13 +8,19 @@ import importlib.util
 import pkgutil
 import re
 import sys
-from importlib.metadata import version
+import importlib.metadata
 from types import ModuleType
 from typing import List, Optional
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
-FEDITEST_VERSION = version('feditest')
+def _version(default_version="0.0.0"):
+    try:
+        return importlib.metadata.version("feditest")
+    except importlib.metadata.PackageNotFoundError:
+        return default_version
+    
+FEDITEST_VERSION = _version('feditest')
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
 ACCT_REGEX = re.compile(r"acct:([-a-zA-Z0-9\._~][-a-zA-Z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-zA-Z0-9\.:]+)")
