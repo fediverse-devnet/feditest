@@ -23,7 +23,8 @@ dependencies = [
   "jinja2",
   "pyhamcrest",
   "pytest",
-  "mastodon.py"
+  "mastodon.py",
+  "pre-commit"
 ]
 description = "Testing federated protocols"
 readme = "README-PyPI.md"
@@ -64,4 +65,3 @@ exclude = [
 [tool.pylint."MESSAGES CONTROL"]
 max-line-length=120
 disable="arguments-renamed, empty-docstring, global-variable-not-assigned, line-too-long, missing-class-docstring, missing-function-docstring, too-few-public-methods, too-many-arguments"
-
