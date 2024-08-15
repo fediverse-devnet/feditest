@@ -1,9 +1,12 @@
 default_install_hook_types:
 - pre-push
 
+default_language_version:
+    python: python3.11
+
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
+  rev: v4.6.0
   hooks:
   # - id: trailing-whitespace
   #   args: [--markdown-linebreak-ext=md]
@@ -14,15 +17,14 @@ repos:
   - id: check-added-large-files
 
 # - repo: https://github.com/psf/black
-#   rev: 23.3.0
+#   rev: 24.8.0
 #   hooks:
 #   - id: black
-#     language_version: python3.11
 #     args:
 #     - --config=pyproject.toml
 
 # - repo: https://github.com/pycqa/isort
-#   rev: 5.12.0
+#   rev: 5.13.2
 #   hooks:
 #     - id: isort
 #       name: isort (python)
