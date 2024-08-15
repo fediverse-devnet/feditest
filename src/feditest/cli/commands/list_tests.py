@@ -17,7 +17,9 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     pattern = re.compile(args.filter_regex) if args.filter_regex else None
 
+    feditest.load_default_tests()
     feditest.load_tests_from(args.testsdir)
+
     for name in sorted(feditest.all_tests.keys()):
         if pattern is None or pattern.match(name):
             print(name)

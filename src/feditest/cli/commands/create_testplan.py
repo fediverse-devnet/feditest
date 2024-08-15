@@ -15,6 +15,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         parser.print_help()
         return 0
 
+    feditest.load_default_tests()
     feditest.load_tests_from(args.testsdir)
 
     constellations = []
