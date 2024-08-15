@@ -31,7 +31,7 @@ def test_unnamed(
     constellation = TestPlanConstellation(roles)
 
     assert len(constellation.roles) == 2
-    assert constellation.name == None
+    assert constellation.name is None
 
 
 def test_named(
