@@ -90,35 +90,31 @@ class WebFingerClient(WebClient):
     """
     A Node that acts as a WebFinger client.
     """
-    def perform_webfinger_query(self, resource_uri: str, rels: list[str] | None = None) -> WebFingerQueryResponse:
+    def perform_webfinger_query(
+        self,
+        server: WebFingerServer,
+        resource_uri: str,
+        rels: list[str] | None = None,
+        scheme: str = 'https'
+    ) -> WebFingerQueryResponse:
         """
-        Make this Node perform a WebFinger query for the provided resource_uri.
+        Make this Node perform a WebFinger query for the provided resource_uri on the provided server
         The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
         'https://example.com/aabc' (not escaped).
-        rels is an optional list of 'rel' query parameters
+        rels is an optional list of 'rel' query parameters. The scheme can be overridden to 'http'
+        for development scenarios
         Return the result of the query. This should returns WebFingerQueryResponse in as many cases
         as possible, but the WebFingerQueryResponse may indicate errors.
         """
         raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
 
-    def construct_webfinger_query_for(
-        self,
-        server_prefix: str,
-        resource_uri: str,
-        rels: list[str] | None = None,
-    ) -> str:
-        query = (
-            f"{server_prefix}/.well-known/webfinger?resource={quote(resource_uri)}"
-        )
-        if query:
-            query += "&rel=" + "&rel=".join(quote(rel) for rel in rels)
-        return query
 
     def construct_webfinger_uri_for(
         self,
         resource_uri: str,
         rels: list[str] | None = None,
         hostname: str | None = None,
+        scheme: str = 'https'
     ) -> str:
         """
         Helper method to construct the WebFinger URI from a resource URI, and an optional list
@@ -144,11 +140,13 @@ class WebFingerClient(WebClient):
         if not hostname:
             raise WebFingerClient.CannotDetermineWebfingerHostError(resource_uri)
 
-        uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
+        uri = f"{scheme}://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
         if rels:
-            uri += '&rel=' + '&rel='.join(quote(rel) for rel in rels)
+            for rel in rels:
+                uri += f"&rel={ quote(rel) }"
 
         return uri
+
 
     class UnsupportedUriSchemeError(RuntimeError):
         """
@@ -156,6 +154,7 @@ class WebFingerClient(WebClient):
         """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
+
 
     class CannotDetermineWebfingerHostError(RuntimeError):
         """
