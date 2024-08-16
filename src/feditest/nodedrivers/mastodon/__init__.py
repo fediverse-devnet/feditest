@@ -1,7 +1,7 @@
 """
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import importlib
 import os
 import re
@@ -31,7 +31,7 @@ if "mastodon" in sys.modules:
     m = sys.modules.pop("mastodon")
     try:
         mastodon_api = importlib.import_module("mastodon")
-        Mastodon = mastodon_api.Mastodon # type: ignore
+        from mastodon_api import Mastodon
     finally:
         sys.modules["mastodon"] = m
 else:
@@ -51,17 +51,18 @@ class UserRecord:
     """
     Collects what we know of a user at a NodeWithMastodonAPI
     """
-    userid : str
-    email : str
+
+    userid: str
+    email: str
     passwd: str
-    mastodon_user_client = None
 
+    _mastodon_user_client: Mastodon | None = field(default=None, init=False, repr=False)
 
-    def mastodon_user_client(self, mastodon_app_client):
-        if not self.mastodon_user_client:
-            self.mastodon_user_client = mastodon_app_client.copy()
-            self.mastodon_user_client.log_in(self.email, self.passwd)
-        return self.mastodon_user_client
+    def mastodon_user_client(self, mastodon_app_client: Mastodon):
+        if not self._mastodon_user_client:
+            self._mastodon_user_client = mastodon_app_client.copy()
+            self._mastodon_user_client.log_in(self.email, self.passwd)
+        return self._mastodon_user_client
 
 
 class NodeWithMastodonAPI(FediverseNode):
