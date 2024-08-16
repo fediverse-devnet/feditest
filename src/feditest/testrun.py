@@ -82,7 +82,7 @@ class TestRunConstellation:
 
             node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
             parameters = plan_node.parameters if plan_node.parameters else {}
-            node : Node = node_driver.provision_node(plan_role_name, parameters)
+            node : Node = node_driver.provision_node(plan_role_name, plan_node, parameters)
             self._nodes[plan_role_name] = node
             self._appdata[plan_role_name] = {
                 'app' : node.app_name,

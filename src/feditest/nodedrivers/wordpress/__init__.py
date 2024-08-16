@@ -6,6 +6,7 @@ from typing import Any
 
 from feditest.nodedrivers.manual import AbstractManualWebServerNodeDriver
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
+from feditest.testplan import TestPlanConstellationNode
 
 
 def _token_validate(candidate: str) -> str | None:
@@ -51,7 +52,7 @@ class WordPressPlusActivityPubPluginManualNodeDriver(AbstractManualWebServerNode
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
+        return WordPressPlusActivityPubPluginNode(rolename, test_plan_node, parameters, self)
 
 

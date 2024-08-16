@@ -4,6 +4,7 @@
 from typing import Any
 
 from feditest.nodedrivers.wordpress import WordPressPlusActivityPubPluginNode
+from feditest.testplan import TestPlanConstellationNode
 from feditest.ubos import UbosNodeDriver
 
 
@@ -20,5 +21,5 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
 
 
     # Python 3.12 @override
-    def _instantiate_ubos_node(self, rolename: str, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
+    def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
+        return WordPressPlusActivityPubPluginNode(rolename, test_plan_node, parameters, self)

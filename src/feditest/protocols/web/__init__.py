@@ -10,6 +10,7 @@ from feditest.protocols.web.traffic import (
     HttpRequestResponsePair,
     ParsedUri,
 )
+from feditest.testplan import TestPlanConstellationNode
 
 
 class WebServerLog:
@@ -41,12 +42,11 @@ class WebServer(Node):
     """
     Abstract class used for Nodes that speak HTTP as server.
     """
-
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'NodeDriver'):
         """
         WebServers need to know their hostnames.
         """
-        super().__init__(rolename, parameters, node_driver)
+        super().__init__(rolename, test_plan_node, parameters, node_driver)
 
         if not parameters.get('hostname'):
             raise Exception('Required: parameters["hostname"]')

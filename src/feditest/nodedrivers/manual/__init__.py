@@ -6,6 +6,7 @@ from typing import Any
 
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.fediverse import FediverseNode
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate
 
 
@@ -33,8 +34,8 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> FediverseNode:
-        return FediverseNode(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FediverseNode:
+        return FediverseNode(rolename, test_plan_node, parameters, self)
 
 
     def _unprovision_node(self, node: Node) -> None:

@@ -16,6 +16,7 @@ from feditest.protocols import NodeDriver, TimeoutException
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import email_validate
 
 
@@ -76,10 +77,8 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(
-        self, rolename: str, parameters: dict[str, Any], node_driver: NodeDriver
-    ):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'NodeDriver'):
+        super().__init__(rolename, test_plan_node, parameters, node_driver)
 
         self._mastodon_app_client = None
         # This instance of Mastodon from Mastodon.py creates the OAuth app. We use it as a template
@@ -305,7 +304,7 @@ class NodeWithMastodonAPI(FediverseNode):
         return UserRecord(cast(str, userid), cast(str, useremail), cast(str, userpass))
 
 
-    def _create_non_existing_user(self):
+    def _create_non_existing_user(self) -> str:
         """
         Create a new user handle that could exist on this Node, but does not.
         """
@@ -371,5 +370,5 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
-        return MastodonNode(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
+        return MastodonNode(rolename, test_plan_node, parameters, self)

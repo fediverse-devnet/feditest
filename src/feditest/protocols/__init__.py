@@ -6,6 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
+from feditest.testplan import TestPlanConstellationNode
 from feditest.reporting import warning, trace
 
 
@@ -24,7 +25,7 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'NodeDriver'):
         """
         rolename: name of the role in the constellation
         parameters: parameters for this Node. Always provided, even if empty
@@ -32,6 +33,8 @@ class Node(ABC):
         """
         if not rolename:
             raise Exception('Required: rolename')
+        if not test_plan_node:
+            raise Exception('Required: test_plan_node') # lint: I rather not rely on you
         if not parameters:
             raise Exception('Required: parameters')
         if not node_driver:
@@ -40,6 +43,7 @@ class Node(ABC):
             raise Exception('Required: parameters["app"]')
 
         self._rolename = rolename
+        self._test_plan_node = test_plan_node
         self._parameters = parameters
         self._node_driver = node_driver
 
@@ -69,8 +73,10 @@ class Node(ABC):
         return None # by default we don't know
 
 
-    def parameter(self, name:str, default: str | None = None) -> str | None:
+    def parameter(self, name: str, default: str | None = None) -> str | None:
         ret = self._parameters.get(name)
+        if not ret:
+            ret = self._test_plan_node.parameter(name)
         if not ret:
             ret = default
         return ret
@@ -114,7 +120,7 @@ class NodeDriver(ABC):
     """
 
     @final
-    def provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+    def provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
@@ -122,7 +128,7 @@ class NodeDriver(ABC):
         """
         self._fill_in_parameters(rolename, parameters)
         trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
-        ret = self._provision_node(rolename, parameters)
+        ret = self._provision_node(rolename, test_plan_node, parameters)
         return ret
 
 
@@ -144,7 +150,7 @@ class NodeDriver(ABC):
         pass
 
 
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.

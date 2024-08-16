@@ -14,6 +14,7 @@ from typing import Any
 from feditest import registry
 from feditest.protocols import Node, NodeDriver, NodeSpecificationInsufficientError, NodeSpecificationInvalidError
 from feditest.reporting import error, info, trace, warning
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import hostname_validate
 
 """
@@ -45,7 +46,7 @@ class UbosNodeDriver(NodeDriver):
     A general-purpose NodeDriver for Nodes provisioned through UBOS Gears.
     """
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
         """
         The UBOS driver knows how to provision a node either by deploying a UBOS Site JSON file
         with "ubos-admin deploy" or to restore a known state of a Site with "ubos-admin restore".
@@ -78,7 +79,7 @@ class UbosNodeDriver(NodeDriver):
         parameters['nonexisting-account-uri'] = f"acct:{ DOES_NOT_EXIST_USER }@{ parameters['hostname'] }"
 
         try:
-            ret = self._instantiate_ubos_node(rolename, parameters)
+            ret = self._instantiate_ubos_node(rolename, test_plan_node, parameters)
             return ret
 
         except Exception as e:
@@ -185,7 +186,7 @@ class UbosNodeDriver(NodeDriver):
 
 
     @abstractmethod
-    def _instantiate_ubos_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+    def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
         """
         This needs to be subclassed to control/observe the running UBOS Node programmatically.
         """

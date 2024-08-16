@@ -7,6 +7,7 @@ from typing import Any, List
 
 from feditest.protocols import NodeDriver
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import FEDITEST_VERSION
 
 
@@ -36,8 +37,8 @@ class SandboxMultClientDriver_ImplementationA(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SandboxMultClient_ImplementationA:
-        return SandboxMultClient_ImplementationA(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> SandboxMultClient_ImplementationA:
+        return SandboxMultClient_ImplementationA(rolename, test_plan_node, parameters, self)
 
 
 class SandboxMultServer_Implementation1(SandboxMultServer):
@@ -45,8 +46,8 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
     First server implementation in the Sandbox protocol with some test instrumentation.
     This server implementation simply calculates a*b.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation1'):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation1'):
+        super().__init__(rolename, test_plan_node, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
 
 
@@ -85,8 +86,8 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> SandboxMultServer_Implementation1:
-        return SandboxMultServer_Implementation1(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> SandboxMultServer_Implementation1:
+        return SandboxMultServer_Implementation1(rolename, test_plan_node, parameters, self)
 
 
 class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
@@ -94,8 +95,8 @@ class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
     Second server implementation in the Sandbox protocol with some test instrumentation.
     This server calculates a*b through a for loop using integers rather than floats
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
+        super().__init__(rolename, test_plan_node, parameters, node_driver)
         self._log : List[SandboxLogEvent] | None = None
 
 
@@ -137,5 +138,5 @@ class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SandboxMultServer_Implementation2Faulty:
-        return SandboxMultServer_Implementation2Faulty(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> SandboxMultServer_Implementation2Faulty:
+        return SandboxMultServer_Implementation2Faulty(rolename, test_plan_node, parameters, self)
