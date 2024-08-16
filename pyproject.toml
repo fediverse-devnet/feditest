@@ -23,7 +23,8 @@ dependencies = [
   "jinja2",
   "pyhamcrest",
   "pytest",
-  "mastodon.py"
+  "mastodon.py",
+  "types-requests"
 ]
 description = "Testing federated protocols"
 readme = "README-PyPI.md"
