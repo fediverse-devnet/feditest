@@ -61,7 +61,7 @@ class TestRunConstellation:
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self._plan_constellation = plan_constellation
         self._nodes : dict[str, Node] = {}
-        self._appdata : dict[str,dict[str,str | None]] = {} # Record what apps and versions are running here. Preserved beyond teardown.
+        self._appdata : dict[str, dict[str, str | None]] = {} # Record what apps and versions are running here. Preserved beyond teardown.
 
 
     def setup(self) -> None:
