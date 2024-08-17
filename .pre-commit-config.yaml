@@ -30,14 +30,15 @@ repos:
 #       name: isort (python)
 #       args: ["--profile", "black", "--filter-files"]
 
-# - repo: https://github.com/astral-sh/ruff-pre-commit
-#   # Ruff version.
-#   rev: v0.6.0
-#   hooks:
-#     # Run the linter.
-#     - id: ruff
-#     # Run the formatter.
-#     - id: ruff-format
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.6.0
+  hooks:
+    # Run the linter.
+    - id: ruff
+      args: ["--fix"]
+    # Run the formatter.
+    # - id: ruff-format
 
 # - repo: local
 #   hooks:
