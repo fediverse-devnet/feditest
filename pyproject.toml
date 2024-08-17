@@ -24,6 +24,7 @@ dependencies = [
   "pyhamcrest",
   "pytest",
   "mastodon.py",
+  "types-requests",
   "pre-commit"
 ]
 description = "Testing federated protocols"

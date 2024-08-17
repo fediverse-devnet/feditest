@@ -1,10 +1,12 @@
 """
 """
 
+import certifi
 from dataclasses import dataclass, field
 import importlib
 import os
 import re
+import requests
 import sys
 import time
 from typing import Any, Callable, cast
@@ -35,7 +37,7 @@ if "mastodon" in sys.modules:
     finally:
         sys.modules["mastodon"] = m
 else:
-    from mastodon import Mastodon # type: ignore
+    from mastodon import Mastodon
 
 
 def _token_validate(candidate: str) -> str | None:
@@ -47,6 +49,22 @@ def _token_validate(candidate: str) -> str | None:
 
 
 @dataclass
+class MastodonOAuthApp:
+    """
+    Captures what we know about the Mastodon OAuth "app" we create to interact with our Mastodon instance.
+    """
+    client_id : str
+    client_secret : str
+    api_base_url : str
+    session : requests.Session # Use this session which has the right CA certs
+
+    @staticmethod
+    def create(api_base_url: str, session: requests.Session):
+        client_id_secret = Mastodon.create_app('feditest', api_base_url=api_base_url, session=session)
+        return MastodonOAuthApp(client_id_secret[0], client_id_secret[1], api_base_url, session)
+
+
+@dataclass
 class UserRecord:
     """
     Collects what we know of a user at a NodeWithMastodonAPI
@@ -55,12 +73,16 @@ class UserRecord:
     userid: str
     email: str
     passwd: str
-
     _mastodon_user_client: Mastodon | None = field(default=None, init=False, repr=False)
 
-    def mastodon_user_client(self, mastodon_app_client: Mastodon):
+    def mastodon_user_client(self, oauth_app: MastodonOAuthApp):
         if not self._mastodon_user_client:
-            self._mastodon_user_client = mastodon_app_client.copy()
+            self._mastodon_user_client = Mastodon(
+                client_id = oauth_app.client_id,
+                client_secret=oauth_app.client_secret,
+                api_base_url=oauth_app.api_base_url,
+                session=oauth_app.session
+            )
             self._mastodon_user_client.log_in(self.email, self.passwd)
         return self._mastodon_user_client
 
@@ -81,11 +103,12 @@ class NodeWithMastodonAPI(FediverseNode):
     ):
         super().__init__(rolename, parameters, node_driver)
 
-        self._mastodon_app_client = None
-        # This instance of Mastodon from Mastodon.py creates the OAuth app. We use it as a template
-        # to clone user-specific instances of Mastodon. It is allocated when it is needed, because
-        # if we were to allocate here, our custom certificate authority isn't here yet and the
-        # operation will fail with a certificate error
+        self._mastodon_oauth_app : MastodonOAuthApp | None = None
+        # The client_id and client_secret for the OAuth "app" we create to interact with a Mastodon instance.
+        # Allocated when needed, so our custom certificate authority has been created before this is used.
+        self._requests_session : requests.Session | None = None
+        # The request.Session with the custom certificate authority set as verifier.
+        # Allocated when needed, so our custom certificate authority has been created before this is used.
 
         self._local_users_by_role: dict[str|None, UserRecord] = {} # always add new UserRecords to both
         self._local_users_by_userid: dict[str, UserRecord] = {} # always add new UserRecords to both
@@ -176,7 +199,7 @@ class NodeWithMastodonAPI(FediverseNode):
         ):
             relationship = mastodon_client.account_follow(b_account)
             if not relationship["following"]:
-                def f(): # I thought I could make this a lambda but python and I don't get a long
+                def f(): # I thought I could make this a lambda but python and I don't get along
                     relationship = mastodon_client.account_relationships(b_account)
                     if relationship["following"]:
                         return relationship["following"]
@@ -305,30 +328,34 @@ class NodeWithMastodonAPI(FediverseNode):
         return UserRecord(cast(str, userid), cast(str, useremail), cast(str, userpass))
 
 
-    def _create_non_existing_user(self):
+    def _create_non_existing_user(self) -> str:
         """
         Create a new user handle that could exist on this Node, but does not.
         """
         return f'does-not-exist-{ os.urandom(4).hex() }' # This is strictly speaking not always true, but will do I think
 
 
-    def _get_mastodon_client_by_actor_uri(self, actor_uri: str):
+    def _get_mastodon_client_by_actor_uri(self, actor_uri: str) -> Mastodon:
         """
         Convenience method to get the instance of the Mastodon client object for a given actor URI.
         """
-        if self._mastodon_app_client is None:
-            app_base_url = f'https://{ self.parameter("hostname") }/'
-            trace( f'Creating Mastodon.py app base with url { app_base_url } ')
-            self._mastodon_app_client = Mastodon.create_app('feditest', api_base_url=app_base_url)
+        if self._requests_session is None:
+            self._requests_session = requests.Session()
+            self._requests_session.verify = certifi.where() # force re-read of cacert file, which the requests library reads upon first import
 
-        trace(f'Mastodon.py app is { self._mastodon_app_client }')
+        if self._mastodon_oauth_app is None:
+            api_base_url = f'https://{ self.parameter("hostname") }/'
+            trace( f'Creating Mastodon.py app with API base URL { api_base_url } ')
+            self._mastodon_oauth_app = MastodonOAuthApp.create(api_base_url, self._requests_session)
+
+        trace('MastodonOAuthApp is', self._mastodon_oauth_app)
         userid = self._actor_uri_to_userid(actor_uri)
         if not userid:
             raise ValueError(f'Cannot find actor { actor_uri }')
         user = self._local_users_by_userid.get(userid)
         if not user:
             raise ValueError(f'Cannot find user { userid }')
-        mastodon_client = user.mastodon_user_client(self._mastodon_app_client)
+        mastodon_client = user.mastodon_user_client(self._mastodon_oauth_app)
         return mastodon_client
 
 
@@ -368,6 +395,13 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
                                                  + f' in role { rolename } at hostname { parameters["hostname"] }: ',
                                                  parse_validate=_token_validate)
         parameters['app'] = 'Mastodon'
+
+        # FIXME: the access token scenario does not currently work. There are several issues:
+        # * We don't have a clear model for scenarios with pre-provisioned users. How many? How do we
+        #   ensure they are fresh and don't have previous data on them that interfers with tests?
+        # * How does one specify pre-provisioned users in the parameters / testplan.json?
+        # * Mastodon is removing password-based authentication: https://github.com/mastodon/mastodon/pull/30960
+        #   which means we need to rethink how we do this in general.
 
 
     # Python 3.12 @override
