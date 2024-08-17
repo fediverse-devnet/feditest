@@ -112,6 +112,8 @@ class Registry(msgspec.Struct):
             ca_subject = x509.Name([
                 x509.NameAttribute(x509.NameOID.COMMON_NAME, "feditest-local-ca." + self.ca.domain),
             ])
+            if self.ca.key is None:
+                raise Exception("No key for CA")
             ca_key = cast(rsa.RSAPrivateKey, load_pem_private_key(self.ca.key.encode('utf-8'), password=None))
             now = datetime.now(UTC)
             ca_cert = x509.CertificateBuilder().subject_name(ca_subject
