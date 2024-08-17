@@ -5,8 +5,6 @@ from datetime import datetime
 
 import feditest
 import pytest
-from feditest import nodedriver
-from feditest.protocols import NodeDriver
 
 
 @pytest.fixture(scope="module")
