@@ -239,6 +239,16 @@ class NotImplementedByNodeDriverError(NotImplementedByNodeOrDriverError):
         super().__init__(f"Not implemented by node driver {node_driver}: {method.__name__}" + (f" ({ arg })" if arg else ""))
 
 
+class NodeOutOfAccountsException(RuntimeError):
+    """
+    A test wanted to obtain an (or obtain another) account on this Node, but no account was
+    known, no account could be automatically provisioned, or all known or provisionable
+    accounts were returned already.
+    """
+    def __init__(self, node: NodeDriver, rolename: str ):
+        super().__init__(f"Out of accounts on Node { node }, account role { rolename }" )
+
+
 class NodeSpecificationInsufficientError(RuntimeError):
     """
     This exception is raised when a NodeDriver cannot instantiate a Node because insufficient

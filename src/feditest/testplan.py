@@ -19,9 +19,31 @@ class TestPlanError(RuntimeError):
         super().__init__(f"TestPlan defined insufficiently: {details}" )
 
 
+class ExistingAccount(msgspec.Struct):
+    """
+    Captures all information we need about a pre-provisionioned account on a TestPlanConstellationNode.
+    This is supposed to be protocol-independent, so it cannot contain data such as WebFinger or
+    ActivitityPub Actor URIs,
+    """
+    username: str | None = None # e.g. 'joe'
+    password: str | None = None
+    oauth_token: str | None = None
+    role: str | None = None # assign a specific account to a specific account role in a test
+
+
+class NonExistingAccount(msgspec.Struct):
+    """
+    Captures all information we need about an account that could exist on a TestPlanConstellationNode but does not.
+    """
+    username: str | None = None
+    role: str | None = None # assign a specific account to a specific account role in a test
+
+
 class TestPlanConstellationNode(msgspec.Struct):
     nodedriver: str | None = None # if we allow this to be None, we can do better error reporting
     parameters: dict[str,Any] | None = None
+    accounts: list[ExistingAccount] | None = None
+    non_existing_accounts: list[NonExistingAccount] | None = None
 
 
     @staticmethod
