@@ -81,15 +81,13 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
-            parameters = plan_node.parameters if plan_node.parameters else {}
-            node : Node = node_driver.provision_node(plan_role_name, plan_node, parameters)
+            node : Node = node_driver.provision_node(plan_role_name, plan_node)
             self._nodes[plan_role_name] = node
             self._appdata[plan_role_name] = {
                 'app' : node.app_name,
                 'app_version' : node.app_version
             }
-            if 'start-delay' in parameters:
-                wait_time = max(wait_time, int(parameters['start-delay']))
+            wait_time = max(wait_time, node.start_delay())
 
         if wait_time:
             info(f'Sleeping for { wait_time } sec to give the Nodes some time to get ready.')
