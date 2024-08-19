@@ -25,7 +25,7 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any], node_driver: 'NodeDriver'):
         """
         rolename: name of the role in the constellation
         parameters: parameters for this Node. Always provided, even if empty
