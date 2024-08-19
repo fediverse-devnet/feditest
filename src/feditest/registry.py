@@ -65,7 +65,7 @@ class Registry(msgspec.Struct):
     @staticmethod
     def create(rootdomain: str | None = None) -> 'Registry':
         if not rootdomain:
-            rootdomain = f'{ random.randint(1000, 9999) }.lan'
+            rootdomain = f'{ random.randint(10000, 99999) }.lan'
 
         ret = Registry(ca=RegistryRoot(domain=rootdomain))
         return ret
@@ -110,8 +110,10 @@ class Registry(msgspec.Struct):
 
         if not self.ca.cert:
             ca_subject = x509.Name([
-                x509.NameAttribute(x509.NameOID.COMMON_NAME, "feditest-user.example"),
+                x509.NameAttribute(x509.NameOID.COMMON_NAME, "feditest-local-ca." + self.ca.domain),
             ])
+            if self.ca.key is None:
+                raise Exception("No key for CA")
             ca_key = cast(rsa.RSAPrivateKey, load_pem_private_key(self.ca.key.encode('utf-8'), password=None))
             now = datetime.now(UTC)
             ca_cert = x509.CertificateBuilder().subject_name(ca_subject
@@ -174,20 +176,22 @@ class Registry(msgspec.Struct):
                 encryption_algorithm=NoEncryption()).decode('utf-8')
 
         if ret.cert is None:
+            self.obtain_registry_root() # make sure we have it
+            ca_cert = x509.load_pem_x509_certificate(cast(str,self.ca.cert).encode('utf-8'))
+            ca_key = cast(rsa.RSAPrivateKey, load_pem_private_key(cast(str,self.ca.key).encode('utf-8'), password=None))
+
             host_key =  cast(rsa.RSAPrivateKey, load_pem_private_key(ret.key.encode('utf-8'), password=None))
             host_subject = x509.Name([
                 x509.NameAttribute(x509.NameOID.COMMON_NAME, host),
             ])
-            host_csr = x509.CertificateSigningRequestBuilder().subject_name(host_subject
-                ).sign(host_key, hashes.SHA256())
-
-            self.obtain_registry_root() # make sure we have it
-            ca_cert = x509.load_pem_x509_certificate(cast(str,self.ca.cert).encode('utf-8'))
-            ca_key = cast(rsa.RSAPrivateKey, load_pem_private_key(cast(str,self.ca.key).encode('utf-8'), password=None))
+            host_san = x509.SubjectAlternativeName([
+                x509.DNSName(host)
+            ])
             now = datetime.now(UTC)
-            host_cert = x509.CertificateBuilder().subject_name(host_csr.subject
+            host_cert = x509.CertificateBuilder().subject_name(host_subject
                 ).issuer_name(ca_cert.subject
-                ).public_key(host_csr.public_key()
+                ).add_extension(host_san, critical=False
+                ).public_key(host_key.public_key()
                 ).serial_number(x509.random_serial_number()
                 ).not_valid_before(now
                 ).not_valid_after(now + timedelta(days=365)  # Expires after 1 year

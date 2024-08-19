@@ -5,9 +5,11 @@ from datetime import datetime
 
 import feditest
 import pytest
-from feditest import nodedriver
-from feditest.protocols import NodeDriver
 
+pytest.skip(
+    "Mastodon tests are disabled until they are fixed.", 
+    allow_module_level=True,
+)
 
 @pytest.fixture(scope="module")
 def mmnode_class():

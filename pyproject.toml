@@ -23,7 +23,9 @@ dependencies = [
   "jinja2",
   "pyhamcrest",
   "pytest",
-  "mastodon.py"
+  "mastodon.py",
+  "types-requests",
+  "pre-commit"
 ]
 description = "Testing federated protocols"
 readme = "README-PyPI.md"
@@ -65,3 +67,5 @@ exclude = [
 max-line-length=120
 disable="arguments-renamed, empty-docstring, global-variable-not-assigned, line-too-long, missing-class-docstring, missing-function-docstring, too-few-public-methods, too-many-arguments"
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]

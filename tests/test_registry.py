@@ -4,7 +4,7 @@ Test the UBOS host registry / CA
 
 import tempfile
 
-from feditest.registry import Registry, RegistryHostInfo, RegistryRoot
+from feditest.registry import Registry
 
 
 def test_allocates_domain():

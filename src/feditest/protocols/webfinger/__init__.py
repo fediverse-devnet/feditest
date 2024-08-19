@@ -101,6 +101,7 @@ class WebFingerClient(WebClient):
         """
         raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
 
+
     def construct_webfinger_query_for(
         self,
         server_prefix: str,
@@ -110,9 +111,11 @@ class WebFingerClient(WebClient):
         query = (
             f"{server_prefix}/.well-known/webfinger?resource={quote(resource_uri)}"
         )
-        if query:
-            query += "&rel=" + "&rel=".join(quote(rel) for rel in rels)
+        if query and rels:
+            for rel in rels:
+                query += "&rel=" + quote(rel)
         return query
+
 
     def construct_webfinger_uri_for(
         self,
@@ -150,12 +153,14 @@ class WebFingerClient(WebClient):
 
         return uri
 
+
     class UnsupportedUriSchemeError(RuntimeError):
         """
         Raised when a WebFinger resource uses a scheme other than http, https, acct
         """
         def __init__(self, resource_uri: str):
             self.resource_uri = resource_uri
+
 
     class CannotDetermineWebfingerHostError(RuntimeError):
         """
