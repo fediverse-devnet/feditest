@@ -31,8 +31,8 @@ class SandboxMultClientDriver_ImplementationA(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'SandboxMultClient_ImplementationA'
 
 
@@ -80,8 +80,8 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'SandboxMultServer_Implementation1'
 
 
@@ -132,8 +132,8 @@ class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'SandboxMultServer_Implementation2Faulty'
 
 

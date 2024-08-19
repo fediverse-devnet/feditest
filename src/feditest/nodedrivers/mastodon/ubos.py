@@ -27,6 +27,12 @@ class MastodonUbosNode(MastodonNode):
 
 
     # Python 3.12 @override
+    @property
+    def start_delay(self):
+        return 10000
+
+
+    # Python 3.12 @override
     def _provision_new_user(self) -> UserRecord:
         trace('Provisioning new user')
         chars = string.ascii_letters + string.digits
@@ -71,8 +77,8 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     Knows how to instantiate Mastodon via UBOS.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'Mastodon'
         parameters['start-delay'] = 10
 

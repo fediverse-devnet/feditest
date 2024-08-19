@@ -386,8 +386,8 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
     Create a manually provisioned Mastodon Node
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         access_token = parameters.get('access_token')
         if not access_token:
             parameters['access_token'] = self.prompt_user('Enter the client API access token for the app'

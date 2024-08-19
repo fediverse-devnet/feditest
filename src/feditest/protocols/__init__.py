@@ -25,7 +25,7 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any], node_driver: 'NodeDriver'):
         """
         rolename: name of the role in the constellation
         parameters: parameters for this Node. Always provided, even if empty
@@ -86,6 +86,14 @@ class Node(ABC):
         return self._parameters.update({name: value})
 
 
+    @property
+    def start_delay(self):
+        """
+        Milliseconds until the node is ready from the time it was created.
+        """
+        return 0
+
+
     def add_cert_to_trust_store(self, root_cert: str) -> None:
         self.prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n' + root_cert)
 
@@ -120,13 +128,15 @@ class NodeDriver(ABC):
     """
 
     @final
-    def provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
+    def provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
-        parameters: parameters for this Node
+        test_plan_node: the specification for this Node in the TestPlan
         """
-        self._fill_in_parameters(rolename, parameters)
+        parameters: dict[str,Any] = {} # These are local to the Node and its NodeDriver. It's up to them how to use them.
+        self._fill_in_parameters(rolename, test_plan_node, parameters)
+        ret = self._provision_node(rolename, test_plan_node, parameters)
         trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
         ret = self._provision_node(rolename, test_plan_node, parameters)
         return ret
@@ -143,11 +153,12 @@ class NodeDriver(ABC):
         self._unprovision_node(node)
 
 
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
         """
         Let our subclasses fill in additional / default parameters before the node gets provisioned
         """
-        pass
+        if test_plan_node.parameters:
+            parameters.update(test_plan_node.parameters)
 
 
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
