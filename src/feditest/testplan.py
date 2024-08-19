@@ -23,27 +23,36 @@ class ExistingAccount(msgspec.Struct):
     """
     Captures all information we need about a pre-provisionioned account on a TestPlanConstellationNode.
     This is supposed to be protocol-independent, so it cannot contain data such as WebFinger or
-    ActivitityPub Actor URIs,
+    ActivitityPub Actor URIs.
+    Arguably having this here makes feditest a little less generic because one can conceive of protocols
+    that do not have, or need, users on nodes. However, most of them do, so we put this here, and for those
+    that don't, there's no need to use this.
+    There are no mandatory fields here. It is up to the NodeDrivers to decide what they need and
+    what constitutes a complete or incomplete account specification.
+    For these reasons, we also don't have any user information on class Node. Specific subclasses need
+    to do this on their own, based on the this data being passed in via TestPlanConstellationNode
+    when the Node is provisioned by the NodeDriver.
     """
     username: str | None = None # e.g. 'joe'
     password: str | None = None
     oauth_token: str | None = None
-    role: str | None = None # assign a specific account to a specific account role in a test
+    role: str | None = None # assign a specific account to a specific account role in a test.
 
 
 class NonExistingAccount(msgspec.Struct):
     """
     Captures all information we need about an account that could exist on a TestPlanConstellationNode but does not.
+    See comment on ExistingAccount
     """
     username: str | None = None
-    role: str | None = None # assign a specific account to a specific account role in a test
+    role: str | None = None # assign a specific account to a specific account role in a test.
 
 
 class TestPlanConstellationNode(msgspec.Struct):
     nodedriver: str | None = None # if we allow this to be None, we can do better error reporting
     parameters: dict[str,Any] | None = None
-    accounts: list[ExistingAccount] | None = None
-    non_existing_accounts: list[NonExistingAccount] | None = None
+    accounts: list[ExistingAccount] | None = None # see comment on ExistingAccount
+    non_existing_accounts: list[NonExistingAccount] | None = None # see comment on ExistingAccount
 
 
     @staticmethod
