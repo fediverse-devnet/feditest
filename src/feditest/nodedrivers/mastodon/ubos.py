@@ -16,8 +16,8 @@ class MastodonUbosNode(MastodonNode):
     """
     A Mastodon Node running on UBOS. This means we know how to interact with it exactly.
     """
-    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any], node_driver: 'MastodonUbosNodeDriver'):
-        super().__init__(rolename, test_plan_node, parameters, node_driver)
+    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'MastodonUbosNodeDriver'):
+        super().__init__(rolename, parameters, node_driver)
 
         self._local_users_by_role[None] = UserRecord(
             userid=cast(str,parameters.get('adminid')),
@@ -87,7 +87,7 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     # Python 3.12 @override
     def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
         trace('Instantiating MastodonUbosNode')
-        return MastodonUbosNode(rolename, test_plan_node, parameters, self)
+        return MastodonUbosNode(rolename, parameters, self)
 
 
     # Python 3.12 @override

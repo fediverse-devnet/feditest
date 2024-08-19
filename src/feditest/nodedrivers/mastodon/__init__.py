@@ -114,8 +114,8 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode,  parameters: dict[str,Any], node_driver: 'NodeDriver'):
-        super().__init__(rolename, test_plan_node, parameters, node_driver)
+    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
+        super().__init__(rolename, parameters, node_driver)
 
         self._mastodon_oauth_app : MastodonOAuthApp | None = None
         # Information we have about the OAuth "app" we we create to interact with a Mastodon instance.
@@ -420,4 +420,4 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
-        return MastodonNode(rolename, test_plan_node, parameters, self)
+        return MastodonNode(rolename, parameters, self)

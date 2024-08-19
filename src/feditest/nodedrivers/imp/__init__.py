@@ -148,7 +148,7 @@ class ImpInProcessNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> Imp:
-        return Imp(rolename, test_plan_node, parameters, self)
+        return Imp(rolename, parameters, self)
 
 
     # Python 3.12 @override
