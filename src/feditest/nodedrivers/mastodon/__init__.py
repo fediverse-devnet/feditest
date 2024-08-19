@@ -68,23 +68,38 @@ class MastodonOAuthApp:
 @dataclass
 class UserRecord:
     """
-    Collects what we know of a user at a NodeWithMastodonAPI
+    Collects what we know of a user at a NodeWithMastodonAPI.
+    This should really be an abstract class, with two subclasses (for userid/password and for oauth token)
+    but I cannot convince Python that I should be allowed to do that with @dataclass, abstract methods and
+    without workarounds.
+    So: either ( email != None && passwd != None && oauth_token == None ) or ( email == None && passwd == None && oauth_token != None )
     """
-
     userid: str
-    email: str
-    passwd: str
-    _mastodon_user_client: Mastodon | None = field(default=None, init=False, repr=False)
+    email: str | None
+    passwd: str | None
+    oauth_token: str | None
+    _mastodon_user_client: Mastodon | None = field(default=None, init=False, repr=False) # don't know how to put this into the superclass
 
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp):
+
+    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
         if not self._mastodon_user_client:
-            self._mastodon_user_client = Mastodon(
-                client_id = oauth_app.client_id,
-                client_secret=oauth_app.client_secret,
-                api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session
-            )
-            self._mastodon_user_client.log_in(self.email, self.passwd)
+            if self.oauth_token:
+                client = Mastodon(
+                    client_id = oauth_app.client_id,
+                    client_secret=oauth_app.client_secret,
+                    api_base_url=oauth_app.api_base_url,
+                    session=oauth_app.session
+                )
+                client.log_in(self.email, self.passwd)
+            else:
+                client = Mastodon(
+                    client_id = oauth_app.client_id,
+                    client_secret=oauth_app.client_secret,
+                    access_token=self.oauth_token,
+                    api_base_url=oauth_app.api_base_url,
+                    session=oauth_app.session
+                )
+            self._mastodon_user_client = client
         return self._mastodon_user_client
 
 
@@ -103,7 +118,7 @@ class NodeWithMastodonAPI(FediverseNode):
         super().__init__(rolename, test_plan_node, parameters, node_driver)
 
         self._mastodon_oauth_app : MastodonOAuthApp | None = None
-        # The client_id and client_secret for the OAuth "app" we create to interact with a Mastodon instance.
+        # Information we have about the OAuth "app" we we create to interact with a Mastodon instance.
         # Allocated when needed, so our custom certificate authority has been created before this is used.
         self._requests_session : requests.Session | None = None
         # The request.Session with the custom certificate authority set as verifier.
@@ -324,7 +339,7 @@ class NodeWithMastodonAPI(FediverseNode):
                                parse_validate=lambda x: x if len(x) else None )
         useremail = self.prompt_user('... and its e-mail: ', parse_validate=email_validate)
         userpass = self.prompt_user('... and its password:', parse_validate=lambda x: len(x) > 3)
-        return UserRecord(cast(str, userid), cast(str, useremail), cast(str, userpass))
+        return UserRecord(userid=cast(str, userid), email=cast(str, useremail), passwd=cast(str, userpass), oauth_token=None)
 
 
     def _create_non_existing_user(self) -> str:

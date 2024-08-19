@@ -20,9 +20,10 @@ class MastodonUbosNode(MastodonNode):
         super().__init__(rolename, test_plan_node, parameters, node_driver)
 
         self._local_users_by_role[None] = UserRecord(
-            cast(str,parameters.get('adminid')),
-            cast(str,parameters.get('adminemail')),
-            cast(str,parameters.get('adminpass')))
+            userid=cast(str,parameters.get('adminid')),
+            email=cast(str,parameters.get('adminemail')),
+            passwd=cast(str,parameters.get('adminpass')),
+            oauth_token=None)
         # Note: We use the site admin user as the default user, which may or may not be a good idea.
 
 
@@ -52,7 +53,7 @@ class MastodonUbosNode(MastodonNode):
         m = re.search( r'password:\s+([a-z0-9]+)', result.stdout )
         if m:
             passwd = m.group(1)
-            return UserRecord(userid, useremail, passwd)
+            return UserRecord(userid=userid, email=useremail, passwd=passwd, oauth_token=None)
 
         raise Exception('Failed to parse tootctl accounts create output:' + result.stdout)
 
