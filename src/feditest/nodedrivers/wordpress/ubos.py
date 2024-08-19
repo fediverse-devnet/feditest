@@ -22,4 +22,4 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
 
     # Python 3.12 @override
     def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        return WordPressPlusActivityPubPluginNode(rolename, test_plan_node, parameters, self)
+        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)

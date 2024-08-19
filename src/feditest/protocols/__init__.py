@@ -25,7 +25,7 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
         """
         rolename: name of the role in the constellation
         parameters: parameters for this Node. Always provided, even if empty
@@ -33,8 +33,6 @@ class Node(ABC):
         """
         if not rolename:
             raise Exception('Required: rolename')
-        if not test_plan_node:
-            raise Exception('Required: test_plan_node') # lint: I rather not rely on you
         if not parameters:
             raise Exception('Required: parameters')
         if not node_driver:
@@ -43,7 +41,6 @@ class Node(ABC):
             raise Exception('Required: parameters["app"]')
 
         self._rolename = rolename
-        self._test_plan_node = test_plan_node
         self._parameters = parameters
         self._node_driver = node_driver
 
