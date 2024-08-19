@@ -74,12 +74,7 @@ class Node(ABC):
 
 
     def parameter(self, name: str, default: str | None = None) -> str | None:
-        ret = self._parameters.get(name)
-        if not ret:
-            ret = self._test_plan_node.parameter(name)
-        if not ret:
-            ret = default
-        return ret
+        return self._parameters.get(name)
 
 
     def set_parameter(self, name:str, value:Any) -> None:
