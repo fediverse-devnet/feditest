@@ -1,5 +1,5 @@
 """
-Nodes managed via UBOS https://ubos.net/
+Nodes managed via UBOS Gears https://ubos.net/
 """
 from abc import abstractmethod
 import hashlib
@@ -149,7 +149,7 @@ class UbosNodeDriver(NodeDriver):
             raise UbosAdminException(self, cmd)
 
 
-    def _provision_node_with_generated_sitejson(self,  parameters: dict[str,Any]) -> None:
+    def _provision_node_with_generated_sitejson(self, parameters: dict[str,Any]) -> None:
         if 'hostname' in parameters:
             info = registry.obtain_hostinfo(parameters['hostname'])
         else:
