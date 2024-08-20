@@ -5,7 +5,7 @@ A NodeDriver that supports all protocols but doesn't automate anything.
 from typing import Any
 
 from feditest.protocols import Node, NodeDriver
-from feditest.protocols.fediverse import FediverseNode
+from feditest.protocols.fediverse import FallbackFediverseNode, FediverseNode
 from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate
 
@@ -35,7 +35,7 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FediverseNode:
-        return FediverseNode(rolename, parameters, self)
+        return FallbackFediverseNode(rolename, parameters, self)
 
 
     def _unprovision_node(self, node: Node) -> None:

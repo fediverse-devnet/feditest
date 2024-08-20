@@ -6,7 +6,7 @@ Node under test exists as a website that we don't have/can provision/unprovision
 from typing import Any
 
 from feditest.protocols import NodeDriver
-from feditest.protocols.fediverse import FediverseNode
+from feditest.protocols.fediverse import FallbackFediverseNode
 from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate
 
@@ -34,5 +34,5 @@ class SaasFediverseNodeDriver(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FediverseNode:
-        return FediverseNode(rolename, parameters, self)
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FallbackFediverseNode:
+        return FallbackFediverseNode(rolename, parameters, self)
