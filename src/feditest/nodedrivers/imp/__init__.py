@@ -35,6 +35,7 @@ class Imp(WebFingerClient):
     def app_version(self):
         return FEDITEST_VERSION
 
+
     # @override # from WebClient
     def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         trace( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
@@ -54,19 +55,15 @@ class Imp(WebFingerClient):
             return ret
         raise WebClient.HttpUnsuccessfulError(request)
 
+
     # @override # from WebFingerClient
     def perform_webfinger_query(
         self,
-        server: WebFingerServer,
-        resource_uri: str|None = None,
+        resource_uri: str,
         rels: list[str] | None = None,
+        server: WebFingerServer | None = None
     ) -> WebFingerQueryResponse:
-        if resource_uri is None:
-            resource_uri = server.parameter("existing-account-uri")
-        if server_prefix := server.parameter("server-prefix"):
-            query_url = self.construct_webfinger_query_for(server_prefix, resource_uri, rels)
-        else:
-            query_url = self.construct_webfinger_uri_for(resource_uri, rels, server.parameter("hostname"))
+        query_url = self.construct_webfinger_uri_for(resource_uri, rels, server.hostname() if server else None )
         parsed_uri = ParsedUri.parse(query_url)
         if not parsed_uri:
             raise ValueError('Not a valid URI:', query_url) # can't avoid this
