@@ -3,12 +3,13 @@ Classes that represent a TestPlan and its parts.
 """
 
 import json
+import re
 from typing import Any
 
 import msgspec
 
 import feditest
-from feditest.utils import hostname_validate, FEDITEST_VERSION
+from feditest.utils import hostname_validate, FEDITEST_VERSION, email_validate, http_https_acct_uri_parse_validate
 
 
 class TestPlanError(RuntimeError):
@@ -35,9 +36,21 @@ class ExistingAccount(msgspec.Struct):
     """
     userid: str | None = None # e.g. 'joe'
     email: str | None = None # e.g. 'joe@example.com'
+    uri: str | None = None # primary URI, e.g. https://example.com/joe or acct:joe@example.com
     password: str | None = None
     oauth_token: str | None = None
     role: str | None = None # assign a specific account to a specific account role in a test.
+
+    def check_valid(self, context_msg: str = "") -> None:
+        # self.userid -- not sure what to check
+        if self.email and not email_validate(self.email):
+            raise TestPlanError(context_msg + f'Invalid e-mail: "{ self.email }".')
+        if self.uri and not http_https_acct_uri_parse_validate(self.uri):
+            raise TestPlanError(context_msg + f'Invalid uri: "{ self.uri }".')
+        # self.password -- not sure what to check
+        # self.oauth_token -- not sure what to check
+        if self.role and re.search(r'\s', self.role) is not None:
+            raise TestPlanError(context_msg + f'Invalid role: "{ self.role }".')
 
 
 class NonExistingAccount(msgspec.Struct):
@@ -46,7 +59,15 @@ class NonExistingAccount(msgspec.Struct):
     See comment on ExistingAccount
     """
     userid: str | None = None
+    uri: str | None = None # primary URI, e.g. https://example.com/joe or acct:joe@example.com
     role: str | None = None # assign a specific account to a specific account role in a test.
+
+    def check_valid(self, context_msg: str = "") -> None:
+        # self.userid -- not sure what to check
+        if self.uri and not http_https_acct_uri_parse_validate(self.uri):
+            raise TestPlanError(context_msg + f'Invalid uri: "{ self.uri }".')
+        if self.role and re.search(r'\s', self.role) is not None:
+            raise TestPlanError(context_msg + f'Invalid role: "{ self.role }".')
 
 
 class TestPlanConstellationNode(msgspec.Struct):
@@ -73,11 +94,43 @@ class TestPlanConstellationNode(msgspec.Struct):
         return None
 
 
+    def get_account_by_rolename(self, rolename: str) -> ExistingAccount | None:
+        """
+        Convenience method to centralize seach in one place
+        """
+        if not self.accounts:
+            return None
+        for account in self.accounts:
+            if rolename == account.role:
+                return account
+        return None
+
+
+    def get_non_existing_account_by_rolename(self, rolename: str) -> NonExistingAccount | None:
+        """
+        Convenience method to centralize seach in one place
+        """
+        if not self.non_existing_accounts:
+            return None
+        for non_account in self.non_existing_accounts:
+            if rolename == non_account.role:
+                return non_account
+        return None
+
+
     def check_can_be_executed(self, context_msg: str = "") -> None:
         if not self.nodedriver:
             raise TestPlanError(context_msg + 'No NodeDriver')
         if self.nodedriver not in feditest.all_node_drivers:
             raise TestPlanError(context_msg + f'Cannot find NodeDriver "{ self.nodedriver }".')
+
+        if self.accounts:
+            for account in self.accounts:
+                account.check_valid(context_msg)
+
+        if self.non_existing_accounts:
+            for non_account in self.non_existing_accounts:
+                non_account.check_valid(context_msg)
 
         # also check well-known parameters
         if self.parameters:
