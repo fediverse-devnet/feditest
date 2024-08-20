@@ -35,7 +35,7 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FediverseNode:
-        return FallbackFediverseNode(rolename, parameters, self)
+        return FallbackFediverseNode(rolename, parameters, self, test_plan_node)
 
 
     def _unprovision_node(self, node: Node) -> None:

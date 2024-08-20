@@ -63,6 +63,16 @@ class WebFingerServer(WebServer):
 
 
 class FallbackWebFingerServer(WebFingerServer):
+    def __init__(self,
+        rolename: str,
+        parameters: dict[str,Any],
+        node_driver: NodeDriver,
+        test_plan_node: TestPlanConstellationNode
+    ):
+        super().__init__(rolename, parameters, node_driver)
+        self._test_plan_node = test_plan_node
+
+
     # Python 3.12 @override
     def obtain_account_identifier(self, rolename: str | None = None) -> str:
         if rolename:

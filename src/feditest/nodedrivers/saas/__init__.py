@@ -35,4 +35,4 @@ class SaasFediverseNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FallbackFediverseNode:
-        return FallbackFediverseNode(rolename, parameters, self)
+        return FallbackFediverseNode(rolename, parameters, self, test_plan_node)
