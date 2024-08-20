@@ -5,10 +5,10 @@ Abstractions for the WebFinger protocol
 from typing import Any, Callable
 from urllib.parse import quote, urlparse
 
-from feditest.protocols import NotImplementedByNodeError
+from feditest.protocols import NodeDriver, NodeSpecificationInvalidError, NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
-from feditest.utils import http_https_acct_uri_validate
+from feditest.testplan import TestPlanConstellationNode
 
 
 class WebFingerServer(WebServer):
@@ -75,35 +75,23 @@ class FallbackWebFingerServer(WebFingerServer):
 
     # Python 3.12 @override
     def obtain_account_identifier(self, rolename: str | None = None) -> str:
-        if rolename:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an existing or new account for role "{rolename}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
-                    self.parameter('existing-account-uri'),
-                    http_https_acct_uri_validate)
-        else:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
-                    self.parameter('existing-account-uri'),
-                    http_https_acct_uri_validate)
-        assert ret
-        self.set_parameter('existing-account-uri', ret)
+        account = self._test_plan_node.get_account_by_rolename(rolename)
+        if not account:
+            raise NodeSpecificationInvalidError(self.node_driver, 'accounts', f'No existing account for role {rolename} given in TestPlan')
+        ret = account.uri
+        if not ret:
+            raise NodeSpecificationInvalidError(self.node_driver, 'accounts', f'No uri for pre-existing account of role {rolename} given in TestPlan')
         return ret
 
 
     # Python 3.12 @override
     def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
-        if rolename:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an non-existing account for role "{rolename}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
-                    self.parameter('nonexisting-account-uri'),
-                    http_https_acct_uri_validate)
-        else:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
-                    self.parameter('nonexisting-account-uri'),
-                    http_https_acct_uri_validate)
-        assert ret
-        self.set_parameter('nonexisting-account-uri', ret)
+        non_account = self._test_plan_node.get_non_existing_account_by_rolename(rolename)
+        if not non_account:
+            raise NodeSpecificationInvalidError(self.node_driver, 'non_existing_accounts', f'No existing account for role {rolename} given in TestPlan')
+        ret = non_account.uri
+        if not ret:
+            raise NodeSpecificationInvalidError(self.node_driver, 'non_existing_accounts', f'No uri for pre-existing account of role {rolename} given in TestPlan')
         return ret
 
 

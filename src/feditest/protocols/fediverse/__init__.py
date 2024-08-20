@@ -55,6 +55,19 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
 
 class FallbackFediverseNode(FediverseNode, FallbackWebFingerServer):
     # Python 3.12 @override
+    def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
+        if rolename:
+            return cast(str, self.prompt_user(
+                    f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{rolename}": ',
+                    self.parameter('node-uri'),
+                    http_https_uri_validate))
+
+        return cast(str, self.prompt_user(
+                f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
+                self.parameter('node-uri'),
+                http_https_uri_validate))
+
+    # Python 3.12 @override
     def make_create_note(self, actor_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
         if deliver_to :
             return cast(str, self.prompt_user(
