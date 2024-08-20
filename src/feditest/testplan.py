@@ -33,7 +33,8 @@ class ExistingAccount(msgspec.Struct):
     to do this on their own, based on the this data being passed in via TestPlanConstellationNode
     when the Node is provisioned by the NodeDriver.
     """
-    username: str | None = None # e.g. 'joe'
+    userid: str | None = None # e.g. 'joe'
+    email: str | None = None # e.g. 'joe@example.com'
     password: str | None = None
     oauth_token: str | None = None
     role: str | None = None # assign a specific account to a specific account role in a test.
@@ -44,7 +45,7 @@ class NonExistingAccount(msgspec.Struct):
     Captures all information we need about an account that could exist on a TestPlanConstellationNode but does not.
     See comment on ExistingAccount
     """
-    username: str | None = None
+    userid: str | None = None
     role: str | None = None # assign a specific account to a specific account role in a test.
 
 

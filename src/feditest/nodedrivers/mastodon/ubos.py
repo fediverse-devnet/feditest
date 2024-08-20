@@ -6,7 +6,7 @@ import secrets
 import string
 from typing import Any, cast
 
-from feditest.nodedrivers.mastodon import MastodonNode, UserRecord
+from feditest.nodedrivers.mastodon import MastodonNode, NoUserRecord, UserRecord
 from feditest.reporting import error, trace
 from feditest.testplan import TestPlanConstellationNode
 from feditest.ubos import UbosNodeDriver
@@ -16,17 +16,6 @@ class MastodonUbosNode(MastodonNode):
     """
     A Mastodon Node running on UBOS. This means we know how to interact with it exactly.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'MastodonUbosNodeDriver'):
-        super().__init__(rolename, parameters, node_driver)
-
-        self._local_users_by_role[None] = UserRecord(
-            userid=cast(str,parameters.get('adminid')),
-            email=cast(str,parameters.get('adminemail')),
-            passwd=cast(str,parameters.get('adminpass')),
-            oauth_token=None)
-        # Note: We use the site admin user as the default user, which may or may not be a good idea.
-
-
     # Python 3.12 @override
     @property
     def start_delay(self):
@@ -87,7 +76,24 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     # Python 3.12 @override
     def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
         trace('Instantiating MastodonUbosNode')
-        return MastodonUbosNode(rolename, parameters, self)
+
+        existing_users_by_role: dict[str | None, UserRecord] = {
+            None : UserRecord(
+                userid=cast(str, parameters.get('adminid')),
+                email=cast(str, parameters.get('adminemail')),
+                passwd=cast(str, parameters.get('adminpass')),
+                oauth_token=None)
+        }
+        non_existing_users_by_role: dict[str | None, NoUserRecord] = {
+            None: NoUserRecord(userid=cast(str, parameters.get('doesnotexistid')))
+        }
+
+        return MastodonUbosNode(
+            rolename,
+            parameters,
+            self,
+            existing_users_by_role,
+            non_existing_users_by_role)
 
 
     # Python 3.12 @override

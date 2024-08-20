@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 from feditest import AssertionFailure, InteropLevel, SpecLevel
 from feditest.nodedrivers.manual import AbstractManualWebServerNodeDriver
-from feditest.protocols import NodeDriver, TimeoutException
+from feditest.protocols import NodeDriver, NodeSpecificationInvalidError, TimeoutException
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
@@ -73,6 +73,7 @@ class UserRecord:
     but I cannot convince Python that I should be allowed to do that with @dataclass, abstract methods and
     without workarounds.
     So: either ( email != None && passwd != None && oauth_token == None ) or ( email == None && passwd == None && oauth_token != None )
+    userid is always required.
     """
     userid: str
     email: str | None
@@ -103,6 +104,59 @@ class UserRecord:
         return self._mastodon_user_client
 
 
+@dataclass
+class NoUserRecord:
+    """
+    Collects what we know of a non-existing user at a NodeWithMastodonAPI.
+    """
+    userid: str
+
+
+def existing_users_by_role(test_plan_node: TestPlanConstellationNode, node_driver: NodeDriver) -> dict[str | None, UserRecord]:
+    """
+    Helper method to determine the initial table of UserRecords from the TestPlanConstellationNode
+    """
+    if not test_plan_node.accounts:
+        return {}
+
+    ret : dict[str | None, UserRecord] = {}
+    for plan_account in test_plan_node.accounts:
+        if plan_account.role in ret:
+            raise NodeSpecificationInvalidError(node_driver, 'accounts', f'Have account with role { plan_account.role } already.')
+        if not plan_account.userid:
+            raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have userid.')
+        if plan_account.email:
+            if not plan_account.password:
+                raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have password if email is given.')
+            if plan_account.oauth_token:
+                raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have email or oauth_token, not both.')
+            ret[plan_account.role] = UserRecord(userid=plan_account.userid, passwd=plan_account.password, email=plan_account.email, oauth_token=None)
+        else:
+            if not plan_account.oauth_token:
+                raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have email or oauth_token.')
+            if plan_account.password:
+                raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must not have password if oauth_token is given.')
+            ret[plan_account.role] = UserRecord(userid=plan_account.userid, passwd=None, email=None, oauth_token=plan_account.oauth_token)
+    return ret
+
+
+def non_existing_users_by_role(test_plan_node: TestPlanConstellationNode, node_driver: NodeDriver) -> dict[str | None, NoUserRecord]:
+    """
+    Helper method to determine the initial table of NoUserRecords from the TestPlanConstellationNode
+    """
+    if not test_plan_node.non_existing_accounts:
+        return {}
+
+    ret : dict[str | None, NoUserRecord] = {}
+    for plan_non_account in test_plan_node.non_existing_accounts:
+        if plan_non_account.role in ret:
+            raise NodeSpecificationInvalidError(node_driver, 'non_existing_accounts', f'Have non-existing account with role { plan_non_account.role } already.')
+        if not plan_non_account.userid:
+            raise NodeSpecificationInvalidError(node_driver, 'non_existing_accounts', 'Must have userid.')
+        ret[plan_non_account.role] = NoUserRecord(userid=plan_non_account.userid)
+    return ret
+
+
 class NodeWithMastodonAPI(FediverseNode):
     """
     Any Node that supports the Mastodon API. This will be subtyped into things like
@@ -114,7 +168,13 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self,
+        rolename: str,
+        parameters: dict[str,Any],
+        node_driver: 'NodeDriver',
+        existing_users_by_role: dict[str | None, UserRecord],
+        non_existing_users_by_role: dict[str | None, NoUserRecord]
+    ):
         super().__init__(rolename, parameters, node_driver)
 
         self._mastodon_oauth_app : MastodonOAuthApp | None = None
@@ -124,9 +184,8 @@ class NodeWithMastodonAPI(FediverseNode):
         # The request.Session with the custom certificate authority set as verifier.
         # Allocated when needed, so our custom certificate authority has been created before this is used.
 
-        self._local_users_by_role: dict[str|None, UserRecord] = {} # always add new UserRecords to both
-        self._local_users_by_userid: dict[str, UserRecord] = {} # always add new UserRecords to both
-        self._non_existing_userids_by_role: dict[str|None, str] = {}
+        self._existing_users_by_role: dict[str | None, UserRecord] = existing_users_by_role
+        self._non_existing_users_by_role: dict[str | None, NoUserRecord] = non_existing_users_by_role
         self._status_dict_by_uri: dict[str, dict[str,Any]] = {} # Maps URIs of created status objects to the corresponding Mastodon.py "status dicts"
             # We keep this around so we can look up id attributes by URI and we can map the FediverseNode API URI parameters
             # to Mastodon's internal status ids
@@ -232,10 +291,10 @@ class NodeWithMastodonAPI(FediverseNode):
     # Python 3.12 @override
     def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
         trace(f'obtain_actor_document_uri for role {rolename}')
-        user = self._local_users_by_role.get(rolename)
+        user = self._existing_users_by_role.get(rolename)
         if not user:
             user = self._provision_new_user()
-            self._local_users_by_role[rolename] = user
+            self._existing_users_by_role[rolename] = user
         return self._userid_to_actor_uri(user.userid)
 
 
@@ -275,21 +334,21 @@ class NodeWithMastodonAPI(FediverseNode):
     # Python 3.12 @override
     def obtain_account_identifier(self, rolename: str | None = None) -> str:
         trace(f'obtain_account_identifier for role {rolename}')
-        user = self._local_users_by_role.get(rolename)
+        user = self._existing_users_by_role.get(rolename)
         if not user:
             user = self._provision_new_user()
-            self._local_users_by_role[rolename] = user
+            self._existing_users_by_role[rolename] = user
         return f'acct:{ user.userid }@{ self.parameter( "hostname" )}'
 
 
     # Python 3.12 @override
     def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
         trace(f'obtain_non_existing_account_identifier for role {rolename}')
-        if existing_user_id := self._non_existing_userids_by_role.get(rolename):
-            return existing_user_id
-        userid = self._create_non_existing_user()
-        self._non_existing_userids_by_role[rolename] = userid
-        return userid
+        if non_existing_user := self._non_existing_users_by_role.get(rolename):
+            return non_existing_user.userid
+        new_non_existing_user = self._create_non_existing_user()
+        self._non_existing_users_by_role[rolename] = new_non_existing_user
+        return new_non_existing_user.userid
 
 
     # Not implemented
@@ -342,11 +401,11 @@ class NodeWithMastodonAPI(FediverseNode):
         return UserRecord(userid=cast(str, userid), email=cast(str, useremail), passwd=cast(str, userpass), oauth_token=None)
 
 
-    def _create_non_existing_user(self) -> str:
+    def _create_non_existing_user(self) -> NoUserRecord:
         """
         Create a new user handle that could exist on this Node, but does not.
         """
-        return f'does-not-exist-{ os.urandom(4).hex() }' # This is strictly speaking not always true, but will do I think
+        return NoUserRecord(userid=f'does-not-exist-{ os.urandom(5).hex() }')  # This is strictly speaking not always true, but will do I think
 
 
     def _get_mastodon_client_by_actor_uri(self, actor_uri: str) -> Mastodon:
@@ -366,7 +425,7 @@ class NodeWithMastodonAPI(FediverseNode):
         userid = self._actor_uri_to_userid(actor_uri)
         if not userid:
             raise ValueError(f'Cannot find actor { actor_uri }')
-        user = self._local_users_by_userid.get(userid)
+        user = self._get_user_by_userid(userid)
         if not user:
             raise ValueError(f'Cannot find user { userid }')
         mastodon_client = user.mastodon_user_client(self._mastodon_oauth_app)
@@ -387,6 +446,13 @@ class NodeWithMastodonAPI(FediverseNode):
         if not msg:
             msg = 'Expected object has not arrived in time'
         raise TimeoutException(msg, retry_count * retry_interval)
+
+
+    def _get_user_by_userid(self, userid: str) -> UserRecord | None:
+        for user in self._existing_users_by_role.values():
+            if userid is user.userid:
+                return user
+        return None
 
 
 class MastodonNode(NodeWithMastodonAPI):
@@ -420,4 +486,9 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
-        return MastodonNode(rolename, parameters, self)
+        return MastodonNode(
+            rolename,
+            parameters,
+            self,
+            existing_users_by_role(test_plan_node, self),
+            non_existing_users_by_role(test_plan_node, self))

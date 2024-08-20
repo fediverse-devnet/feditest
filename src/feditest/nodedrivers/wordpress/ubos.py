@@ -1,8 +1,9 @@
 """
 """
 
-from typing import Any
+from typing import Any, cast
 
+from feditest.nodedrivers.mastodon import NoUserRecord, UserRecord
 from feditest.nodedrivers.wordpress import WordPressPlusActivityPubPluginNode
 from feditest.testplan import TestPlanConstellationNode
 from feditest.ubos import UbosNodeDriver
@@ -22,4 +23,20 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
 
     # Python 3.12 @override
     def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
+        existing_users_by_role: dict[str | None, UserRecord] = {
+            None : UserRecord(
+                userid=cast(str, parameters.get('adminid')),
+                email=cast(str, parameters.get('adminemail')),
+                passwd=cast(str, parameters.get('adminpass')),
+                oauth_token=None)
+        }
+        non_existing_users_by_role: dict[str | None, NoUserRecord] = {
+            None: NoUserRecord(userid=cast(str, parameters.get('doesnotexistid')))
+        }
+
+        return WordPressPlusActivityPubPluginNode(
+            rolename,
+            parameters,
+            self,
+            existing_users_by_role,
+            non_existing_users_by_role)

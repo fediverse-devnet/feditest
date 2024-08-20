@@ -75,9 +75,6 @@ class UbosNodeDriver(NodeDriver):
         else:
             self._provision_node_with_generated_sitejson(parameters)
 
-        parameters['existing-account-uri'] = f"acct:{ ADMIN_USER }@{ parameters['hostname'] }"
-        parameters['nonexisting-account-uri'] = f"acct:{ DOES_NOT_EXIST_USER }@{ parameters['hostname'] }"
-
         try:
             ret = self._instantiate_ubos_node(rolename, test_plan_node, parameters)
             return ret
@@ -161,6 +158,7 @@ class UbosNodeDriver(NodeDriver):
         parameters['adminid'] = ADMIN_USER
         parameters['adminemail'] = f'{ ADMIN_USER }@{ parameters["hostname"] }'
         parameters['adminpass'] = self._generate_credential()
+        parameters['doesnotexistid'] = DOES_NOT_EXIST_USER
 
         siteJson = {
             'hostname' : parameters['hostname'],

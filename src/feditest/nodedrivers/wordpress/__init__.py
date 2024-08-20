@@ -5,7 +5,7 @@ import re
 from typing import Any
 
 from feditest.nodedrivers.manual import AbstractManualWebServerNodeDriver
-from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
+from feditest.nodedrivers.mastodon import NodeWithMastodonAPI, existing_users_by_role, non_existing_users_by_role
 from feditest.testplan import TestPlanConstellationNode
 
 
@@ -53,6 +53,11 @@ class WordPressPlusActivityPubPluginManualNodeDriver(AbstractManualWebServerNode
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
+        return WordPressPlusActivityPubPluginNode(
+            rolename,
+            parameters,
+            self,
+            existing_users_by_role(test_plan_node, self),
+            non_existing_users_by_role(test_plan_node, self))
 
 
