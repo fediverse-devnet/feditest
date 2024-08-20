@@ -90,42 +90,33 @@ class WebFingerClient(WebClient):
     """
     A Node that acts as a WebFinger client.
     """
-    def perform_webfinger_query(self, resource_uri: str, rels: list[str] | None = None) -> WebFingerQueryResponse:
+    def perform_webfinger_query(
+        self,
+        resource_uri: str,
+        rels: list[str] | None = None,
+        server: WebFingerServer | None = None
+    ) -> WebFingerQueryResponse:
         """
         Make this Node perform a WebFinger query for the provided resource_uri.
         The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
         'https://example.com/aabc' (not escaped).
-        rels is an optional list of 'rel' query parameters
-        Return the result of the query. This should returns WebFingerQueryResponse in as many cases
+        rels is an optional list of 'rel' query parameters.
+        server, if given, indicates the non-default server that is supposed to perform the query
+        Return the result of the query. This should return WebFingerQueryResponse in as many cases
         as possible, but the WebFingerQueryResponse may indicate errors.
         """
         raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
-
-
-    def construct_webfinger_query_for(
-        self,
-        server_prefix: str,
-        resource_uri: str,
-        rels: list[str] | None = None,
-    ) -> str:
-        query = (
-            f"{server_prefix}/.well-known/webfinger?resource={quote(resource_uri)}"
-        )
-        if query and rels:
-            for rel in rels:
-                query += "&rel=" + quote(rel)
-        return query
 
 
     def construct_webfinger_uri_for(
         self,
         resource_uri: str,
         rels: list[str] | None = None,
-        hostname: str | None = None,
+        hostname: str | None = None
     ) -> str:
         """
-        Helper method to construct the WebFinger URI from a resource URI, and an optional list
-        of rels to ask for
+        Helper method to construct the WebFinger URI from a resource URI, an optional list
+        of rels to ask for, and (if given) a non-default hostname
         """
         if not hostname:
             parsed_resource_uri = urlparse(resource_uri)
@@ -149,7 +140,8 @@ class WebFingerClient(WebClient):
 
         uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
         if rels:
-            uri += '&rel=' + '&rel='.join(quote(rel) for rel in rels)
+            for rel in rels:
+                uri += f"&rel={ quote(rel) }"
 
         return uri
 
