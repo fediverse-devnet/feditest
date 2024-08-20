@@ -7,6 +7,7 @@ from typing import Any
 
 from feditest.protocols import NodeDriver
 from feditest.protocols.fediverse import FediverseNode
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate
 
 
@@ -16,8 +17,8 @@ class SaasFediverseNodeDriver(NodeDriver):
     Node under test exists as a website that we don't have/can provision/unprovision.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
 
         hostname = parameters.get('hostname')
         if not hostname:
@@ -33,5 +34,5 @@ class SaasFediverseNodeDriver(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> FediverseNode:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FediverseNode:
         return FediverseNode(rolename, parameters, self)

@@ -17,6 +17,7 @@ from feditest.protocols.web.traffic import (
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 from feditest.reporting import trace
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import FEDITEST_VERSION
 
 _HEADERS = {
@@ -140,13 +141,13 @@ class ImpInProcessNodeDriver(NodeDriver):
     Knows how to instantiate an Imp.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'Imp'
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any] ) -> Imp:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> Imp:
         return Imp(rolename, parameters, self)
 
 

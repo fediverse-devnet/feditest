@@ -6,6 +6,7 @@ from typing import Any
 
 from feditest.protocols import Node, NodeDriver
 from feditest.protocols.fediverse import FediverseNode
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate
 
 
@@ -15,8 +16,8 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
     automate anything.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         hostname = parameters.get('hostname')
         if hostname:
             self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
@@ -33,7 +34,7 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> FediverseNode:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> FediverseNode:
         return FediverseNode(rolename, parameters, self)
 
 

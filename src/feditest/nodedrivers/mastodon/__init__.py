@@ -18,6 +18,7 @@ from feditest.protocols import NodeDriver, TimeoutException
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import email_validate
 
 
@@ -98,9 +99,7 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(
-        self, rolename: str, parameters: dict[str, Any], node_driver: NodeDriver
-    ):
+    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
         super().__init__(rolename, parameters, node_driver)
 
         self._mastodon_oauth_app : MastodonOAuthApp | None = None
@@ -387,8 +386,8 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
     Create a manually provisioned Mastodon Node
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         access_token = parameters.get('access_token')
         if not access_token:
             parameters['access_token'] = self.prompt_user('Enter the client API access token for the app'
@@ -405,5 +404,5 @@ class MastodonManualNodeDriver(AbstractManualWebServerNodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
         return MastodonNode(rolename, parameters, self)

@@ -6,6 +6,7 @@ from abc import ABC
 from collections.abc import Callable
 from typing import Any, final
 
+from feditest.testplan import TestPlanConstellationNode
 from feditest.reporting import warning, trace
 
 
@@ -69,15 +70,20 @@ class Node(ABC):
         return None # by default we don't know
 
 
-    def parameter(self, name:str, default: str | None = None) -> str | None:
-        ret = self._parameters.get(name)
-        if not ret:
-            ret = default
-        return ret
+    def parameter(self, name: str, default: str | None = None) -> str | None:
+        return self._parameters.get(name)
 
 
     def set_parameter(self, name:str, value:Any) -> None:
         return self._parameters.update({name: value})
+
+
+    @property
+    def start_delay(self):
+        """
+        Milliseconds until the node is ready from the time it was created.
+        """
+        return 0
 
 
     def add_cert_to_trust_store(self, root_cert: str) -> None:
@@ -114,15 +120,17 @@ class NodeDriver(ABC):
     """
 
     @final
-    def provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+    def provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
-        parameters: parameters for this Node
+        test_plan_node: the specification for this Node in the TestPlan
         """
-        self._fill_in_parameters(rolename, parameters)
+        parameters: dict[str,Any] = {} # These are local to the Node and its NodeDriver. It's up to them how to use them.
+        self._fill_in_parameters(rolename, test_plan_node, parameters)
+        ret = self._provision_node(rolename, test_plan_node, parameters)
         trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
-        ret = self._provision_node(rolename, parameters)
+        ret = self._provision_node(rolename, test_plan_node, parameters)
         return ret
 
 
@@ -137,14 +145,15 @@ class NodeDriver(ABC):
         self._unprovision_node(node)
 
 
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
         """
         Let our subclasses fill in additional / default parameters before the node gets provisioned
         """
-        pass
+        if test_plan_node.parameters:
+            parameters.update(test_plan_node.parameters)
 
 
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.

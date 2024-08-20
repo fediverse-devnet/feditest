@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from feditest.nodedrivers.mastodon import MastodonNode, UserRecord
 from feditest.reporting import error, trace
+from feditest.testplan import TestPlanConstellationNode
 from feditest.ubos import UbosNodeDriver
 
 
@@ -23,6 +24,12 @@ class MastodonUbosNode(MastodonNode):
             cast(str,parameters.get('adminemail')),
             cast(str,parameters.get('adminpass')))
         # Note: We use the site admin user as the default user, which may or may not be a good idea.
+
+
+    # Python 3.12 @override
+    @property
+    def start_delay(self):
+        return 10000
 
 
     # Python 3.12 @override
@@ -70,14 +77,14 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     Knows how to instantiate Mastodon via UBOS.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, parameters)
+    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
+        super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'Mastodon'
         parameters['start-delay'] = 10
 
 
     # Python 3.12 @override
-    def _instantiate_ubos_node(self, rolename: str, parameters: dict[str, Any]) -> MastodonNode:
+    def _instantiate_ubos_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
         trace('Instantiating MastodonUbosNode')
         return MastodonUbosNode(rolename, parameters, self)
 
