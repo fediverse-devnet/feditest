@@ -128,7 +128,6 @@ class NodeDriver(ABC):
         """
         parameters: dict[str,Any] = {} # These are local to the Node and its NodeDriver. It's up to them how to use them.
         self._fill_in_parameters(rolename, test_plan_node, parameters)
-        ret = self._provision_node(rolename, test_plan_node, parameters)
         trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
         ret = self._provision_node(rolename, test_plan_node, parameters)
         return ret
