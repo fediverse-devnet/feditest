@@ -45,6 +45,7 @@ class TestFromTestFunction(Test):
         self.test_function = test_function
 
 
+    # Python 3.12 @override
     def metadata(self) -> dict[str, Any]:
         return {
             'Name:' : self.name,
@@ -52,6 +53,7 @@ class TestFromTestFunction(Test):
         }
 
 
+    # Python 3.12 @override
     def needed_local_role_names(self) -> set[str]:
         ret = {}
         function_spec = getfullargspec(self.test_function)
@@ -81,6 +83,7 @@ class TestFromTestClass(Test):
         self.steps : list[TestStepInTestClass] = []
 
 
+    # Python 3.12 @override
     def metadata(self) -> dict[str, Any]:
         return {
             'Name:' : self.name,
@@ -88,6 +91,8 @@ class TestFromTestClass(Test):
             'Steps:' : len(self.steps)
         }
 
+
+    # Python 3.12 @override
     def needed_local_role_names(self) -> set[str]:
         """
         Determines the names of the constellation roles this test step needs.

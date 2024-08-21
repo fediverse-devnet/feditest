@@ -217,8 +217,8 @@ def nodedriver(to_register: Type[TNodeDriver]) -> Type[TNodeDriver]:
     return to_register
 
 def load_default_node_drivers() -> None:
-    for d in [ 'feditest.nodedrivers.manual.ManualFediverseNodeDriver',
-               'feditest.nodedrivers.imp.ImpInProcessNodeDriver',
+    for d in [ 'feditest.nodedrivers.imp.ImpInProcessNodeDriver',
+               'feditest.nodedrivers.manual.ManualFediverseNodeDriver',
                'feditest.nodedrivers.mastodon.MastodonManualNodeDriver',
                'feditest.nodedrivers.mastodon.ubos.MastodonUbosNodeDriver',
                'feditest.nodedrivers.saas.SaasFediverseNodeDriver',

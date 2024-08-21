@@ -10,7 +10,7 @@ from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate
 
 
-class AbstractManualWebServerNodeDriver(NodeDriver):
+class AbstractManualFediverseNodeDriver(NodeDriver):
     """
     Abstract superclass of NodeDrivers that support all web server-side protocols but don't
     automate anything.
@@ -42,8 +42,11 @@ class AbstractManualWebServerNodeDriver(NodeDriver):
         self.prompt_user(f'Manually unprovision the Node for constellation role { node.rolename() } and hit return when done.')
 
 
-class ManualFediverseNodeDriver(AbstractManualWebServerNodeDriver):
+class ManualFediverseNodeDriver(AbstractManualFediverseNodeDriver):
     """
     A NodeDriver that supports all web server-side protocols but doesn't automate anything.
     """
-    pass
+    # Python 3.12 @override
+    def check_plan_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, context_msg: str = '') -> None:
+        super().check_plan_node(rolename, test_plan_node)
+        FallbackFediverseNode.check_plan_node(test_plan_node, context_msg + "ManualFediverseNodeDriver:")

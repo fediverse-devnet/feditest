@@ -11,7 +11,6 @@ from feditest.protocols.activitypub.utils import is_member_of_collection_at
 from feditest import InteropLevel, SpecLevel, assert_that
 from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebServer
-from feditest.utils import http_https_uri_validate
 
 # Note:
 # The data elements held by the classes here are all untyped. That's because we want to be able

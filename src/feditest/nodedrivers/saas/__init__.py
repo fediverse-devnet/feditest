@@ -17,6 +17,12 @@ class SaasFediverseNodeDriver(NodeDriver):
     Node under test exists as a website that we don't have/can provision/unprovision.
     """
     # Python 3.12 @override
+    def check_plan_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, context_msg: str = '') -> None:
+        super().check_plan_node(rolename, test_plan_node)
+        FallbackFediverseNode.check_plan_node(test_plan_node, context_msg + "SaasFediverseNodeDriver:")
+
+
+    # Python 3.12 @override
     def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
         super()._fill_in_parameters(rolename, test_plan_node, parameters)
 

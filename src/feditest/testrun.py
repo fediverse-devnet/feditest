@@ -73,7 +73,10 @@ class TestRunConstellation:
         else:
             trace('Setting up constellation')
 
-        wait_time = 0
+        # Two stages:
+        # 1. check
+        # 2. instantiate
+        # The NodeDriver is a singleton, so there's no need to keep it around
         for plan_role_name, plan_node in self._plan_constellation.roles.items():
             if plan_node is None:
                 raise ValueError('Unexpected null node')
@@ -81,6 +84,16 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
+            node_driver.check_plan_node(plan_role_name, plan_node)
+
+        wait_time = 0
+        for plan_role_name, plan_node in self._plan_constellation.roles.items():
+            if plan_node is None: # It's either repeat this here or do a cast to make the linter happy
+                raise ValueError('Unexpected null node')
+            if plan_node.nodedriver is None:
+                raise ValueError('Unexpected null nodedriver')
+
+            node_driver = nodedriver_singleton(plan_node.nodedriver)
             node : Node = node_driver.provision_node(plan_role_name, plan_node)
             self._nodes[plan_role_name] = node
             self._appdata[plan_role_name] = {
@@ -94,6 +107,7 @@ class TestRunConstellation:
             time.sleep(wait_time) # Apparently some applications take some time
                                   # after deployment before they are ready to communicate.
 
+        # set up CA and distribute it to all nodes if needed
         root_cert = registry.root_cert_for_trust_root()
         if root_cert:
             registry.memoize_system_trust_root()

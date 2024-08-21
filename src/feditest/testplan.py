@@ -3,13 +3,12 @@ Classes that represent a TestPlan and its parts.
 """
 
 import json
-import re
-from typing import Any
+from typing import Any, Final
 
 import msgspec
 
 import feditest
-from feditest.utils import hostname_validate, FEDITEST_VERSION, email_validate, http_https_acct_uri_parse_validate
+from feditest.utils import hostname_validate, FEDITEST_VERSION
 
 
 class TestPlanError(RuntimeError):
@@ -20,61 +19,30 @@ class TestPlanError(RuntimeError):
         super().__init__(f"TestPlan defined insufficiently: {details}" )
 
 
-class ExistingAccount(msgspec.Struct):
-    """
-    Captures all information we need about a pre-provisionioned account on a TestPlanConstellationNode.
-    This is supposed to be protocol-independent, so it cannot contain data such as WebFinger or
-    ActivitityPub Actor URIs.
-    Arguably having this here makes feditest a little less generic because one can conceive of protocols
-    that do not have, or need, users on nodes. However, most of them do, so we put this here, and for those
-    that don't, there's no need to use this.
-    There are no mandatory fields here. It is up to the NodeDrivers to decide what they need and
-    what constitutes a complete or incomplete account specification.
-    For these reasons, we also don't have any user information on class Node. Specific subclasses need
-    to do this on their own, based on the this data being passed in via TestPlanConstellationNode
-    when the Node is provisioned by the NodeDriver.
-    """
-    userid: str | None = None # e.g. 'joe'
-    email: str | None = None # e.g. 'joe@example.com'
-    uri: str | None = None # primary URI, e.g. https://example.com/joe or acct:joe@example.com
-    password: str | None = None
-    oauth_token: str | None = None
-    role: str | None = None # assign a specific account to a specific account role in a test.
-
-    def check_valid(self, context_msg: str = "") -> None:
-        # self.userid -- not sure what to check
-        if self.email and not email_validate(self.email):
-            raise TestPlanError(context_msg + f'Invalid e-mail: "{ self.email }".')
-        if self.uri and not http_https_acct_uri_parse_validate(self.uri):
-            raise TestPlanError(context_msg + f'Invalid uri: "{ self.uri }".')
-        # self.password -- not sure what to check
-        # self.oauth_token -- not sure what to check
-        if self.role and re.search(r'\s', self.role) is not None:
-            raise TestPlanError(context_msg + f'Invalid role: "{ self.role }".')
-
-
-class NonExistingAccount(msgspec.Struct):
-    """
-    Captures all information we need about an account that could exist on a TestPlanConstellationNode but does not.
-    See comment on ExistingAccount
-    """
-    userid: str | None = None
-    uri: str | None = None # primary URI, e.g. https://example.com/joe or acct:joe@example.com
-    role: str | None = None # assign a specific account to a specific account role in a test.
-
-    def check_valid(self, context_msg: str = "") -> None:
-        # self.userid -- not sure what to check
-        if self.uri and not http_https_acct_uri_parse_validate(self.uri):
-            raise TestPlanError(context_msg + f'Invalid uri: "{ self.uri }".')
-        if self.role and re.search(r'\s', self.role) is not None:
-            raise TestPlanError(context_msg + f'Invalid role: "{ self.role }".')
-
-
 class TestPlanConstellationNode(msgspec.Struct):
+    """
+    A Node in a TestPlanConstellation.
+
+    The accounts field collects the active accounts that are known to pre-exist on the
+    Node, and can be used for testing. The non_existing_accounts collects information
+    on accounts that are known not to exist. (This is useful to test what happens if
+    a message is directed to a non-existing account, for example.)
+
+    The accounts and non_existing_accounts fields are free-form hashes on this level,
+    with only one pre-defined (but optional) key: 'role'. The 'role' field indicates
+    which account role this account should be used with, if any.
+
+    This is a free-form hash because different subclasses of Node want different
+    fields, and only they can decide what is and isn't valid for them. This
+    checking is initiated by the TestRun before the Nodes are provisioned. The
+    TestRun delegates it to the NodeDrivers that will instantiate the Nodes.
+    """
     nodedriver: str | None = None # if we allow this to be None, we can do better error reporting
     parameters: dict[str,Any] | None = None
-    accounts: list[ExistingAccount] | None = None # see comment on ExistingAccount
-    non_existing_accounts: list[NonExistingAccount] | None = None # see comment on ExistingAccount
+    accounts: list[dict[str, str]] | None = None
+    non_existing_accounts: list[dict[str, str]] | None = None
+
+    ROLE_KEY: Final[str] = 'role'
 
 
     @staticmethod
@@ -94,26 +62,26 @@ class TestPlanConstellationNode(msgspec.Struct):
         return None
 
 
-    def get_account_by_rolename(self, rolename: str) -> ExistingAccount | None:
+    def get_account_by_rolename(self, rolename: str | None) -> dict[str, str] | None:
         """
-        Convenience method to centralize seach in one place
+        Convenience method to centralize search in one place.
         """
         if not self.accounts:
             return None
         for account in self.accounts:
-            if rolename == account.role:
+            if 'role' in account and rolename == account['role']:
                 return account
         return None
 
 
-    def get_non_existing_account_by_rolename(self, rolename: str) -> NonExistingAccount | None:
+    def get_non_existing_account_by_rolename(self, rolename: str | None) -> dict[str, str] | None:
         """
-        Convenience method to centralize seach in one place
+        Convenience method to centralize search in one place.
         """
         if not self.non_existing_accounts:
             return None
         for non_account in self.non_existing_accounts:
-            if rolename == non_account.role:
+            if 'role' in non_account and rolename == non_account['role']:
                 return non_account
         return None
 
@@ -124,13 +92,8 @@ class TestPlanConstellationNode(msgspec.Struct):
         if self.nodedriver not in feditest.all_node_drivers:
             raise TestPlanError(context_msg + f'Cannot find NodeDriver "{ self.nodedriver }".')
 
-        if self.accounts:
-            for account in self.accounts:
-                account.check_valid(context_msg)
-
-        if self.non_existing_accounts:
-            for non_account in self.non_existing_accounts:
-                non_account.check_valid(context_msg)
+        # self.accounts and self.non_existing_accounts cannot be checked here;
+        # this can only be done later once the NodeDriver has been instantiated
 
         # also check well-known parameters
         if self.parameters:

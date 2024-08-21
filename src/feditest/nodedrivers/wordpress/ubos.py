@@ -28,10 +28,13 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
                 userid=cast(str, parameters.get('adminid')),
                 email=cast(str, parameters.get('adminemail')),
                 passwd=cast(str, parameters.get('adminpass')),
-                oauth_token=None)
+                oauth_token=None,
+                role=None)
         }
         non_existing_users_by_role: dict[str | None, NoUserRecord] = {
-            None: NoUserRecord(userid=cast(str, parameters.get('doesnotexistid')))
+            None: NoUserRecord(
+                userid=cast(str, parameters.get('doesnotexistid')),
+                role=None)
         }
 
         return WordPressPlusActivityPubPluginNode(

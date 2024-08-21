@@ -2,7 +2,7 @@
 Abstractions for the WebFinger protocol
 """
 
-from typing import Any, Callable
+from typing import Any, Callable, Final
 from urllib.parse import quote, urlparse
 
 from feditest.protocols import NodeDriver, NodeSpecificationInvalidError, NotImplementedByNodeError
@@ -60,39 +60,6 @@ class WebFingerServer(WebServer):
         Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
         """
         raise NotImplementedByNodeError(self, WebFingerServer.override_webfinger_response)
-
-
-class FallbackWebFingerServer(WebFingerServer):
-    def __init__(self,
-        rolename: str,
-        parameters: dict[str,Any],
-        node_driver: NodeDriver,
-        test_plan_node: TestPlanConstellationNode
-    ):
-        super().__init__(rolename, parameters, node_driver)
-        self._test_plan_node = test_plan_node
-
-
-    # Python 3.12 @override
-    def obtain_account_identifier(self, rolename: str | None = None) -> str:
-        account = self._test_plan_node.get_account_by_rolename(rolename)
-        if not account:
-            raise NodeSpecificationInvalidError(self.node_driver, 'accounts', f'No existing account for role {rolename} given in TestPlan')
-        ret = account.uri
-        if not ret:
-            raise NodeSpecificationInvalidError(self.node_driver, 'accounts', f'No uri for pre-existing account of role {rolename} given in TestPlan')
-        return ret
-
-
-    # Python 3.12 @override
-    def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
-        non_account = self._test_plan_node.get_non_existing_account_by_rolename(rolename)
-        if not non_account:
-            raise NodeSpecificationInvalidError(self.node_driver, 'non_existing_accounts', f'No existing account for role {rolename} given in TestPlan')
-        ret = non_account.uri
-        if not ret:
-            raise NodeSpecificationInvalidError(self.node_driver, 'non_existing_accounts', f'No uri for pre-existing account of role {rolename} given in TestPlan')
-        return ret
 
 
 class WebFingerClient(WebClient):

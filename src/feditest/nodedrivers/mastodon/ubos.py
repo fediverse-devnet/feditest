@@ -23,7 +23,7 @@ class MastodonUbosNode(MastodonNode):
 
 
     # Python 3.12 @override
-    def _provision_new_user(self) -> UserRecord:
+    def _provision_new_user(self, rolename: str) -> UserRecord:
         trace('Provisioning new user')
         chars = string.ascii_letters + string.digits
         userid = ''.join(secrets.choice(chars) for i in range(8))
@@ -42,7 +42,7 @@ class MastodonUbosNode(MastodonNode):
         m = re.search( r'password:\s+([a-z0-9]+)', result.stdout )
         if m:
             passwd = m.group(1)
-            return UserRecord(userid=userid, email=useremail, passwd=passwd, oauth_token=None)
+            return UserRecord(userid=userid, email=useremail, passwd=passwd, oauth_token=None, role=rolename)
 
         raise Exception('Failed to parse tootctl accounts create output:' + result.stdout)
 
@@ -67,6 +67,12 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     Knows how to instantiate Mastodon via UBOS.
     """
     # Python 3.12 @override
+    def check_plan_node(self,rolename: str, test_plan_node: TestPlanConstellationNode) -> None:
+        super().check_plan_node(rolename, test_plan_node)
+        MastodonNode.check_plan_node(test_plan_node, 'MastodonUbosNodeDriver:')
+
+
+    # Python 3.12 @override
     def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
         super()._fill_in_parameters(rolename, test_plan_node, parameters)
         parameters['app'] = 'Mastodon'
@@ -82,10 +88,13 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
                 userid=cast(str, parameters.get('adminid')),
                 email=cast(str, parameters.get('adminemail')),
                 passwd=cast(str, parameters.get('adminpass')),
-                oauth_token=None)
+                oauth_token=None,
+                role=None)
         }
         non_existing_users_by_role: dict[str | None, NoUserRecord] = {
-            None: NoUserRecord(userid=cast(str, parameters.get('doesnotexistid')))
+            None: NoUserRecord(
+                userid=cast(str, parameters.get('doesnotexistid')),
+                role=None)
         }
 
         return MastodonUbosNode(

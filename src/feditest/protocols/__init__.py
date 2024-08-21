@@ -118,6 +118,14 @@ class NodeDriver(ABC):
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
     Any one subclass of NodeDriver is only instantiated once as a singleton
     """
+    def check_plan_node(self,rolename: str, test_plan_node: TestPlanConstellationNode) -> None:
+        """
+        Check that once we get around to provision the Node according to test_plan_node, everything
+        will go smoothly.
+        This should be overridden by subclasses that have specific requirements to check those.
+        """
+        pass
+
 
     @final
     def provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> Node:

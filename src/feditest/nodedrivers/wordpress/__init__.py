@@ -53,11 +53,6 @@ class WordPressPlusActivityPubPluginManualNodeDriver(AbstractManualWebServerNode
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> WordPressPlusActivityPubPluginNode:
-        return WordPressPlusActivityPubPluginNode(
-            rolename,
-            parameters,
-            self,
-            existing_users_by_role(test_plan_node, self),
-            non_existing_users_by_role(test_plan_node, self))
+        return WordPressPlusActivityPubPluginNode(rolename, parameters, self)
 
 
