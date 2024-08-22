@@ -51,7 +51,12 @@ def init():
 
     @nodedriver
     class Faulty_NodeDriver(NodeDriver):
-        def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> Node:
+        def _provision_node(
+            self,
+            olename: str,
+            test_plan_node: TestPlanConstellationNode,
+            parameters: dict[str, Any],
+        ) -> Node:
             raise NodeDriverTestException()
 
     feditest._loading_node_drivers = False
