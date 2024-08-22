@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2023-2024 Johannes Ernst
+# SPDX-FileCopyrightText: 2023-2024 Steve Bate
+#
+# SPDX-License-Identifier: MIT
+
 """
 A NodeDriver that supports all protocols but doesn't automate anything and assumes the
 Node under test exists as a website that we don't have/can provision/unprovision.

@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2023-2024 Johannes Ernst
+# SPDX-FileCopyrightText: 2023-2024 Steve Bate
+#
+# SPDX-License-Identifier: MIT
+
 # def pytest_pycollect_makeitem(collector, name, obj):
 #     module_name = getattr(obj, "__module__") if hasattr(obj, "__module__") else None
 #     if module_name and module_name.startswith("feditest."):
