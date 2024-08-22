@@ -2,13 +2,12 @@
 Abstractions for the WebFinger protocol
 """
 
-from typing import Any, Callable, Final
+from typing import Any, Callable
 from urllib.parse import quote, urlparse
 
-from feditest.protocols import NodeDriver, NodeSpecificationInvalidError, NotImplementedByNodeError
+from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
-from feditest.testplan import TestPlanConstellationNode
 
 
 class WebFingerServer(WebServer):
@@ -112,7 +111,7 @@ class WebFingerClient(WebClient):
                     raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
 
         if not hostname:
-            raise WebFingerClient.CannotDetermineWebfingerHostError(resource_uri)
+            raise WebFingerClient.CannotDetermineWebFingerHostError(resource_uri)
 
         uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
         if rels:
@@ -130,7 +129,7 @@ class WebFingerClient(WebClient):
             self.resource_uri = resource_uri
 
 
-    class CannotDetermineWebfingerHostError(RuntimeError):
+    class CannotDetermineWebFingerHostError(RuntimeError):
         """
         Raised when the WebFinger host could not be determined.
         """

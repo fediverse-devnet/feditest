@@ -14,7 +14,7 @@ from feditest import registry
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import Node, NodeConfiguration, NodeDriver
 from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (
     TestPlan,
@@ -76,7 +76,7 @@ class TestRunConstellation:
         # Two stages:
         # 1. check
         # 2. instantiate
-        # The NodeDriver is a singleton, so there's no need to keep it around
+        role_to_config : dict[str, NodeConfiguration] = {}
         for plan_role_name, plan_node in self._plan_constellation.roles.items():
             if plan_node is None:
                 raise ValueError('Unexpected null node')
@@ -84,9 +84,10 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
-            node_driver.check_plan_node(plan_role_name, plan_node)
+            config = node_driver.create_configuration(plan_role_name, plan_node) # may raise
+            role_to_config[plan_role_name] = config
 
-        wait_time = 0
+        wait_time = 0.0
         for plan_role_name, plan_node in self._plan_constellation.roles.items():
             if plan_node is None: # It's either repeat this here or do a cast to make the linter happy
                 raise ValueError('Unexpected null node')
@@ -94,13 +95,14 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver = nodedriver_singleton(plan_node.nodedriver)
-            node : Node = node_driver.provision_node(plan_role_name, plan_node)
+            config = role_to_config[plan_role_name]
+            node : Node = node_driver.provision_node(plan_role_name, config)
             self._nodes[plan_role_name] = node
-            self._appdata[plan_role_name] = {
-                'app' : node.app_name,
-                'app_version' : node.app_version
+            self._appdata[plan_role_name] = { # FIXME? Replace this with the NodeConfiguration object instead?
+                'app' : config.app,
+                'app_version' : config.app_version
             }
-            wait_time = max(wait_time, node.start_delay())
+            wait_time = max(wait_time, config.start_delay)
 
         if wait_time:
             info(f'Sleeping for { wait_time } sec to give the Nodes some time to get ready.')

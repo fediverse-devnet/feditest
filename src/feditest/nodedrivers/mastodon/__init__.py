@@ -1,20 +1,19 @@
 """
 """
 
-import certifi
-from dataclasses import dataclass, field
+from abc import abstractmethod
+from dataclasses import dataclass
 import importlib
-import os
 import re
 import requests
 import sys
 import time
-from typing import Any, Callable, cast, Final
+from typing import Any, Callable, Final, cast
 from urllib.parse import urlparse
 
 from feditest import AssertionFailure, InteropLevel, SpecLevel
 from feditest.nodedrivers.manual import AbstractManualFediverseNodeDriver
-from feditest.protocols import NodeDriver, TimeoutException
+from feditest.protocols import Account, AccountManager, NodeDriver, NodeConfiguration, NonExistingAccount, TimeoutException
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
@@ -56,6 +55,7 @@ def _userid_validate(candidate: str) -> str | None:
     # FIXME is this right?
     return re.match(r'[a-zA-Z0-9_]', candidate) is not None
 
+
 def _password_validate(candidate: str) -> str | None:
     """
     Validate a Mastodon password. Avoids user input errors.
@@ -80,53 +80,87 @@ class MastodonOAuthApp:
         return MastodonOAuthApp(client_id_secret[0], client_id_secret[1], api_base_url, session)
 
 
-# @dataclass
-# class MastodonUserRecord:
-#     """
-#     Collects what we know of a user at a NodeWithMastodonAPI.
-#     This should really be an abstract class, with two subclasses (for userid/password and for oauth token)
-#     but I cannot convince Python that I should be allowed to do that with @dataclass, abstract methods and
-#     without workarounds.
-#     So: either ( email != None && passwd != None && oauth_token == None ) or ( email == None && passwd == None && oauth_token != None )
-#     userid is always required.
-#     """
-#     userid: str
-#     email: str | None
-#     passwd: str | None
-#     oauth_token: str | None
-#     role: str | None
-#     _mastodon_user_client: Mastodon | None = field(default=None, init=False, repr=False) # don't know how to put this into the superclass
+class MastodonAccount(Account): # this is intended to be abstract
+    def __init__(self, role: str | None, userid: str):
+        super().__init__(role)
+        self.userid = userid
+        self._mastodon_user_client: Mastodon | None = None
 
 
-#     def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
-#         if not self._mastodon_user_client:
-#             if self.oauth_token:
-#                 client = Mastodon(
-#                     client_id = oauth_app.client_id,
-#                     client_secret=oauth_app.client_secret,
-#                     api_base_url=oauth_app.api_base_url,
-#                     session=oauth_app.session
-#                 )
-#                 client.log_in(self.email, self.passwd)
-#             else:
-#                 client = Mastodon(
-#                     client_id = oauth_app.client_id,
-#                     client_secret=oauth_app.client_secret,
-#                     access_token=self.oauth_token,
-#                     api_base_url=oauth_app.api_base_url,
-#                     session=oauth_app.session
-#                 )
-#             self._mastodon_user_client = client
-#         return self._mastodon_user_client
+    @abstractmethod
+    @property
+    def webfinger_uri(self):
+        fixme() # need to get at the root URI
 
 
-# @dataclass
-# class MastodonNoUserRecord:
-#     """
-#     Collects what we know of a non-existing user at a NodeWithMastodonAPI.
-#     """
-#     userid: str
-#     role: str | None
+    @abstractmethod
+    @property
+    def actor_uri(self):
+        fixme() # need to get at the root URI
+
+
+    @abstractmethod
+    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+        ...
+
+
+class MastodonUserPasswordAccount(MastodonAccount):
+    def __init__(self, role: str | None, userid: str, email: str, password: str):
+        super().__init__(role, userid)
+        self.email = email
+        self.password = password
+
+
+    # Python 3.12 @override
+    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+        if self._mastodon_user_client is None:
+            client = Mastodon(
+                client_id = oauth_app.client_id,
+                client_secret=oauth_app.client_secret,
+                api_base_url=oauth_app.api_base_url,
+                session=oauth_app.session
+            )
+            client.log_in(self.email, self.passwd)
+            self._mastodon_user_client = client
+        return self._mastodon_user_client
+
+
+class MastodonOAuthTokenAccount(MastodonAccount):
+    def __init__(self, role: str | None, userid: str, oauth_token: str):
+        super().__init__(role, userid)
+        self.oauth_token = oauth_token
+
+
+    # Python 3.12 @override
+    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+        if self._mastodon_user_client is None:
+            client = Mastodon(
+                client_id = oauth_app.client_id,
+                client_secret=oauth_app.client_secret,
+                access_token=self.oauth_token,
+                api_base_url=oauth_app.api_base_url,
+                session=oauth_app.session
+            )
+            self._mastodon_user_client = client
+        return self._mastodon_user_client
+
+
+class MastodonNonExistingAccount(NonExistingAccount):
+    def __init__(self, role: str | None, userid: str):
+        super().__init__(role)
+        self.userid = userid
+
+
+    @abstractmethod
+    @property
+    def webfinger_uri(self):
+        fixme() # need to get at the root URI
+
+
+    @abstractmethod
+    @property
+    def actor_uri(self):
+        fixme() # need to get at the root URI
 
 
 # def existing_users(test_plan_node: TestPlanConstellationNode, node_driver: NodeDriver) -> list[MastodonUserRecord]:
@@ -188,27 +222,21 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(self,
-        rolename: str,
-        parameters: dict[str,Any],
-        node_driver: 'NodeDriver',
-#         existing_users: list[MastodonUserRecord],
-#         non_existing_users: list[MastodonNoUserRecord]
-    ):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None = None):
+        super().__init__(rolename, config)
+        self._account_manager = account_manager
 
-#         self._mastodon_oauth_app : MastodonOAuthApp | None = None
-#         # Information we have about the OAuth "app" we we create to interact with a Mastodon instance.
-#         # Allocated when needed, so our custom certificate authority has been created before this is used.
-#         self._requests_session : requests.Session | None = None
-#         # The request.Session with the custom certificate authority set as verifier.
-#         # Allocated when needed, so our custom certificate authority has been created before this is used.
+        self._mastodon_oauth_app : MastodonOAuthApp | None = None
+        # Information we have about the OAuth "app" we we create to interact with a Mastodon instance.
+        # Allocated when needed, so our custom certificate authority has been created before this is used.
+        self._requests_session : requests.Session | None = None
+        # The request.Session with the custom certificate authority set as verifier.
+        # Allocated when needed, so our custom certificate authority has been created before this is used.
 
-#         self._existing_users: list[MastodonUserRecord] = existing_users
-#         self._non_existing_users: list[MastodonNoUserRecord] = non_existing_users
-        self._status_dict_by_uri: dict[str, dict[str,Any]] = {} # Maps URIs of created status objects to the corresponding Mastodon.py "status dicts"
-            # We keep this around so we can look up id attributes by URI and we can map the FediverseNode API URI parameters
-            # to Mastodon's internal status ids
+        self._status_dict_by_uri: dict[str, dict[str,Any]] = {}
+        # Maps URIs of created status objects to the corresponding Mastodon.py "status dicts"
+        # We keep this around so we can look up id attributes by URI and we can map the FediverseNode API URI parameters
+        # to Mastodon's internal status ids
 
 
 # From FediverseNode
@@ -307,15 +335,10 @@ class NodeWithMastodonAPI(FediverseNode):
         raise ValueError(f'Actor URI not found: { b_uri_there }')
 
 
-# # From ActivityPubNode
-#     # Python 3.12 @override
-#     def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
-#         trace(f'obtain_actor_document_uri for role {rolename}')
-#         user = self._existing_users_by_role.get(rolename)
-#         if not user:
-#             user = self._provision_new_user(rolename)
-#             self._existing_users_by_role[rolename] = user
-#         return self._userid_to_actor_uri(user.userid)
+    # Python 3.12 @override
+    def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
+        account = cast(MastodonAccount, self._account_manager.obtain_account_by_role(rolename))
+        return account.actor_uri
 
 
     # Python 3.12 @override
@@ -351,24 +374,17 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
 # # From WebFingerServer
-#     # Python 3.12 @override
-#     def obtain_account_identifier(self, rolename: str | None = None) -> str:
-#         trace(f'obtain_account_identifier for role {rolename}')
-#         user = self._existing_users_by_role.get(rolename)
-#         if not user:
-#             user = self._provision_new_user(rolename)
-#             self._existing_users_by_role[rolename] = user
-#         return f'acct:{ user.userid }@{ self.parameter( "hostname" )}'
+    # Python 3.12 @override
+    def obtain_account_identifier(self, rolename: str | None = None) -> str:
+        account = cast(MastodonAccount, self._account_manager.obtain_account_by_role(rolename))
+        return account.webfinger_uri
 
 
-#     # Python 3.12 @override
-#     def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
-#         trace(f'obtain_non_existing_account_identifier for role {rolename}')
-#         if non_existing_user := self._non_existing_users_by_role.get(rolename):
-#             return non_existing_user.userid
-#         new_non_existing_user = self._create_non_existing_user()
-#         self._non_existing_users_by_role[rolename] = new_non_existing_user
-#         return new_non_existing_user.userid
+    # Python 3.12 @override
+    def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
+        non_account = cast(MastodonNonExistingAccount, self._account_manager.obtain_non_existing_account_by_role(rolename))
+        return non_account.webfinger_uri
+
 
 
     # Not implemented
@@ -525,6 +541,15 @@ class MastodonManualNodeDriver(AbstractManualFediverseNodeDriver):
     Create a manually provisioned Mastodon Node
     """
     # Python 3.12 @override
+    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
+        return NodeConfiguration(
+            self,
+            'Mastodon',
+            test_plan_node.parameter('app_version'),
+            test_plan_node.parameter('hostname')
+        )
+
+
     def check_plan_node(self,rolename: str, test_plan_node: TestPlanConstellationNode) -> None:
         super().check_plan_node(rolename, test_plan_node)
         MastodonNode.check_plan_node(test_plan_node, 'MastodonManualNodeDriver:')
@@ -537,8 +562,5 @@ class MastodonManualNodeDriver(AbstractManualFediverseNodeDriver):
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str, Any]) -> MastodonNode:
-        return MastodonNode(
-            rolename,
-            parameters,
-            self)
+    def _provision_node(self, rolename: str, config: NodeConfiguration) -> MastodonNode:
+        return MastodonNode(rolename, config)

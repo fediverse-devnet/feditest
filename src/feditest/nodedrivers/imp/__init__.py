@@ -2,12 +2,12 @@
 An in-process Node implementation for now.
 """
 
-from typing import Any, cast
+from typing import cast
 
 import httpx
 from multidict import MultiDict
 
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import Node, NodeConfiguration, NodeDriver
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,
@@ -30,10 +30,6 @@ class Imp(WebFingerClient):
     Our placeholder test client. Its future is to ~~tbd~~ be factored out of here.
     """
     # use superclass constructor
-
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
 
 
     # @override # from WebClient
@@ -138,14 +134,18 @@ class ImpInProcessNodeDriver(NodeDriver):
     Knows how to instantiate an Imp.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'Imp'
+    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
+        return NodeConfiguration(
+            self,
+            'Imp',
+            FEDITEST_VERSION,
+            test_plan_node.parameter('hostname')
+        )
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> Imp:
-        return Imp(rolename, parameters, self)
+    def _provision_node(self, rolename: str, config: NodeConfiguration) -> Imp:
+        return Imp(rolename, config)
 
 
     # Python 3.12 @override

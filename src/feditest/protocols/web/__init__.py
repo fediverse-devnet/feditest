@@ -41,16 +41,6 @@ class WebServer(Node):
     """
     Abstract class used for Nodes that speak HTTP as server.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
-        """
-        WebServers need to know their hostnames.
-        """
-        super().__init__(rolename, parameters, node_driver)
-
-        if not parameters.get('hostname'):
-            raise Exception('Required: parameters["hostname"]')
-
-
     @final
     def transaction(self, code: Callable[[],None]) -> WebServerLog:
         """

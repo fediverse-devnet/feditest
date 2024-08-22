@@ -62,6 +62,12 @@ class TestPlanConstellationNode(msgspec.Struct):
         return None
 
 
+    def parameter_or_raise(self, name: str) -> Any:
+        if self.parameters and name in self.parameters:
+            return self.parameters[name]
+        raise TestPlanError(f'Required parameter missing: { name }')
+
+
     def get_account_by_rolename(self, rolename: str | None) -> dict[str, str] | None:
         """
         Convenience method to centralize search in one place.

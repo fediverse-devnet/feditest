@@ -19,7 +19,7 @@ def _version(default_version="0.0.0"):
         return importlib.metadata.version("feditest")
     except importlib.metadata.PackageNotFoundError:
         return default_version
-    
+
 FEDITEST_VERSION = _version('feditest')
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
@@ -195,6 +195,24 @@ def account_id_parse_validate(candidate: str) -> ParsedUri | None:
 
 def account_id_validate(candidate: str) -> str | None:
     parsed = account_id_parse_validate(candidate)
+    if parsed:
+        return parsed.get_uri()
+    return None
+
+
+def https_uri_parse_validate(candidate: str) -> ParsedUri | None:
+    """
+    Validate that the provided string is a valid HTTPS URI.
+    return: ParsedUri if valid, None otherwise
+    """
+    parsed = ParsedUri.parse(candidate)
+    if isinstance(parsed, ParsedNonAcctUri) and parsed.scheme == 'https' and len(parsed.netloc) > 0:
+        return parsed
+    return None
+
+
+def https_uri_validate(candidate: str) -> str | None:
+    parsed = https_uri_parse_validate(candidate)
     if parsed:
         return parsed.get_uri()
     return None

@@ -10,6 +10,86 @@ from feditest.testplan import TestPlanConstellationNode
 from feditest.reporting import warning, trace
 
 
+class Account(ABC):
+    """
+    The notion of an existing account on a Node. As different Nodes have different ideas about
+    what they know about an Account, this is an entirey abstract base class here.
+    """
+    def __init__(self, role: str | None):
+        self.role = role
+
+
+class NonExistingAccount(ABC):
+    """
+    The notion of a non-existing account on a Node. As different Nodes have different ideas about
+    what they know about an Account, this is an entirey abstract base class here.
+    """
+    def __init__(self, role: str | None):
+        self.role = role
+
+
+class NodeConfiguration(ABC):
+    """
+    Collects all information about a Node so that the Node can be instantiated.
+    This is an abstract concept; specific Node subclasses will have their own subclasses.
+    On this level, just a few properties have been defined that are commonly used.
+
+    (Maybe this could be a @dataclass: not sure how exactly that works with ABC and subclasses
+    so I rather not try)
+    """
+    def __init__(self,
+        node_driver: 'NodeDriver',
+        app: str,
+        app_version: str | None = None,
+        hostname: str | None = None,
+        known_accounts: list[Account] | None = None,
+        known_non_existing_accounts: list[NonExistingAccount] | None = None,
+        start_delay: float = 0.0
+    ):
+        self._node_driver = node_driver
+        self._app = app
+        self._app_version = app_version
+        self._hostname = hostname
+        self._known_accounts = known_accounts
+        self._known_non_existing_accounts = known_non_existing_accounts
+        self._start_delay = start_delay
+
+
+    @property
+    def node_driver(self) -> 'NodeDriver':
+        return self._node_driver
+
+
+    @property
+    def app(self) -> str:
+        return self._app
+
+
+    @property
+    def app_version(self) -> str | None:
+        return self._app_version
+
+
+    @property
+    def hostname(self) -> str | None:
+        return self._hostname
+
+
+    @property
+    def known_accounts(self) -> list[Account]:
+        return self._known_accounts if self._known_accounts is not None else []
+
+
+    @property
+    def known_non_existing_accounts(self) -> list[NonExistingAccount]:
+        return self._known_non_existing_accounts if self._known_non_existing_accounts is not None else []
+
+
+    @property
+    def start_delay(self) -> float:
+        return self._start_delay
+
+
 class Node(ABC):
     """
     A Node is the interface through which FediTest talks to an application instance.
@@ -25,24 +105,18 @@ class Node(ABC):
     so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'NodeDriver'):
+    def __init__(self, rolename: str, config: NodeConfiguration):
         """
         rolename: name of the role in the constellation
-        parameters: parameters for this Node. Always provided, even if empty
-        node_driver: the NodeDriver that provisioned this Node
+        config: the previous created configuration object for this Node
         """
         if not rolename:
             raise Exception('Required: rolename')
-        if not parameters:
-            raise Exception('Required: parameters')
-        if not node_driver:
-            raise Exception('Required: node_driver')
-        if not parameters.get('app'):
-            raise Exception('Required: parameters["app"]')
+        if not config: # not trusting the linter
+            raise Exception('Required: config')
 
         self._rolename = rolename
-        self._parameters = parameters
-        self._node_driver = node_driver
+        self._config = config
 
 
     @property
@@ -51,39 +125,18 @@ class Node(ABC):
 
 
     @property
+    def config(self):
+        return self._config
+
+
+    @property
     def hostname(self):
-        return self._parameters.get('hostname')
+        return self._config.hostname
 
 
     @property
     def node_driver(self):
-        return self._node_driver
-
-
-    @property
-    def app_name(self):
-        return self._parameters.get('app')
-
-
-    @property
-    def app_version(self):
-        return None # by default we don't know
-
-
-    def parameter(self, name: str, default: str | None = None) -> str | None:
-        return self._parameters.get(name)
-
-
-    def set_parameter(self, name:str, value:Any) -> None:
-        return self._parameters.update({name: value})
-
-
-    @property
-    def start_delay(self):
-        """
-        Milliseconds until the node is ready from the time it was created.
-        """
-        return 0
+        return self._config.node_driver
 
 
     def add_cert_to_trust_store(self, root_cert: str) -> None:
@@ -110,7 +163,7 @@ class Node(ABC):
         If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
         return: the value entered by the user, parsed, or None
         """
-        return self._node_driver.prompt_user(question, value_if_known, parse_validate)
+        return self.node_driver.prompt_user(question, value_if_known, parse_validate)
 
 
 class NodeDriver(ABC):
@@ -118,26 +171,30 @@ class NodeDriver(ABC):
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
     Any one subclass of NodeDriver is only instantiated once as a singleton
     """
-    def check_plan_node(self,rolename: str, test_plan_node: TestPlanConstellationNode) -> None:
+    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
         """
-        Check that once we get around to provision the Node according to test_plan_node, everything
-        will go smoothly.
-        This should be overridden by subclasses that have specific requirements to check those.
+        Read the node data provided in test_plan_node and create a NodeConfiguration object
+        from it. This will throw exceptions if the Node is misconfigured.
+
+        Override in subclasses.
         """
-        pass
+        return NodeConfiguration(
+            self,
+            test_plan_node.parameter_or_raise('app'),
+            test_plan_node.parameter('app_version'),
+            test_plan_node.parameter('hostname')
+        )
 
 
     @final
-    def provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> Node:
+    def provision_node(self, rolename: str, config: NodeConfiguration) -> Node:
         """
         Instantiate a Node
         rolename: the name of this Node in the constellation
-        test_plan_node: the specification for this Node in the TestPlan
+        config: the NodeConfiguration created with create_configuration
         """
-        parameters: dict[str,Any] = {} # These are local to the Node and its NodeDriver. It's up to them how to use them.
-        self._fill_in_parameters(rolename, test_plan_node, parameters)
-        trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and parameters { parameters }')
-        ret = self._provision_node(rolename, test_plan_node, parameters)
+        trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and configuration { config }')
+        ret = self._provision_node(rolename, config)
         return ret
 
 
@@ -152,15 +209,7 @@ class NodeDriver(ABC):
         self._unprovision_node(node)
 
 
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        """
-        Let our subclasses fill in additional / default parameters before the node gets provisioned
-        """
-        if test_plan_node.parameters:
-            parameters.update(test_plan_node.parameters)
-
-
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> Node:
+    def _provision_node(self, rolename: str, config: NodeConfiguration) -> Node:
         """
         The factory method for Node. Any subclass of NodeDriver should also
         override this and return a more specific subclass of IUT.

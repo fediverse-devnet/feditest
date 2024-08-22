@@ -4,25 +4,7 @@ Accounts on a Node.
 
 from abc import ABC, abstractmethod
 
-from feditest.protocols import NodeDriver
-
-
-class Account(ABC):
-    """
-    The notion of an existing account on a Node. As different Nodes have different ideas about
-    what they know about an Account, this is an entirey abstract base class here.
-    """
-    def __init__(self, role: str):
-        self.role = role
-
-
-class NonExistingAccount(ABC):
-    """
-    The notion of a non-existing account on a Node. As different Nodes have different ideas about
-    what they know about an Account, this is an entirey abstract base class here.
-    """
-    def __init__(self, role: str):
-        self.role = role
+from feditest.protocols import Account, NodeConfiguration, NodeDriver, NonExistingAccount
 
 
 class InvalidAccountSpecificationException(Exception):
@@ -56,7 +38,6 @@ class OutOfNonExistingAccountsException(Exception):
     was known or could be provisionined.
     """
 
-
 class AccountManager(ABC):
     """
     Manages accounts on a Node. It can be implemented in a variety of ways, including
@@ -83,11 +64,14 @@ class AccountManager(ABC):
 
 class DefaultAccountManager(AccountManager):
     """
-    An AccountManager implementation that returns the pre-allocated Accounts, and
-    has an empty method to dynamically provision new Accounts, which can be implemented
+    An AccountManager implementation that is initialized from lists of inital accounts and non-accounts
+    in a NodeConfiguration, and then dynamically allocates those Accounts and
+    NonExistingAccounts to the requested roles.
+    It is not part of the NodeConfiguration, only the Node at run-time.
+    It has an empty method to dynamically provision new Accounts, which can be implemented
     by subclasses.
     """
-    def __init__(self, initial_accounts: list[Account], initial_non_existing_accounts: list[NonExistingAccount]):
+    def __init__(self, config: NodeConfiguration):
         """
         Provide the accounts and non-existing-accounts that are known to exist/not exist
         when the Node is provisioned.
@@ -97,11 +81,14 @@ class DefaultAccountManager(AccountManager):
           * accounts initially without role get a role associated with them, so they are removed from
             _accounts_without_role and put here
         """
-        self._accounts_allocated_to_role = { account.role : account for account in initial_accounts if account.role }
-        self._accounts_not_allocated_to_role = [ account for account in initial_accounts if not account.role ]
+        initial_accounts = config.known_accounts
+        initial_non_existing_accounts = config.known_non_existing_accounts
 
-        self._non_existing_accounts_allocated_to_role = { non_account.role : non_account for non_account in initial_non_existing_accounts if non_account.role }
-        self._non_existing_accounts_not_allocated_to_role = [ non_account for non_account in initial_non_existing_accounts if not non_account.role ]
+        self._accounts_allocated_to_role : dict[str | None, Account] = { account.role : account for account in initial_accounts if account.role }
+        self._accounts_not_allocated_to_role : list[Account] = [ account for account in initial_accounts if not account.role ]
+
+        self._non_existing_accounts_allocated_to_role : dict[str | None, NonExistingAccount] = { non_account.role : non_account for non_account in initial_non_existing_accounts if non_account.role }
+        self._non_existing_accounts_not_allocated_to_role : list[NonExistingAccount ]= [ non_account for non_account in initial_non_existing_accounts if not non_account.role ]
 
 
     # Python 3.12 @override
@@ -143,7 +130,7 @@ class DefaultAccountManager(AccountManager):
         return None
 
 
-    def _provision_non_existing_account_for_role(self, role: str | None = None) -> Account | None:
+    def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
         """
         This no-op method can be overridden by subclasses to dynamically provision a new NonExistingAccount.
         """

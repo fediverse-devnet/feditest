@@ -1,5 +1,5 @@
 """
-Webfinger testing utils
+WebFinger testing utils
 """
 
 from typing import Any, Type
@@ -8,7 +8,7 @@ from multidict import MultiDict
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
+from feditest.protocols.webfinger.traffic import ClaimedJrd
 
 class RecursiveEqualToMatcher(BaseMatcher):
     """

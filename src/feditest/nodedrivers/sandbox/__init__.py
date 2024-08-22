@@ -5,7 +5,7 @@
 
 from typing import Any, List
 
-from feditest.protocols import NodeDriver
+from feditest.protocols import NodeConfiguration, NodeDriver
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
 from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import FEDITEST_VERSION
@@ -20,25 +20,24 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
         return c
 
 
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
-
-
 class SandboxMultClientDriver_ImplementationA(NodeDriver):
     """
     Driver for the client implementation, so the client can be provisioned and unprovisioned for
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'SandboxMultClient_ImplementationA'
+    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
+        return NodeConfiguration(
+            self,
+            'SandboxMultClient_ImplementationA',
+            FEDITEST_VERSION,
+            test_plan_node.parameter('hostname')
+        )
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> SandboxMultClient_ImplementationA:
-        return SandboxMultClient_ImplementationA(rolename, parameters, self)
+    def _provision_node(self, rolename: str, config: NodeConfiguration) ->  SandboxMultClient_ImplementationA:
+        return SandboxMultClient_ImplementationA(rolename, config)
 
 
 class SandboxMultServer_Implementation1(SandboxMultServer):
@@ -46,14 +45,9 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
     First server implementation in the Sandbox protocol with some test instrumentation.
     This server implementation simply calculates a*b.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation1'):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, config: NodeConfiguration):
+        super().__init__(rolename, config)
         self._log : List[SandboxLogEvent] | None = None
-
-
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
 
 
     def mult(self, a: float, b: float) -> float:
@@ -80,14 +74,18 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'SandboxMultServer_Implementation1'
+    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
+        return NodeConfiguration(
+            self,
+            'SandboxMultServer_Implementation1',
+            FEDITEST_VERSION,
+            test_plan_node.parameter('hostname')
+        )
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> SandboxMultServer_Implementation1:
-        return SandboxMultServer_Implementation1(rolename, parameters, self)
+    def _provision_node(self, rolename: str, config: NodeConfiguration) ->  SandboxMultServer_Implementation1:
+        return SandboxMultServer_Implementation1(rolename, config)
 
 
 class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
@@ -95,14 +93,9 @@ class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
     Second server implementation in the Sandbox protocol with some test instrumentation.
     This server calculates a*b through a for loop using integers rather than floats
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, config: NodeConfiguration):
+        super().__init__(rolename, config)
         self._log : List[SandboxLogEvent] | None = None
-
-
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
 
 
     def mult(self, a: float, b: float) -> float:
@@ -132,11 +125,15 @@ class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'SandboxMultServer_Implementation2Faulty'
+    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
+        return NodeConfiguration(
+            self,
+            'SandboxMultServer_Implementation2Faulty',
+            FEDITEST_VERSION,
+            test_plan_node.parameter('hostname')
+        )
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> SandboxMultServer_Implementation2Faulty:
-        return SandboxMultServer_Implementation2Faulty(rolename, parameters, self)
+    def _provision_node(self, rolename: str, config: NodeConfiguration) ->  SandboxMultServer_Implementation2Faulty:
+        return SandboxMultServer_Implementation2Faulty(rolename, config)
