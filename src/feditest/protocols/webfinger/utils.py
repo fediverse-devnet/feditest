@@ -8,7 +8,7 @@ from multidict import MultiDict
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from feditest.protocols.webfinger.traffic import ClaimedJrd
+from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 
 class RecursiveEqualToMatcher(BaseMatcher):
     """
@@ -146,3 +146,25 @@ def multi_dict_has_key(arg: str) -> MultiDictHasKeyMatcher :
 
 def none_except(*allowed_excs : Type[Exception]) -> NoneExceptMatcher :
     return NoneExceptMatcher(list(allowed_excs))
+
+
+def wf_error(response: WebFingerQueryResponse) -> str:
+    """
+    Construct an error message
+    """
+    if not response.exc:
+        return 'ok'
+
+    if isinstance(response.exc, ExceptionGroup):
+        # Make this more compact than the default
+        msg = str(response.exc.args[0]).split('\n', maxsplit=1)[0]
+        msg += f' ({ len(response.exc.exceptions) })'
+        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
+        for i, exc in enumerate(response.exc.exceptions):
+            msg += f'\n{ i }: { exc }'
+
+    else:
+        msg = str(response.exc).split('\n', maxsplit=1)[0]
+        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
+        msg += '\n'.join(str(response.exc).split('\n')[1:])
+    return msg
