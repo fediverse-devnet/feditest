@@ -2,6 +2,7 @@
 """
 
 from abc import abstractmethod
+import certifi
 from dataclasses import dataclass
 import importlib
 import re
@@ -470,19 +471,14 @@ class NodeWithMastodonAPI(FediverseNode):
         """
         Convenience method to get the instance of the Mastodon client object for a given actor URI.
         """
-#         if self._requests_session is None:
-#             self._requests_session = requests.Session()
-#             self._requests_session.verify = certifi.where() # force re-read of cacert file, which the requests library reads upon first import
+        if self._requests_session is None:
+            self._requests_session = requests.Session()
+            self._requests_session.verify = certifi.where() # force re-read of cacert file, which the requests library reads upon first import
 
-#         if self._mastodon_oauth_app is None:
-#             api_base_url = f'https://{ self.parameter("hostname") }/'
-#             trace( f'Creating Mastodon.py app with API base URL { api_base_url } ')
-#             self._mastodon_oauth_app = MastodonOAuthApp.create(api_base_url, self._requests_session)
+        userid = self._actor_uri_to_userid(actor_uri)
+        if not userid:
+            raise ValueError(f'Cannot find actor { actor_uri }')
 
-#         trace('MastodonOAuthApp is', self._mastodon_oauth_app)
-#         userid = self._actor_uri_to_userid(actor_uri)
-#         if not userid:
-#             raise ValueError(f'Cannot find actor { actor_uri }')
 #         user = self._get_user_by_userid(userid)
 #         if not user:
 #             raise ValueError(f'Cannot find user { userid }')
@@ -586,7 +582,6 @@ class InteractiveMastodonAccountManager(AbstractAccountManager):
         return MastodonNonExistingAccount(role, userid)
 
 
-class MastodonManualNodeDriver(AbstractManualFediverseNodeDriver):
 class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     Create a manually provisioned Mastodon Node
@@ -628,8 +623,12 @@ class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
 
 
     # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FediverseNode:
+        self.prompt_user(f'Manually provision the Node for constellation role { rolename }'
+                         + f' at host { config.hostname } with app { config.app } and hit return when done.')
+        return MastodonNode(rolename, config, account_manager)
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, config: NodeConfiguration) -> MastodonNode:
-        return MastodonNode(rolename, config)
+    def _unprovision_node(self, node: Node) -> None:
+        self.prompt_user(f'Manually unprovision the Node for constellation role { node.rolename } and hit return when done.')
