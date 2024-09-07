@@ -92,6 +92,15 @@ class AccountManager(ABC):
     TestPlan, or dynamically provisioning accounts etc.
     """
     @abstractmethod
+    def set_node(self, node: 'Node'):
+        """
+        Set the Node to which this AccountManager belongs. This is invoked exactly once after the Node
+        has been instantiated (the AccountManager is instantiated earlier).
+        """
+        ...
+
+
+    @abstractmethod
     def obtain_account_by_role(self, role: str | None = None) -> Account:
         """
         If this method is invoked with the same role twice, it returns
@@ -129,6 +138,24 @@ class AbstractAccountManager(AccountManager):
         self._non_existing_accounts_allocated_to_role : dict[str | None, NonExistingAccount] = { non_account.role : non_account for non_account in initial_non_existing_accounts if non_account.role }
         self._non_existing_accounts_not_allocated_to_role : list[NonExistingAccount ]= [ non_account for non_account in initial_non_existing_accounts if not non_account.role ]
 
+        self._node = None # the Node this AccountManager belongs to. Set once the Node has been instantiated
+
+
+    # Python 3.12 @override
+    def set_node(self, node: 'Node'):
+        if self._node:
+            raise ValueError('Have Node already')
+        self._node = node
+
+        for account in self._accounts_allocated_to_role.values():
+            account.set_node(self._node)
+        for account in self._accounts_not_allocated_to_role:
+            account.set_node(self._node)
+        for non_existing_account in self._non_existing_accounts_allocated_to_role.values():
+            non_existing_account.set_node(self._node)
+        for non_existing_account in self._non_existing_accounts_not_allocated_to_role:
+            non_existing_account.set_node(self._node)
+
 
     # Python 3.12 @override
     def obtain_account_by_role(self, role: str | None = None) -> Account:
@@ -140,6 +167,7 @@ class AbstractAccountManager(AccountManager):
             else:
                 ret = self._provision_account_for_role(role)
                 if ret:
+                    ret.set_node(self._node)
                     self._accounts_allocated_to_role[role] = ret
         if ret:
             return ret
@@ -156,6 +184,7 @@ class AbstractAccountManager(AccountManager):
             else:
                 ret = self._provision_non_existing_account_for_role(role)
                 if ret:
+                    ret.set_node(self._node)
                     self._non_existing_accounts_allocated_to_role[role] = ret
         if ret:
             return ret
@@ -267,7 +296,9 @@ class Node(ABC):
 
         self._rolename = rolename
         self._config = config
-        self._account_manager = account_manager
+        if account_manager:
+            self._account_manager = account_manager
+            self._account_manager.set_node(self)
 
 
     @property
