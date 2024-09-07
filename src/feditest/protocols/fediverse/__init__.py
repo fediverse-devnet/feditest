@@ -23,12 +23,6 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.make_create_note)
 
 
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
-        """
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.wait_for_object_in_inbox)
-
-
     def make_announce_object(self, actor_uri, note_uri: str) -> str:
         """
         """
@@ -49,3 +43,9 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         relationship is fully established.
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_a_follow_b)
+
+
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
+        """
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.wait_for_object_in_inbox)
