@@ -264,15 +264,8 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
         app_version = test_plan_node.parameter('app_version')
         hostname = test_plan_node.parameter('hostname')
 
-        if app and not appname_validate(app):
-            raise TestPlanError(f'Parameter "app" is invalid: "{ app }".')
-        if app_version and not isinstance(app_version,str):
-            raise TestPlanError(f'Parameter "app_version" is not a string: "{ app_version }".')
-        if hostname and not hostname_validate(hostname):
-            raise TestPlanError(f'Parameter "hostname" is invalid: "{ hostname }".')
-
         if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for the Node of constellation role "{ rolename }":',
+            hostname = self.prompt_user(f'Enter the hostname for the Node of constellation role "{ rolename }": ',
                                         parse_validate=hostname_validate)
         if not app:
             app = self.prompt_user(f'Enter the name of the app at constellation role "{ rolename }" and hostname "{ hostname }": ',
@@ -290,13 +283,13 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
 
         return (
             NodeConfiguration(
-            self,
-            cast(str, app),
-            cast(str, app_version),
+                self,
+                cast(str, app),
+                cast(str, app_version),
                 hostname
             ),
             InteractiveFallbackFediverseAccountManager(
-            accounts,
+                accounts,
                 non_existing_accounts,
                 f'On FediverseNode "{ hostname }" with constellation role "{ rolename }", running app "{ app }":',
                 self

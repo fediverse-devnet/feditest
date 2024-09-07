@@ -8,6 +8,7 @@ from typing import Any, final
 
 from feditest.testplan import TestPlanConstellationNode
 from feditest.reporting import warning, trace
+from feditest.utils import hostname_validate, appname_validate, appversion_validate
 
 
 class Account(ABC):
@@ -199,6 +200,13 @@ class NodeConfiguration:
         hostname: str | None = None,
         start_delay: float = 0.0
     ):
+        if app and not appname_validate(app):
+            raise NodeSpecificationInvalidError(node_driver, 'app', app)
+        if app_version and not appversion_validate(app_version):
+            raise NodeSpecificationInvalidError(node_driver, 'app_version', app_version)
+        if hostname and not hostname_validate(hostname):
+            raise NodeSpecificationInvalidError(node_driver, 'hostname', hostname)
+
         self._node_driver = node_driver
         self._app = app
         self._app_version = app_version
@@ -328,10 +336,10 @@ class NodeDriver(ABC):
         """
         return (
             NodeConfiguration(
-            self,
-            test_plan_node.parameter_or_raise('app'),
-            test_plan_node.parameter('app_version'),
-            test_plan_node.parameter('hostname')
+                self,
+                test_plan_node.parameter_or_raise('app'),
+                test_plan_node.parameter('app_version'),
+                test_plan_node.parameter('hostname')
             ),
             None
         )
