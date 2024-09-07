@@ -251,54 +251,6 @@ class MastodonNonExistingAccount(NonExistingAccount):
 
     @property
     def actor_uri(self):
-
-
-# def existing_users(test_plan_node: TestPlanConstellationNode, node_driver: NodeDriver) -> list[MastodonUserRecord]:
-#     """
-#     Helper method to determine the initial list of UserRecords from the TestPlanConstellationNode.
-#     This can't be a dict because not all accounts will have an assigned role.
-#     """
-#     if not test_plan_node.accounts:
-#         return []
-
-#     ret : list[MastodonUserRecord] = []
-#     # FIXME
-#     # for plan_account in test_plan_node.accounts:
-#     #     if plan_account.role in ret:
-#     #         raise NodeSpecificationInvalidError(node_driver, 'accounts', f'Have account with role { plan_account.role } already.')
-#     #     if not plan_account.userid:
-#     #         raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have userid.')
-#     #     if plan_account.email:
-#     #         if not plan_account.password:
-#     #             raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have password if email is given.')
-#     #         if plan_account.oauth_token:
-#     #             raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have email or oauth_token, not both.')
-#     #         ret[plan_account.role] = MastodonUserRecord(userid=plan_account.userid, passwd=plan_account.password, email=plan_account.email, oauth_token=None)
-#     #     else:
-#     #         if not plan_account.oauth_token:
-#     #             raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must have email or oauth_token.')
-#     #         if plan_account.password:
-#     #             raise NodeSpecificationInvalidError(node_driver, 'accounts', 'Must not have password if oauth_token is given.')
-#     #         ret[plan_account.role] = MastodonUserRecord(userid=plan_account.userid, passwd=None, email=None, oauth_token=plan_account.oauth_token)
-#     return ret
-
-
-# def non_existing_users(test_plan_node: TestPlanConstellationNode, node_driver: NodeDriver) -> list[MastodonNoUserRecord]:
-#     """
-#     Helper method to determine the initial table of NoUserRecords from the TestPlanConstellationNode
-#     """
-#     if not test_plan_node.non_existing_accounts:
-#         return []
-
-#     ret : list[MastodonNoUserRecord] = []
-#     # FIXME
-#     # for plan_non_account in test_plan_node.non_existing_accounts:
-#     #     if plan_non_account.role in ret:
-#     #         raise NodeSpecificationInvalidError(node_driver, 'non_existing_accounts', f'Have non-existing account with role { plan_non_account.role } already.')
-#     #     if not plan_non_account.userid:
-#     #         raise NodeSpecificationInvalidError(node_driver, 'non_existing_accounts', 'Must have userid.')
-#     #     ret[plan_non_account.role] = MastodonNoUserRecord(userid=plan_non_account.userid)
-#     return ret
         return f'https://{ self.node.hostname }/users/{ self.userid }'
 
 
