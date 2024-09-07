@@ -7,7 +7,7 @@ from typing import cast
 import httpx
 from multidict import MultiDict
 
-from feditest.protocols import Node, NodeConfiguration, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,
@@ -134,18 +134,21 @@ class ImpInProcessNodeDriver(NodeDriver):
     Knows how to instantiate an Imp.
     """
     # Python 3.12 @override
-    def create_configuration(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> NodeConfiguration:
-        return NodeConfiguration(
-            self,
-            'Imp',
-            FEDITEST_VERSION,
-            test_plan_node.parameter('hostname')
+    def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
+        return (
+            NodeConfiguration(
+                self,
+                'Imp',
+                FEDITEST_VERSION,
+                test_plan_node.parameter('hostname')
+            ),
+            None
         )
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, config: NodeConfiguration) -> Imp:
-        return Imp(rolename, config)
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> Imp:
+        return Imp(rolename, config, account_manager)
 
 
     # Python 3.12 @override

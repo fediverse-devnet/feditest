@@ -2,7 +2,7 @@
 """
 
 from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver, FallbackFediverseNode
-from feditest.protocols import NodeConfiguration
+from feditest.protocols import AccountManager, NodeConfiguration
 
 
 class SaasFediverseNodeDriver(AbstractFallbackFediverseNodeDriver):
@@ -11,8 +11,8 @@ class SaasFediverseNodeDriver(AbstractFallbackFediverseNodeDriver):
     Node under test exists as a website that we don't have/can provision/unprovision.
     """
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, config: NodeConfiguration) -> FallbackFediverseNode:
-        return FallbackFediverseNode(rolename, config)
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FallbackFediverseNode:
+        return FallbackFediverseNode(rolename, config, account_manager)
 
 
     # No need to override _unprovision_node()

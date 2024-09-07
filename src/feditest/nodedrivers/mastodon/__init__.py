@@ -222,9 +222,8 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None = None):
-        super().__init__(rolename, config)
-        self._account_manager = account_manager
+    def __init__(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager):
+        super().__init__(rolename, config, account_manager)
 
         self._mastodon_oauth_app : MastodonOAuthApp | None = None
         # Information we have about the OAuth "app" we we create to interact with a Mastodon instance.
@@ -240,6 +239,7 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
 # From FediverseNode
+
     # Python 3.12 @override
     def make_create_note(self, actor_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
         trace('make_create_note:')
@@ -337,7 +337,8 @@ class NodeWithMastodonAPI(FediverseNode):
 
     # Python 3.12 @override
     def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
-        account = cast(MastodonAccount, self._account_manager.obtain_account_by_role(rolename))
+        account_manager = cast(AccountManager, self._account_manager)
+        account = cast(MastodonAccount, account_manager.obtain_account_by_role(rolename))
         return account.actor_uri
 
 
@@ -372,26 +373,26 @@ class NodeWithMastodonAPI(FediverseNode):
                 interop_level or InteropLevel.UNKNOWN,
                 f"{candidate_member_uri} must not be in {collection_uri}")
 
+# From WebFingerServer
 
-# # From WebFingerServer
     # Python 3.12 @override
     def obtain_account_identifier(self, rolename: str | None = None) -> str:
-        account = cast(MastodonAccount, self._account_manager.obtain_account_by_role(rolename))
+        account_manager = cast(AccountManager, self._account_manager)
+        account = cast(MastodonAccount, account_manager.obtain_account_by_role(rolename))
         return account.webfinger_uri
 
 
     # Python 3.12 @override
     def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
-        non_account = cast(MastodonNonExistingAccount, self._account_manager.obtain_non_existing_account_by_role(rolename))
+        account_manager = cast(AccountManager, self._account_manager)
+        non_account = cast(MastodonNonExistingAccount, account_manager.obtain_non_existing_account_by_role(rolename))
         return non_account.webfinger_uri
 
-
-
-    # Not implemented
+    # Not implemented:
     # def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
     # def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
 
-# # From WebServer
+# From WebServer
 
     # Not implemented:
     # def transaction(self, code: Callable[[],None]) -> WebServerLog:
@@ -537,6 +538,7 @@ class MastodonNode(NodeWithMastodonAPI):
 
 
 class MastodonManualNodeDriver(AbstractManualFediverseNodeDriver):
+class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     Create a manually provisioned Mastodon Node
     """

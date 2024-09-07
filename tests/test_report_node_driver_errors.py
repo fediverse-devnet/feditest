@@ -7,7 +7,7 @@ from typing import Any
 import feditest
 import pytest
 from feditest import nodedriver
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,
@@ -53,9 +53,9 @@ def init():
     class Faulty_NodeDriver(NodeDriver):
         def _provision_node(
             self,
-            olename: str,
-            test_plan_node: TestPlanConstellationNode,
-            parameters: dict[str, Any],
+            rolename: str,
+            config: NodeConfiguration,
+            account_manager: AccountManager | None
         ) -> Node:
             raise NodeDriverTestException()
 

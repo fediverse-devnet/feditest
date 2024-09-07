@@ -40,9 +40,9 @@ class TestPlanConstellationNode(msgspec.Struct):
     TestRun delegates it to the NodeDrivers that will instantiate the Nodes.
     """
     nodedriver: str | None = None # if we allow this to be None, we can do better error reporting
-    parameters: dict[str,Any] | None = None
-    accounts: list[dict[str, str]] | None = None
-    non_existing_accounts: list[dict[str, str]] | None = None
+    parameters: dict[str,Any | None] | None = None
+    accounts: list[dict[str, str | None]] | None = None
+    non_existing_accounts: list[dict[str, str | None]] | None = None
 
 
 
@@ -69,7 +69,7 @@ class TestPlanConstellationNode(msgspec.Struct):
         raise TestPlanError(f'Required parameter missing: { name }')
 
 
-    def get_account_by_rolename(self, rolename: str | None) -> dict[str, str] | None:
+    def get_account_by_rolename(self, rolename: str | None) -> dict[str, str | None] | None:
         """
         Convenience method to centralize search in one place.
         """
@@ -81,7 +81,7 @@ class TestPlanConstellationNode(msgspec.Struct):
         return None
 
 
-    def get_non_existing_account_by_rolename(self, rolename: str | None) -> dict[str, str] | None:
+    def get_non_existing_account_by_rolename(self, rolename: str | None) -> dict[str, str | None] | None:
         """
         Convenience method to centralize search in one place.
         """

@@ -14,7 +14,7 @@ from feditest import registry
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
-from feditest.protocols import Node, NodeConfiguration, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (
     TestPlan,
@@ -76,7 +76,7 @@ class TestRunConstellation:
         # Two stages:
         # 1. check
         # 2. instantiate
-        role_to_config : dict[str, NodeConfiguration] = {}
+        role_to_config_account_mgr : dict[str, tuple[NodeConfiguration,AccountManager | None]] = {}
         for plan_role_name, plan_node in self._plan_constellation.roles.items():
             if plan_node is None:
                 raise ValueError('Unexpected null node')
@@ -84,8 +84,8 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
-            config = node_driver.create_configuration(plan_role_name, plan_node) # may raise
-            role_to_config[plan_role_name] = config
+            config_account_mgr = node_driver.create_configuration_account_manager(plan_role_name, plan_node) # may raise
+            role_to_config_account_mgr[plan_role_name] = config_account_mgr
 
         wait_time = 0.0
         for plan_role_name, plan_node in self._plan_constellation.roles.items():
@@ -95,8 +95,10 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver = nodedriver_singleton(plan_node.nodedriver)
-            config = role_to_config[plan_role_name]
-            node : Node = node_driver.provision_node(plan_role_name, config)
+            config_account_mgr = role_to_config_account_mgr[plan_role_name]
+            config = config_account_mgr[0]
+            account_mgr = config_account_mgr[1]
+            node : Node = node_driver.provision_node(plan_role_name, config, account_mgr)
             self._nodes[plan_role_name] = node
             self._appdata[plan_role_name] = { # FIXME? Replace this with the NodeConfiguration object instead?
                 'app' : config.app,
