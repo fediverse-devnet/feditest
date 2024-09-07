@@ -182,13 +182,6 @@ class FallbackFediverseNode(FediverseNode):
 
 
     # Python 3.12 @override
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
-        return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
-                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:'))
-
-
-    # Python 3.12 @override
     def make_announce_object(self, actor_uri, note_uri: str) -> str:
         return cast(str, self.prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ note_uri }"'
@@ -207,6 +200,13 @@ class FallbackFediverseNode(FediverseNode):
     def make_a_follow_b(self, a_uri_here: str, b_uri_there: str, node_there: ActivityPubNode) -> None:
         self.prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ a_uri_here }" follow actor "{ b_uri_there }" and hit return once the relationship is fully established.' )
+
+
+    # Python 3.12 @override
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
+        return cast(str, self.prompt_user(
+                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
+                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:'))
 
 
 class InteractiveFallbackFediverseAccountManager(AbstractAccountManager):
