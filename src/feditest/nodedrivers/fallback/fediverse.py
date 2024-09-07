@@ -25,14 +25,14 @@ URI_KEY: Final[str] = 'uri'
 ACTOR_URI_KEY: Final[str] = 'actor_uri'
 
 """
-Pre-existing oaccounts in TestPlans are specified as follows:
+Pre-existing accounts in TestPlans are specified as follows:
 * URI_KEY: URI that either is a WebFinger resource (e.g. acct:joe@example.com or https://example.com/ ) or an Actor URI
 * ROLE_KEY: optional account role
 * ACTOR_URI_KEY: optional https URI that points to the Actor. This is calculated by WebFinger lookup if not provided
 
 Known non-existing accounts are specified as follows:
 * URI_KEY: URI that neither is a WebFinger resource nor an Actor URI
-* ROLE_KEY: optional account role
+* ROLE_KEY: optional non-existing account role
 """
 
 class FallbackFediverseAccount(Account):
@@ -230,11 +230,11 @@ class InteractiveFallbackFediverseAccountManager(AbstractAccountManager):
     def _provision_account_for_role(self, role: str | None = None) -> Account | None:
         uri = cast(str, self._node_driver.prompt_user(
                 self._context_msg
-                + f' provision an account for account role "{ role }" and enter its URI here (with https: or acct: scheme): ',
+                + f' provision an account for account role "{ role }" and enter its URI here (with https: or acct: scheme) (node account field "{ URI_KEY }"): ',
                 parse_validate=http_https_acct_uri_validate))
         actor_uri = cast(str, self._node_driver.prompt_user(
                 self._context_msg
-                + f' for the account with account role "{ role }", enter its Actor URI here (with https: scheme): ',
+                + f' for the account with account role "{ role }", enter its Actor URI here (with https: scheme) (node account field "{ ACTOR_URI_KEY }"): ',
                 parse_validate=https_uri_validate))
 
         return FallbackFediverseAccount(uri, actor_uri, role)
@@ -243,11 +243,11 @@ class InteractiveFallbackFediverseAccountManager(AbstractAccountManager):
     def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
         uri = cast(str, self._node_driver.prompt_user(
                 self._context_msg
-                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme): ',
+                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_KEY }"): ',
                 parse_validate=http_https_acct_uri_validate))
         actor_uri = cast(str, self._node_driver.prompt_user(
                 self._context_msg
-                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme): ',
+                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_KEY }"): ',
                 parse_validate=https_uri_validate))
 
         return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
@@ -265,10 +265,10 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
         hostname = test_plan_node.parameter('hostname')
 
         if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for the Node of constellation role "{ rolename }": ',
+            hostname = self.prompt_user(f'Enter the hostname for the Node of constellation role "{ rolename }" (node parameter "hostname"): ',
                                         parse_validate=hostname_validate)
         if not app:
-            app = self.prompt_user(f'Enter the name of the app at constellation role "{ rolename }" and hostname "{ hostname }": ',
+            app = self.prompt_user(f'Enter the name of the app at constellation role "{ rolename }" and hostname "{ hostname }" (node parameter "app"): ',
                                    parse_validate=appname_validate)
 
         accounts : list[Account] = []
