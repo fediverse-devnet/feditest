@@ -82,8 +82,10 @@ class TestRunResultTranscript(msgspec.Struct):
                 stacktrace.append((filename[len(pwd):], line))
             else:
                 stacktrace.append((filename, line))
-
-        return TestRunResultTranscript(str(exc.__class__.__name__), spec_level, interop_level, stacktrace, str(exc))
+        msg = str(exc).strip()
+        if not msg: # Happens e.g. for NotImplementedError
+            msg = type(exc).__name__
+        return TestRunResultTranscript(str(exc.__class__.__name__), spec_level, interop_level, stacktrace, msg)
 
 
     def title(self):
