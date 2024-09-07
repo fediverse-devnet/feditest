@@ -447,26 +447,6 @@ class NodeWithMastodonAPI(FediverseNode):
 
 # Internal implementation helpers
 
-#     def _provision_new_user(self, rolename: str) -> MastodonUserRecord:
-#         """
-#         Make sure a new user exists. This should be overridden in subclasses if at all possible.
-#         """
-#         userid = self.prompt_user( f'Create a new user account for user role { rolename } on the app'
-#                                  + f' in role { self._rolename } at hostname { self._parameters["hostname"] }'
-#                                  + ' and enter its user handle: ',
-#                                parse_validate=lambda x: x if len(x) else None )
-#         useremail = self.prompt_user('... and its e-mail: ', parse_validate=email_validate)
-#         userpass = self.prompt_user('... and its password:', parse_validate=lambda x: len(x) > 3)
-#         return MastodonUserRecord(userid=cast(str, userid), email=cast(str, useremail), passwd=cast(str, userpass), oauth_token=None, role=rolename)
-
-
-#     def _create_non_existing_user(self) -> MastodonNoUserRecord:
-#         """
-#         Create a new user handle that could exist on this Node, but does not.
-#         """
-#         return MastodonNoUserRecord(userid=f'does-not-exist-{ os.urandom(5).hex() }')  # This is strictly speaking not always true, but will do I think
-
-
     def _get_mastodon_client_by_actor_uri(self, actor_uri: str) -> Mastodon:
         """
         Convenience method to get the instance of the Mastodon client object for a given actor URI.
@@ -478,12 +458,6 @@ class NodeWithMastodonAPI(FediverseNode):
         userid = self._actor_uri_to_userid(actor_uri)
         if not userid:
             raise ValueError(f'Cannot find actor { actor_uri }')
-
-#         user = self._get_user_by_userid(userid)
-#         if not user:
-#             raise ValueError(f'Cannot find user { userid }')
-#         mastodon_client = user.mastodon_user_client(self._mastodon_oauth_app)
-#         return mastodon_client
 
 
     def _poll_until_result(self,
@@ -510,13 +484,6 @@ class NodeWithMastodonAPI(FediverseNode):
         so this is abstract here and must be overridden.
         """
         ...
-
-
-#     def _get_user_by_userid(self, userid: str) -> MastodonUserRecord:
-#         for user in self._existing_users_by_role.values():
-#             if userid is user.userid:
-#                 return user
-#         return None
 
 
 class MastodonNode(NodeWithMastodonAPI):
