@@ -304,27 +304,6 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
-        trace('wait_for_object_in_inbox:')
-        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
-
-        response = self._poll_until_result( # may throw
-            lambda: next(
-                (
-                    s
-                    for s in mastodon_client.timeline("local")
-                    if s.uri == object_uri
-                ),
-                None,
-            ),
-            int(self.parameter('inbox_wait_retry_count') or '5'),
-            int(self.parameter('inbox_wait_retry_interval') or '1'),
-            f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }')
-        trace(f'wait_for_object_in_inbox returns with { response }')
-        return response
-
-
-    # Python 3.12 @override
     def make_announce_object(self, actor_uri, note_uri: str) -> str:
         trace('make_announce_object:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
@@ -379,11 +358,35 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, retry_count: int = 5, retry_interval: int = 1) -> str:
+        trace('wait_for_object_in_inbox:')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+        response = self._poll_until_result( # may throw
+            lambda: next(
+                (
+                    s
+                    for s in mastodon_client.timeline("local")
+                    if s.uri == object_uri
+                ),
+                None,
+            ),
+            retry_count,
+            retry_interval,
+            f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }')
+        trace(f'wait_for_object_in_inbox returns with { response }')
+        return response
+
+# From ActivityPubNode
+
+    # Python 3.12 @override
     def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
         account_manager = cast(AccountManager, self._account_manager)
         account = cast(MastodonAccount, account_manager.obtain_account_by_role(rolename))
         return account.actor_uri
 
+    # Not implemented:
+    # def obtain_followers_collection_uri(self, actor_uri: str) -> str:
+    # def obtain_following_collection_uri(self, actor_uri: str) -> str:
 
     # Python 3.12 @override
     def assert_member_of_collection_at(
