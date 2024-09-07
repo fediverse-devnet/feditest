@@ -9,7 +9,7 @@ from typing import Any, cast
 from feditest.nodedrivers.mastodon import MastodonNode, NoUserRecord, UserRecord
 from feditest.reporting import error, trace
 from feditest.testplan import TestPlanConstellationNode
-from feditest.ubos import UbosNodeDriver
+from feditest.ubos import UbosNodeConfiguration, UbosNodeDriver
 
 
 class MastodonUbosNode(MastodonNode):
@@ -50,16 +50,16 @@ class MastodonUbosNode(MastodonNode):
     # Python 3.12 @override
     def add_cert_to_trust_store(self, root_cert: str) -> None:
         # We ask our UbosNodeDriver, so we don't have to have a UbosNode class
-        rshcmd = self.parameter('rshcmd')
-        real_node_driver = cast(MastodonUbosNodeDriver, self._node_driver)
-        real_node_driver.add_cert_to_trust_store(root_cert, rshcmd)
+        config = cast(UbosNodeConfiguration, self._config)
+        real_node_driver = cast(MastodonUbosNodeDriver, config.node_driver)
+        real_node_driver.add_cert_to_trust_store(root_cert, config.rshcmd)
 
 
     # Python 3.12 @override
     def remove_cert_from_trust_store(self, root_cert: str) -> None:
-        rshcmd = self.parameter('rshcmd')
-        real_node_driver = cast(MastodonUbosNodeDriver, self._node_driver)
-        real_node_driver.remove_cert_from_trust_store(root_cert, rshcmd)
+        config = cast(UbosNodeConfiguration, self._config)
+        real_node_driver = cast(MastodonUbosNodeDriver, config.node_driver)
+        real_node_driver.remove_cert_from_trust_store(root_cert, config.rshcmd)
 
 
 class MastodonUbosNodeDriver(UbosNodeDriver):
