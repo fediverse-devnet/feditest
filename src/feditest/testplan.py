@@ -18,6 +18,8 @@ class TestPlanError(RuntimeError):
     def __init__(self, details: str ):
         super().__init__(f"TestPlan defined insufficiently: {details}" )
 
+ROLE_KEY: Final[str] = 'role' # This applies to the TestPlanConstellationNode, but needs to be out here
+                              # so it won't be JSON serialized
 
 class TestPlanConstellationNode(msgspec.Struct):
     """
@@ -42,7 +44,6 @@ class TestPlanConstellationNode(msgspec.Struct):
     accounts: list[dict[str, str]] | None = None
     non_existing_accounts: list[dict[str, str]] | None = None
 
-    ROLE_KEY: Final[str] = 'role'
 
 
     @staticmethod
