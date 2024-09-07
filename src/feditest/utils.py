@@ -346,6 +346,14 @@ def appname_validate(candidate: str) -> str | None:
     return candidate if len(candidate) > 0 else None
 
 
+def appversion_validate(candidate: str) -> str | None:
+    """
+    Validate that the provided string is a valid application version.
+    return: string if value, None otherwise
+    """
+    return candidate if len(candidate) > 0 else None
+
+
 def boolean_response_parse_validate(candidate:str) -> bool | None:
     """
     The provided string was entered by the user as a response a boolean question.
