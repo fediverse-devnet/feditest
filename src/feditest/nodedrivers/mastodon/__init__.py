@@ -168,13 +168,12 @@ class MastodonAccount(Account): # this is intended to be abstract
 
     @property
     def webfinger_uri(self):
-        fixme() # need to get at the root URI
+        return f'acct:{ self.userid }@{ self.node.hostname }'
 
 
-    @abstractmethod
     @property
     def actor_uri(self):
-        fixme() # need to get at the root URI
+        return f'https://{ self.node.hostname }/users/{ self.userid }'
 
 
     @abstractmethod
@@ -198,7 +197,7 @@ class MastodonUserPasswordAccount(MastodonAccount):
                 api_base_url=oauth_app.api_base_url,
                 session=oauth_app.session
             )
-            client.log_in(self.email, self.passwd)
+            client.log_in(self.email, self.password)
             self._mastodon_user_client = client
         return self._mastodon_user_client
 
@@ -247,13 +246,11 @@ class MastodonNonExistingAccount(NonExistingAccount):
 
     @property
     def webfinger_uri(self):
-        fixme() # need to get at the root URI
+        return f'acct:{ self.userid }@{ self.node.hostname }'
 
 
-    @abstractmethod
     @property
     def actor_uri(self):
-        fixme() # need to get at the root URI
 
 
 # def existing_users(test_plan_node: TestPlanConstellationNode, node_driver: NodeDriver) -> list[MastodonUserRecord]:
@@ -302,6 +299,7 @@ class MastodonNonExistingAccount(NonExistingAccount):
 #     #         raise NodeSpecificationInvalidError(node_driver, 'non_existing_accounts', 'Must have userid.')
 #     #     ret[plan_non_account.role] = MastodonNoUserRecord(userid=plan_non_account.userid)
 #     return ret
+        return f'https://{ self.node.hostname }/users/{ self.userid }'
 
 
 class NodeWithMastodonAPI(FediverseNode):
@@ -491,32 +489,7 @@ class NodeWithMastodonAPI(FediverseNode):
     # def transaction(self, code: Callable[[],None]) -> WebServerLog:
     # def override_http_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
 
-# # Internal implementation helpers
-
-#     def _userid_to_actor_uri(self, userid: str) -> str:
-#         """
-#         The algorithm by which this application maps userids to ActivityPub actor URIs.
-#         Apparently this is different between Mastodon and other implementations, such as WordPress,
-#         so this might be overridden
-
-#         see also: _actor_uri_to_userid()
-#         """
-#         return f'https://{ self.parameter("hostname") }/users/{ userid }'
-
-
-#     def _actor_uri_to_userid(self, actor_uri: str) -> str:
-#         """
-#         The algorithm by which this application maps userids to ActivityPub actor URIs in reverse.
-#         Apparently this is different between Mastodon and other implementations, such as WordPress,
-#         so this might be overridden
-
-#         see also: _userid_to_actor_uri()
-#         """
-#         if m:= re.match('^https://([^/]+)/users/(.+)$', actor_uri):
-#             if m.group(1) == self.parameter('hostname'):
-#                 return m.group(2)
-#         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
-
+# Internal implementation helpers
 
 #     def _provision_new_user(self, rolename: str) -> MastodonUserRecord:
 #         """
@@ -578,6 +551,16 @@ class NodeWithMastodonAPI(FediverseNode):
         raise TimeoutException(msg, retry_count * retry_interval)
 
 
+    @abstractmethod
+    def _actor_uri_to_userid(self, actor_uri: str) -> str:
+        """
+        The algorithm by which this application maps userids to ActivityPub actor URIs in reverse.
+        Apparently this is different between Mastodon and other implementations, such as WordPress,
+        so this is abstract here and must be overridden.
+        """
+        ...
+
+
 #     def _get_user_by_userid(self, userid: str) -> MastodonUserRecord:
 #         for user in self._existing_users_by_role.values():
 #             if userid is user.userid:
@@ -589,6 +572,19 @@ class MastodonNode(NodeWithMastodonAPI):
     """
     An actual Mastodon Node.
     """
+    # Python 3.12 @override
+    def _actor_uri_to_userid(self, actor_uri: str) -> str:
+        """
+        The algorithm by which this application maps userids to ActivityPub actor URIs in reverse.
+        Apparently this is different between Mastodon and other implementations, such as WordPress,
+        so this is abstract here and must be overridden.
+        """
+        if m:= re.match('^https://([^/]+)/users/(.+)$', actor_uri):
+            if m.group(1) == self._config.hostname:
+                return m.group(2)
+        raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
+
+
 class InteractiveMastodonAccountManager(AbstractAccountManager):
         """
     An AccountManager that asks the user when it runs out of known accounts.
