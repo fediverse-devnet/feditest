@@ -18,7 +18,7 @@ from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanError
-from feditest.utils import email_validate
+from feditest.utils import appname_validate, email_validate, hostname_validate
 
 
 # We use the Mastodon.py module primarily because of its built-in support for rate limiting.
@@ -45,15 +45,17 @@ def _oauth_token_validate(candidate: str) -> str | None:
     Validate a Mastodon client API token. Avoids user input errors.
     FIXME this is a wild guess and can be better.
     """
+    candidate = candidate.strip()
     return candidate if len(candidate)>10 else None
 
 
 def _userid_validate(candidate: str) -> str | None:
     """
     Validate a Mastodon user name. Avoids user input errors.
+    FIXME this is a wild guess and can be better.
     """
-    # FIXME is this right?
-    return re.match(r'[a-zA-Z0-9_]', candidate) is not None
+    candidate = candidate.strip()
+    return candidate if re.match(r'[a-zA-Z0-9_]', candidate) else None
 
 
 def _password_validate(candidate: str) -> str | None:
@@ -61,7 +63,8 @@ def _password_validate(candidate: str) -> str | None:
     Validate a Mastodon password. Avoids user input errors.
     FIXME this is a wild guess and can be better.
     """
-    return candidate if len(candidate)>10 else None
+    candidate = candidate.strip()
+    return candidate if len(candidate)>4 else None
 
 
 @dataclass
