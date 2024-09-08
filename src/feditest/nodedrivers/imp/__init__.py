@@ -136,7 +136,7 @@ class ImpInProcessNodeDriver(NodeDriver):
     # Python 3.12 @override
     @staticmethod
     def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
-        return [ HOSTNAME_PAR ]
+        return []
 
 
     # Python 3.12 @override
