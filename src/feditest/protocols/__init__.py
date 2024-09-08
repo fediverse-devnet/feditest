@@ -115,12 +115,29 @@ class AccountManager(ABC):
         """
         ...
 
+    @abstractmethod
+    def get_account_by_role(self, role: str | None = None) -> Account | None:
+        """
+        If an account has been assigned to a role already, return it;
+        otherwise return None
+        """
+        ...
+
 
     @abstractmethod
     def obtain_account_by_role(self, role: str | None = None) -> Account:
         """
         If this method is invoked with the same role twice, it returns
         the same Account. May raise OutOfAccountsException.
+        """
+        ...
+
+
+    @abstractmethod
+    def get_non_existing_account_by_role(self, role: str | None = None) -> NonExistingAccount | None:
+        """
+        If a non-existing account has been assigned to a role already, return it;
+        otherwise return None
         """
         ...
 
@@ -174,11 +191,16 @@ class AbstractAccountManager(AccountManager):
 
 
     # Python 3.12 @override
+    def get_account_by_role(self, role: str | None = None) -> Account | None:
+        return self._accounts_allocated_to_role.get(role)
+
+
+    # Python 3.12 @override
     def obtain_account_by_role(self, role: str | None = None) -> Account:
         ret = self._accounts_allocated_to_role.get(role)
         if not ret:
             if self._accounts_not_allocated_to_role:
-                ret = self._accounts_not_allocated_to_role.pop()
+                ret = self._accounts_not_allocated_to_role.pop(0)
                 self._accounts_allocated_to_role[role] = ret
             else:
                 ret = self._provision_account_for_role(role)
@@ -192,11 +214,16 @@ class AbstractAccountManager(AccountManager):
 
 
     # Python 3.12 @override
+    def get_non_existing_account_by_role(self, role: str | None = None) -> NonExistingAccount | None:
+        return self._non_existing_accounts_allocated_to_role.get(role)
+
+
+    # Python 3.12 @override
     def obtain_non_existing_account_by_role(self, role: str | None = None) -> NonExistingAccount:
         ret = self._non_existing_accounts_allocated_to_role.get(role)
         if not ret:
             if self._non_existing_accounts_not_allocated_to_role:
-                ret = self._non_existing_accounts_not_allocated_to_role.pop()
+                ret = self._non_existing_accounts_not_allocated_to_role.pop(0)
                 self._non_existing_accounts_allocated_to_role[role] = ret
             else:
                 ret = self._provision_non_existing_account_for_role(role)
