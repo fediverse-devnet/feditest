@@ -176,10 +176,10 @@ class MastodonAccount(Account): # this is intended to be abstract
 
 
 class MastodonUserPasswordAccount(MastodonAccount):
-    def __init__(self, role: str | None, userid: str, email: str, password: str):
+    def __init__(self, role: str | None, userid: str, password: str, email: str):
         super().__init__(role, userid)
-        self.email = email
         self.password = password
+        self.email = email
 
 
     # Python 3.12 @override
