@@ -5,19 +5,22 @@ Fallback implementation for FediverseNode
 from typing import Final, cast
 
 from feditest.protocols import (
-    AbstractAccountManager,
     Account,
     AccountManager,
+    DefaultAccountManager,
     InvalidAccountSpecificationException,
     InvalidNonExistingAccountSpecificationException,
     NodeConfiguration,
     NodeDriver,
     NonExistingAccount,
-    OutOfAccountsException
+    OutOfAccountsException,
+    APP_PAR,
+    APP_VERSION_PAR,
+    HOSTNAME_PAR
 )
 from feditest.protocols.activitypub import ActivityPubNode
 from feditest.protocols.fediverse import FediverseNode
-from feditest.testplan import TestPlanConstellationNode, TestPlanError
+from feditest.testplan import TestPlanConstellationNode
 from feditest.utils import appname_validate, hostname_validate, http_https_acct_uri_validate, https_uri_validate
 
 ROLE_KEY: Final[str] = 'role'
@@ -144,6 +147,35 @@ class FallbackFediverseNonExistingAccount(NonExistingAccount):
 
 class FallbackFediverseNode(FediverseNode):
     # Python 3.12 @override
+    def provision_account_for_role(self, role: str | None = None) -> Account | None:
+        context_msg = f'Node { self }:'
+        uri = cast(str, self.prompt_user(
+                context_msg
+                + f' provision an account for account role "{ role }" and enter its URI here (with https: or acct: scheme) (node account field "{ URI_KEY }"): ',
+                parse_validate=http_https_acct_uri_validate))
+        actor_uri = cast(str, self.prompt_user(
+                context_msg
+                + f' for the account with account role "{ role }", enter its Actor URI here (with https: scheme) (node account field "{ ACTOR_URI_KEY }"): ',
+                parse_validate=https_uri_validate))
+
+        return FallbackFediverseAccount(uri, actor_uri, role)
+
+
+    def provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
+        context_msg = f'Node { self }:'
+        uri = cast(str, self.prompt_user(
+                context_msg
+                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_KEY }"): ',
+                parse_validate=http_https_acct_uri_validate))
+        actor_uri = cast(str, self.prompt_user(
+                context_msg
+                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_KEY }"): ',
+                parse_validate=https_uri_validate))
+
+        return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
+
+
+    # Python 3.12 @override
     def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
         if not self.account_manager:
             raise OutOfAccountsException('No AccountManager set')
@@ -209,50 +241,6 @@ class FallbackFediverseNode(FediverseNode):
                 + f' the object with URI "{ object_uri }" has appeared and enter its local URI:'))
 
 
-class InteractiveFallbackFediverseAccountManager(AbstractAccountManager):
-    """
-    An AccountManager that asks the user when it runs out of known accounts.
-    """
-    def __init__(self,
-                 initial_accounts: list[Account],
-                 initial_non_existing_accounts: list[NonExistingAccount],
-                 context_msg: str,
-                 node_driver: NodeDriver
-    ):
-        super().__init__(initial_accounts, initial_non_existing_accounts)
-
-        # we want to prompt the user with some context
-        self._context_msg = context_msg
-        self._node_driver = node_driver
-
-
-    # Python 3.12 @override
-    def _provision_account_for_role(self, role: str | None = None) -> Account | None:
-        uri = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provision an account for account role "{ role }" and enter its URI here (with https: or acct: scheme) (node account field "{ URI_KEY }"): ',
-                parse_validate=http_https_acct_uri_validate))
-        actor_uri = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' for the account with account role "{ role }", enter its Actor URI here (with https: scheme) (node account field "{ ACTOR_URI_KEY }"): ',
-                parse_validate=https_uri_validate))
-
-        return FallbackFediverseAccount(uri, actor_uri, role)
-
-
-    def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
-        uri = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_KEY }"): ',
-                parse_validate=http_https_acct_uri_validate))
-        actor_uri = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_KEY }"): ',
-                parse_validate=https_uri_validate))
-
-        return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
-
-
 class AbstractFallbackFediverseNodeDriver(NodeDriver):
     """
     Abstract superclass of NodeDrivers that support all web server-side protocols but don't
@@ -260,9 +248,9 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
     """
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
-        app = test_plan_node.parameter('app')
-        app_version = test_plan_node.parameter('app_version')
-        hostname = test_plan_node.parameter('hostname')
+        app = test_plan_node.parameter(APP_PAR)
+        app_version = test_plan_node.parameter(APP_VERSION_PAR)
+        hostname = test_plan_node.parameter(HOSTNAME_PAR)
 
         if not hostname:
             hostname = self.prompt_user(f'Enter the hostname for the Node of constellation role "{ rolename }" (node parameter "hostname"): ',
@@ -288,10 +276,5 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
                 cast(str, app_version),
                 hostname
             ),
-            InteractiveFallbackFediverseAccountManager(
-                accounts,
-                non_existing_accounts,
-                f'On FediverseNode "{ hostname }" with constellation role "{ rolename }", running app "{ app }":',
-                self
-            )
+            DefaultAccountManager(accounts, non_existing_accounts)
         )

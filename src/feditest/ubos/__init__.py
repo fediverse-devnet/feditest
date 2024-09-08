@@ -4,7 +4,9 @@ Nodes managed via UBOS Gears https://ubos.net/
 from abc import abstractmethod
 import hashlib
 import json
+import os.path
 import random
+import re
 import secrets
 import subprocess
 import shutil
@@ -13,25 +15,98 @@ from typing import Any, cast
 
 from feditest import registry
 from feditest.protocols import (
-    Account,
+    APP_PAR,
+    APP_VERSION_PAR,
+    HOSTNAME_PAR,
     AccountManager,
     Node,
     NodeConfiguration,
-    NodeDriver,
-    NodeSpecificationInsufficientError,
-    NonExistingAccount
+    NodeDriver
 )
 
 from feditest.reporting import error, info, trace, warning
-from feditest.testplan import TestPlanConstellationNode
-from feditest.utils import hostname_validate
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeParameterMalformedError, TestPlanNodeParameterRequiredError
+from feditest.utils import email_validate
 
 """
 There is no UbosNode: all relevant info is in the UbosNodeConfiguration.
 """
 
-ADMIN_USER = 'feditestadmin' # Note: 'admin' is not permitted by Mastodon
-DOES_NOT_EXIST_USER = 'does-not-exist'
+SITEID_PAR = TestPlanNodeParameter(
+    'siteid',
+    """The UBOS SiteId to use for the app.""",
+    validate = lambda s: re.fullmatch('s[0-9a-f]{40}', s)
+)
+
+APPCONFIGID_PAR = TestPlanNodeParameter(
+    'appconfigid',
+    """The UBOS AppConfigId to use for the app.""",
+    validate = lambda s: re.fullmatch('a[0-9a-f]{40}', s)
+)
+
+ADMIN_USERID_PAR = TestPlanNodeParameter(
+    'admin_userid',
+    """User identifier for the administrator of the UBOS Site.""",
+    default = 'feditestadmin', # Note: 'admin' is not permitted by Mastodon
+    validate = lambda s: re.fullmatch('[-a-zA-Z0-9_]+', s)
+)
+
+ADMIN_USERNAME_PAR = TestPlanNodeParameter(
+    'admin_username',
+    """Human-readable name for the administrator of the UBOS Site.""",
+    default = 'feditestadmin', # Note: 'admin' is not permitted by Mastodon
+    validate = lambda s: len(s)
+)
+
+ADMIN_CREDENTIAL_PAR = TestPlanNodeParameter(
+    'admin_credential',
+    """Password for the administrator of the UBOS Site.""",
+    validate = lambda s: len(s)
+)
+
+ADMIN_EMAIL_PAR = TestPlanNodeParameter(
+    'admin_email',
+    """Contact e-mail for the administrator of the UBOS Site.""",
+    validate = email_validate
+)
+
+BACKUPFILE_PAR = TestPlanNodeParameter(
+    'backupfile',
+    '''If the app is to be instantiated by restoring from a .ubos-backup, specify its file name.
+    You must also specify parameter "backup_appconfigid".''',
+    validate = lambda s: os.path.isfile(s)
+)
+
+BACKUP_APPCONFIGID_PAR = TestPlanNodeParameter(
+    'backup_appconfigid',
+    f'''If the app is to be instantiated by restoring from a .ubos-backup, specify the AppConfigId to be restored.
+    You must also specify parameter "{ BACKUPFILE_PAR }".''',
+    validate = lambda s: re.fullmatch('a[0-9a-f]{40}', s)
+)
+
+TLSKEY_PAR = TestPlanNodeParameter(
+    'tlskey',
+    '''Use this TLS key for the webserver instead of automatically provisioning one locally.'''
+    # FIXME: should be valdiated
+)
+
+TLSCERT_PAR = TestPlanNodeParameter(
+    'tlscert',
+    '''Use this TLS certificate chain for the webserver instead of a local certificate authority's.'''
+    # FIXME: should be valdiated
+)
+
+START_DELAY_PAR = TestPlanNodeParameter(
+    'start_delay',
+    """Specify, in seconds, for how long feditest should wait until it considers the newly provisioned Node operational.""",
+    validate = lambda s: isinstance(s, int) and s>=0
+)
+
+RSH_CMD_PAR = TestPlanNodeParameter(
+    'rshcmd',
+    """The ssh or other command to run to perform UBOS administration commands at a remote Node."""
+    # Cannot validate, can be all sorts of things
+)
 
 
 class UbosAdminException(Exception):
@@ -56,10 +131,10 @@ class UbosNodeConfiguration(NodeConfiguration):
         siteid: str,
         appconfigid: str,
         appconfigjson: dict[str,Any],
-        admin_email: str,
-        admin_username: str,
         admin_userid: str,
+        admin_username: str,
         admin_credential: str,
+        admin_email: str,
         app: str,
         app_version: str | None = None,
         hostname: str | None = None,
@@ -72,13 +147,113 @@ class UbosNodeConfiguration(NodeConfiguration):
         self._siteid = siteid
         self._appconfigid = appconfigid
         self._appconfigjson = appconfigjson
-        self._admin_email = admin_email
-        self._admin_username = admin_username
         self._admin_userid = admin_userid
+        self._admin_username = admin_username
         self._admin_credential = admin_credential
+        self._admin_email = admin_email
         self._tlskey = tlskey
         self._tlscert = tlscert
         self._rshcmd = rshcmd
+
+
+    @staticmethod
+    def _generate_siteid():
+        ret = 's'
+        for i in range(40):
+            ret += format(secrets.randbelow(16), 'x')
+        return ret
+
+
+    @staticmethod
+    def _generate_appconfigid():
+        ret = 'a'
+        for i in range(40):
+            ret += format(secrets.randbelow(16), 'x')
+        return ret
+
+
+    @staticmethod
+    def _generate_credential():
+        chars = string.ascii_letters + string.digits + string.punctuation
+        ret = ''.join(random.choice(chars) for i in range(16))
+        return ret
+
+
+    @staticmethod
+    def create_from_node_in_testplan(
+        test_plan_node: TestPlanConstellationNode,
+        node_driver: 'UbosNodeDriver',
+        appconfigjson: dict[str, Any],
+        defaults: dict[str, str | None] | None = None
+    ) -> 'UbosNodeConfiguration':
+        """
+        Parses the information provided in the "parameters" dict of TestPlanConstellationNode
+        """
+        siteid = test_plan_node.parameter(SITEID_PAR, defaults=defaults) or UbosNodeConfiguration._generate_siteid()
+        appconfigid = test_plan_node.parameter(APPCONFIGID_PAR, defaults=defaults) or UbosNodeConfiguration._generate_appconfigid()
+        app = test_plan_node.parameter_or_raise(APP_PAR, defaults=defaults)
+        hostname = test_plan_node.parameter(HOSTNAME_PAR) or registry.obtain_new_hostname(app)
+        admin_userid = test_plan_node.parameter(ADMIN_USERID_PAR, defaults=defaults) or 'feditestadmin'
+        admin_username = test_plan_node.parameter(ADMIN_USERNAME_PAR, defaults=defaults) or 'feditestadmin'
+        admin_credential = test_plan_node.parameter(ADMIN_CREDENTIAL_PAR, defaults=defaults) or UbosNodeConfiguration._generate_credential()
+        admin_email = test_plan_node.parameter(ADMIN_EMAIL_PAR, defaults=defaults) or f'{ admin_userid }@{ hostname }'
+        start_delay_1 = test_plan_node.parameter(START_DELAY_PAR, defaults=defaults)
+        if start_delay_1:
+            if isinstance(float, start_delay_1):
+                start_delay = cast(float, start_delay_1)
+            else:
+                start_delay = float(start_delay_1)
+        else:
+            start_delay = 0.0
+
+        backupfile = test_plan_node.parameter(BACKUPFILE_PAR)
+        if backupfile:
+            backup_appconfigid = test_plan_node.parameter(BACKUP_APPCONFIGID_PAR)
+            if not backup_appconfigid:
+                raise TestPlanNodeParameterRequiredError(BACKUP_APPCONFIGID_PAR, f' when "{ BACKUP_APPCONFIGID_PAR }" is given')
+
+            return UbosNodeFromBackupConfiguration(
+                node_driver = node_driver,
+                siteid = siteid,
+                appconfigid = appconfigid,
+                appconfigjson = appconfigjson,
+                admin_userid = admin_userid,
+                admin_username = admin_username,
+                admin_credential = admin_credential,
+                admin_email = admin_email,
+                backupfile = backupfile,
+                backup_appconfigid = backup_appconfigid,
+                app = app,
+                app_version = test_plan_node.parameter(APP_VERSION_PAR, defaults=defaults),
+                hostname = hostname,
+                tlskey = test_plan_node.parameter(TLSKEY_PAR, defaults=defaults),
+                tlscert = test_plan_node.parameter(TLSCERT_PAR, defaults=defaults),
+                start_delay = start_delay,
+                rshcmd = test_plan_node.parameter(RSH_CMD_PAR, defaults=defaults)
+            )
+
+        else:
+            backup_appconfigid = test_plan_node.parameter(BACKUP_APPCONFIGID_PAR)
+            if backup_appconfigid:
+                raise TestPlanNodeParameterMalformedError(BACKUP_APPCONFIGID_PAR, f' must not be given unless "{ BACKUP_APPCONFIGID_PAR }" is given as well')
+
+            return UbosNodeDeployConfiguration(
+                node_driver = node_driver,
+                siteid = siteid,
+                appconfigid = appconfigid,
+                appconfigjson = appconfigjson,
+                admin_userid = admin_userid,
+                admin_username = admin_username,
+                admin_credential = admin_credential,
+                admin_email = admin_email,
+                app = app,
+                app_version = test_plan_node.parameter(APP_VERSION_PAR, defaults=defaults),
+                hostname = hostname,
+                tlskey = test_plan_node.parameter(TLSKEY_PAR, defaults=defaults),
+                tlscert = test_plan_node.parameter(TLSCERT_PAR, defaults=defaults),
+                start_delay = start_delay,
+                rshcmd = test_plan_node.parameter(RSH_CMD_PAR, defaults=defaults)
+            )
 
 
     @property
@@ -96,24 +271,24 @@ class UbosNodeConfiguration(NodeConfiguration):
         return self._appconfigid
 
 
-    # @property
-    # def admin_email(self) -> str:
-    #     return self._admin_email
+    @property
+    def admin_email(self) -> str:
+        return self._admin_email
 
 
-    # @property
-    # def admin_username(self) -> str:
-    #     return self._admin_username
+    @property
+    def admin_username(self) -> str:
+        return self._admin_username
 
 
-    # @property
-    # def admin_userid(self) -> str:
-    #     return self._admin_userid
+    @property
+    def admin_userid(self) -> str:
+        return self._admin_userid
 
 
-    # @property
-    # def admin_credential(self) -> str:
-    #     return self._admin_credential
+    @property
+    def admin_credential(self) -> str:
+        return self._admin_credential
 
 
 class UbosNodeDeployConfiguration(UbosNodeConfiguration):
@@ -125,7 +300,7 @@ class UbosNodeDeployConfiguration(UbosNodeConfiguration):
         tlscert = self._tlscert
         if tlskey is None or tlscert is None:
             # Obtain these as late as possible, so all hostnames etc in the constellation are known
-            info = registry.obtain_new_hostinfo(self._app)
+            info = registry.obtain_hostinfo(self.hostname)
             if tlskey is None:
                 tlskey = info.key
             if tlscert is None:
@@ -162,10 +337,10 @@ class UbosNodeFromBackupConfiguration(UbosNodeConfiguration):
         siteid: str,
         appconfigid: str,
         appconfigjson: dict[str, Any],
-        admin_email: str,
-        admin_username: str,
         admin_userid: str,
+        admin_username: str,
         admin_credential: str,
+        admin_email: str,
         backupfile: str,
         backup_appconfigid: str,
         app: str,
@@ -176,7 +351,7 @@ class UbosNodeFromBackupConfiguration(UbosNodeConfiguration):
         start_delay: float = 0.0,
         rshcmd: str | None = None,
     ):
-        super().__init__(node_driver, siteid, appconfigid, appconfigjson, admin_email, admin_username, admin_userid, admin_credential, app, app_version, hostname, tlskey, tlscert, start_delay, rshcmd)
+        super().__init__(node_driver, siteid, appconfigid, appconfigjson, admin_userid, admin_username, admin_credential, admin_email, app, app_version, hostname, tlskey, tlscert, start_delay, rshcmd)
 
         self._backupfile = backupfile
         self._backup_appconfigid = backup_appconfigid
@@ -187,7 +362,7 @@ class UbosNodeFromBackupConfiguration(UbosNodeConfiguration):
         tlscert = self._tlscert
         if tlskey is None or tlscert is None:
             # Obtain these as late as possible, so all hostnames etc in the constellation are known
-            info = registry.obtain_new_hostinfo(self._app)
+            info = registry.obtain_hostinfo(self.hostname)
             if tlskey is None:
                 tlskey = info.key
             if tlscert is None:
@@ -224,6 +399,12 @@ class UbosNodeDriver(NodeDriver):
     """
     A general-purpose NodeDriver for Nodes provisioned through UBOS Gears.
     """
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ SITEID_PAR, APPCONFIGID_PAR, APP_PAR, HOSTNAME_PAR, ADMIN_USERID_PAR, ADMIN_USERNAME_PAR, ADMIN_CREDENTIAL_PAR, ADMIN_EMAIL_PAR, START_DELAY_PAR, BACKUPFILE_PAR, BACKUP_APPCONFIGID_PAR ]
+
+
     # Python 3.12 @override
     def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> Node:
         """
@@ -352,26 +533,6 @@ class UbosNodeDriver(NodeDriver):
             info( f"Executing '{fullcmd}'")
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, capture_output=capture_output)
 
-        return ret
-
-
-    def _generate_siteid(self):
-        ret = 's'
-        for i in range(40):
-            ret += format(secrets.randbelow(16), 'x')
-        return ret
-
-
-    def _generate_appconfigid(self):
-        ret = 'a'
-        for i in range(40):
-            ret += format(secrets.randbelow(16), 'x')
-        return ret
-
-
-    def _generate_credential(self):
-        chars = string.ascii_letters + string.digits + string.punctuation
-        ret = ''.join(random.choice(chars) for i in range(16))
         return ret
 
 

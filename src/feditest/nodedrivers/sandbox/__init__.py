@@ -3,9 +3,9 @@
 
 from typing import List
 
-from feditest.protocols import AccountManager, NodeConfiguration, NodeDriver
+from feditest.protocols import AccountManager, NodeConfiguration, NodeDriver, HOSTNAME_PAR
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
 from feditest.utils import FEDITEST_VERSION
 
 
@@ -24,13 +24,19 @@ class SandboxMultClientDriver_ImplementationA(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
+
+
+    # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         return (
             NodeConfiguration(
                 self,
                 'SandboxMultClient_ImplementationA',
                 FEDITEST_VERSION,
-                test_plan_node.parameter('hostname')
+                test_plan_node.parameter(HOSTNAME_PAR)
             ),
             None
         )
@@ -75,13 +81,19 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
+
+
+    # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         return (
             NodeConfiguration(
                 self,
                 'SandboxMultServer_Implementation1',
                 FEDITEST_VERSION,
-                test_plan_node.parameter('hostname')
+                test_plan_node.parameter(HOSTNAME_PAR)
             ),
             None
         )
@@ -129,13 +141,19 @@ class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
+
+
+    # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         return (
             NodeConfiguration(
                 self,
                 'SandboxMultServer_Implementation2Faulty',
                 FEDITEST_VERSION,
-                test_plan_node.parameter('hostname')
+                test_plan_node.parameter(HOSTNAME_PAR)
             ),
             None
         )

@@ -15,23 +15,24 @@ from urllib.parse import urlparse
 from feditest import AssertionFailure, InteropLevel, SpecLevel
 from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver
 from feditest.protocols import (
-    AbstractAccountManager,
     Account,
     AccountManager,
+    DefaultAccountManager,
     InvalidAccountSpecificationException,
-    InvalidNonExistingAccountSpecificationException,
     Node,
     NodeConfiguration,
     NodeDriver,
     NonExistingAccount,
-    OutOfAccountsException,
-    TimeoutException
+    TimeoutException,
+    APP_PAR,
+    APP_VERSION_PAR,
+    HOSTNAME_PAR
 )
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
-from feditest.testplan import TestPlanConstellationNode, TestPlanError
-from feditest.utils import appname_validate, email_validate, hostname_validate
+from feditest.testplan import TestPlanConstellationNode
+from feditest.utils import email_validate, hostname_validate
 
 
 # We use the Mastodon.py module primarily because of its built-in support for rate limiting.
@@ -164,7 +165,7 @@ class MastodonAccount(Account): # this is intended to be abstract
             if not _password_validate(password):
                 raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { PASSWORD_KEY } must be a valid Mastodon password, is: "{ password }".')
 
-            return MastodonUserPasswordAccount(role, userid, email, password)
+            return MastodonUserPasswordAccount(role, userid, password, email)
 
 
     @property
@@ -445,6 +446,36 @@ class NodeWithMastodonAPI(FediverseNode):
     # def transaction(self, code: Callable[[],None]) -> WebServerLog:
     # def override_http_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
 
+# From Node
+
+    # Python 3.12 @override
+    def provision_account_for_role(self, role: str | None = None) -> Account | None:
+        context_msg = f'Mastodon Node { self }: '
+        userid = cast(str, self.prompt_user(
+                context_msg
+                + f' provide the userid of an existing account for account role "{ role }" (node account field "{ USERID_KEY }"): ',
+                parse_validate=_userid_validate))
+        password = cast(str, self.prompt_user(
+                context_msg
+                + f' provide the password for account "{ userid }", account role "{ role }" (node account field "{ PASSWORD_KEY }"): ',
+                parse_validate=_password_validate))
+        email = cast(str, self.prompt_user(
+                context_msg
+                + f' provide the email for account "{ userid }", account role "{ role }" (node account field "{ EMAIL_KEY }"): ',
+                parse_validate=_password_validate))
+
+        return MastodonUserPasswordAccount(role, userid, password, email)
+
+
+    def provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
+        context_msg = f'Mastodon Node { self }: '
+        userid = cast(str, self.prompt_user(
+                context_msg
+                + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_KEY }"): ',
+                parse_validate=_userid_validate))
+
+        return MastodonNonExistingAccount(role, userid)
+
 # Internal implementation helpers
 
     def _get_mastodon_client_by_actor_uri(self, actor_uri: str) -> Mastodon:
@@ -503,61 +534,15 @@ class MastodonNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-class InteractiveMastodonAccountManager(AbstractAccountManager):
-        """
-    An AccountManager that asks the user when it runs out of known accounts.
-        """
-    def __init__(self,
-                 initial_accounts: list[Account],
-                 initial_non_existing_accounts: list[NonExistingAccount],
-                 context_msg: str,
-                 node_driver: NodeDriver
-    ):
-        super().__init__(initial_accounts, initial_non_existing_accounts)
-
-        # we want to prompt the user with some context
-        self._context_msg = context_msg
-        self._node_driver = node_driver
-
-
-    # Python 3.12 @override
-    def _provision_account_for_role(self, role: str | None = None) -> Account | None:
-        userid = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provide the userid of an existing account for account role "{ role }" (node account field "{ USERID_KEY }"): ',
-                parse_validate=_userid_validate))
-
-        password = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provide the password for account "{ userid }", account role "{ role }" (node account field "{ PASSWORD_KEY }"): ',
-                parse_validate=_password_validate))
-
-        email = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provide the email for account "{ userid }", account role "{ role }" (node account field "{ EMAIL_KEY }"): ',
-                parse_validate=_password_validate))
-
-        return MastodonUserPasswordAccount(role, userid, email, password)
-
-
-    def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
-        userid = cast(str, self._node_driver.prompt_user(
-                self._context_msg
-                + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_KEY }"): ',
-                parse_validate=_userid_validate))
-
-        return MastodonNonExistingAccount(role, userid)
-
-
 class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     Create a manually provisioned Mastodon Node
     """
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
-        app = test_plan_node.parameter('app') or 'Mastodon' # Let user give a more descriptive name if they want to
-        app_version = test_plan_node.parameter('app_version')
-        hostname = test_plan_node.parameter('hostname')
+        app = test_plan_node.parameter(APP_PAR) or 'Mastodon' # Let user give a more descriptive name if they want to
+        app_version = test_plan_node.parameter(APP_VERSION_PAR)
+        hostname = test_plan_node.parameter(HOSTNAME_PAR)
 
         if not hostname:
             hostname = self.prompt_user(f'Enter the hostname for the Mastodon Node of constellation role "{ rolename }" (node parameter "hostname"): ',
@@ -580,12 +565,7 @@ class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
                 cast(str, app_version),
                 hostname
             ),
-            InteractiveMastodonAccountManager(
-                accounts,
-                non_existing_accounts,
-                f'On Mastodon node "{ hostname }" with constellation role "{ rolename }":',
-                self
-            )
+            DefaultAccountManager(accounts, non_existing_accounts)
         )
 
 
@@ -593,7 +573,7 @@ class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FediverseNode:
         self.prompt_user(f'Manually provision the Node for constellation role { rolename }'
                          + f' at host { config.hostname } with app { config.app } and hit return when done.')
-        return MastodonNode(rolename, config, account_manager)
+        return MastodonNode(rolename, config, cast(AccountManager, account_manager))
 
 
     # Python 3.12 @override

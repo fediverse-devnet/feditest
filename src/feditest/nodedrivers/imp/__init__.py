@@ -7,7 +7,7 @@ from typing import cast
 import httpx
 from multidict import MultiDict
 
-from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver, HOSTNAME_PAR
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,
@@ -17,7 +17,7 @@ from feditest.protocols.web.traffic import (
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 from feditest.reporting import trace
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
 from feditest.utils import FEDITEST_VERSION
 
 _HEADERS = {
@@ -134,13 +134,19 @@ class ImpInProcessNodeDriver(NodeDriver):
     Knows how to instantiate an Imp.
     """
     # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
+
+
+    # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         return (
             NodeConfiguration(
                 self,
                 'Imp',
                 FEDITEST_VERSION,
-                test_plan_node.parameter('hostname')
+                test_plan_node.parameter(HOSTNAME_PAR)
             ),
             None
         )

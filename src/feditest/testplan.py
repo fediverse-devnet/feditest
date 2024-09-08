@@ -2,8 +2,9 @@
 Classes that represent a TestPlan and its parts.
 """
 
+from dataclasses import dataclass
 import json
-from typing import Any, Final
+from typing import Any, Callable, Final
 
 import msgspec
 
@@ -11,12 +12,41 @@ import feditest
 from feditest.utils import hostname_validate, FEDITEST_VERSION
 
 
+@dataclass
+class TestPlanNodeParameter:
+    """
+    Captures everything that's there to know about a parameter in a Node specification in a test plan.
+    This centralizes error checking functionality and makes emitting helpful output simpler
+    """
+    name: str
+    description: str
+    validate: Callable[[str],Any] | None = None
+    default: str | None = None
+
+
 class TestPlanError(RuntimeError):
     """
     This exception is raised when a TestPlan is defined incorrectly or incompletely.
     """
-    def __init__(self, details: str ):
+    def __init__(self, details: str):
         super().__init__(f"TestPlan defined insufficiently: {details}" )
+
+
+class TestPlanNodeParameterRequiredError(TestPlanError):
+    """
+    A required parameter was missing.
+    """
+    def __init__(self, par: TestPlanNodeParameter, more_details : str = ''):
+        super().__init__(f'Required parameter missing: "{ par.name }"{ more_details}.')
+
+
+class TestPlanNodeParameterMalformedError(TestPlanError):
+    """
+    A required parameter was given but malformed.
+    """
+    def __init__(self, par: TestPlanNodeParameter, more_details : str = ''):
+        super().__init__(f'Required parameter malformed: "{ par.name }"{ more_details}.')
+
 
 ROLE_KEY: Final[str] = 'role' # This applies to the TestPlanConstellationNode, but needs to be out here
                               # so it won't be JSON serialized
@@ -45,7 +75,6 @@ class TestPlanConstellationNode(msgspec.Struct):
     non_existing_accounts: list[dict[str, str | None]] | None = None
 
 
-
     @staticmethod
     def load(filename: str) -> 'TestPlanConstellationNode':
         """
@@ -57,16 +86,26 @@ class TestPlanConstellationNode(msgspec.Struct):
         return msgspec.convert(testplanconstellationnode_json, type=TestPlanConstellationNode)
 
 
-    def parameter(self, name: str) -> Any | None:
+    def parameter(self, par: TestPlanNodeParameter, defaults: dict[str, str | None] | None = None) -> Any | None:
+        ret = None
         if self.parameters:
-            return self.parameters.get(name)
+            ret = self.parameters.get(par.name)
+        if not ret and defaults:
+            ret = defaults.get(par.name)
+        if not ret:
+            ret = par.default
+        if ret:
+            if par.validate and not par.validate(ret):
+                raise TestPlanNodeParameterMalformedError(par)
+            return ret
         return None
 
 
-    def parameter_or_raise(self, name: str) -> Any:
-        if self.parameters and name in self.parameters:
-            return self.parameters[name]
-        raise TestPlanError(f'Required parameter missing: { name }')
+    def parameter_or_raise(self, par: TestPlanNodeParameter, defaults: dict[str, str | None] | None = None) -> Any:
+        ret = self.parameter(par, defaults)
+        if ret is None:
+            raise TestPlanNodeParameterRequiredError(par)
+        return ret
 
 
     def get_account_by_rolename(self, rolename: str | None) -> dict[str, str | None] | None:

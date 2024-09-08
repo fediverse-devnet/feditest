@@ -3,6 +3,7 @@ Provide information on a variety of objects
 """
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
+from typing import Any
 
 import feditest
 import feditest.cli
@@ -54,10 +55,15 @@ def run_info_node_driver(name: str) -> int:
     """
     node_driver_class = feditest.all_node_drivers.get(name)
     if node_driver_class:
-        node_driver_metadata = {
+        node_driver_metadata : dict[str, Any] = {
             'Node driver name:' : node_driver_class.__qualname__,
-            'Description:' : node_driver_class.__doc__
+            'Description:' : node_driver_class.__doc__,
         }
+        pars = node_driver_class.test_plan_node_parameters()
+        if pars:
+            node_driver_metadata['Parameters'] = {}
+            for par in pars:
+                node_driver_metadata['Parameters'][par.name] = par.description
 
         print(format_name_value_string(node_driver_metadata), end='')
         return 0

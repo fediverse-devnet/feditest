@@ -4,11 +4,27 @@ Define interfaces to interact with the nodes in the constellation being tested
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any, final
+from typing import Any, cast, final
 
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
 from feditest.reporting import warning, trace
 from feditest.utils import hostname_validate, appname_validate, appversion_validate
+
+
+APP_PAR = TestPlanNodeParameter(
+    'app',
+    """Name of the app""",
+    validate = lambda x: len(x)
+)
+APP_VERSION_PAR = TestPlanNodeParameter(
+    'app_version',
+    """Version of the app"""
+)
+HOSTNAME_PAR = TestPlanNodeParameter(
+    'hostname',
+    """DNS hostname of where the app is running.""",
+    validate=hostname_validate
+)
 
 
 class Account(ABC):
@@ -138,11 +154,11 @@ class AbstractAccountManager(AccountManager):
         self._non_existing_accounts_allocated_to_role : dict[str | None, NonExistingAccount] = { non_account.role : non_account for non_account in initial_non_existing_accounts if non_account.role }
         self._non_existing_accounts_not_allocated_to_role : list[NonExistingAccount ]= [ non_account for non_account in initial_non_existing_accounts if not non_account.role ]
 
-        self._node = None # the Node this AccountManager belongs to. Set once the Node has been instantiated
+        self._node : Node | None = None # the Node this AccountManager belongs to. Set once the Node has been instantiated
 
 
     # Python 3.12 @override
-    def set_node(self, node: 'Node'):
+    def set_node(self, node: 'Node') -> None:
         if self._node:
             raise ValueError('Have Node already')
         self._node = node
@@ -167,7 +183,8 @@ class AbstractAccountManager(AccountManager):
             else:
                 ret = self._provision_account_for_role(role)
                 if ret:
-                    ret.set_node(self._node)
+                    if ret.node is None: # the Node may already have assigned it
+                        ret.set_node(cast(Node, self._node)) # by now it is not None
                     self._accounts_allocated_to_role[role] = ret
         if ret:
             return ret
@@ -184,25 +201,44 @@ class AbstractAccountManager(AccountManager):
             else:
                 ret = self._provision_non_existing_account_for_role(role)
                 if ret:
-                    ret.set_node(self._node)
+                    if ret.node is None: # the Node may already have assigned it
+                        ret.set_node(cast(Node, self._node)) # by now it is not None
                     self._non_existing_accounts_allocated_to_role[role] = ret
         if ret:
             return ret
         raise OutOfNonExistingAccountsException()
 
 
+    @abstractmethod
     def _provision_account_for_role(self, role: str | None = None) -> Account | None:
         """
-        This no-op method can be overridden by subclasses to dynamically provision a new Account.
+        This can be overridden by subclasses to dynamically provision a new Account.
+        By default, we ask our Node.
         """
-        return None
+        ...
+
+
+    @abstractmethod
+    def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
+        """
+        This can be overridden by subclasses to dynamically provision a new NonExistingAccount.
+        By default, we ask our Node.
+        """
+        ...
+
+
+class DefaultAccountManager(AbstractAccountManager):
+    """
+    An AccountManager that asks the Node to provision accounts.
+    """
+    def _provision_account_for_role(self, role: str | None = None) -> Account | None:
+        node = cast(Node, self._node)
+        return node.provision_account_for_role(role)
 
 
     def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
-        """
-        This no-op method can be overridden by subclasses to dynamically provision a new NonExistingAccount.
-        """
-        return None
+        node = cast(Node, self._node)
+        return node.provision_non_existing_account_for_role(role)
 
 
 class StaticAccountManager(AbstractAccountManager):
@@ -210,7 +246,12 @@ class StaticAccountManager(AbstractAccountManager):
     An AccountManager that only uses the static informatation about Accounts and NonExistingAccounts
     that was provided in the TestPlan.
     """
-    pass
+    def _provision_account_for_role(self, role: str | None = None) -> Account | None:
+        return None
+
+
+    def _provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
+        return None
 
 
 class NodeConfiguration:
@@ -326,6 +367,22 @@ class Node(ABC):
         return self._account_manager
 
 
+    def provision_account_for_role(self, role: str | None = None) -> Account | None:
+        """
+        We need a new Account on this Node, for the given role. Provision that account,
+        or return None if not possible. By default, we ask the user.
+        """
+        return None
+
+
+    def provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
+        """
+        We need a new NonExistingAccount on this Node, for the given role. Return information about that
+        non-existing account, or return None if not possible. By default, we ask the user.
+        """
+        return None
+
+
     def add_cert_to_trust_store(self, root_cert: str) -> None:
         self.prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n' + root_cert)
 
@@ -358,19 +415,29 @@ class NodeDriver(ABC):
     This is an abstract superclass for all objects that know how to instantiate Nodes of some kind.
     Any one subclass of NodeDriver is only instantiated once as a singleton
     """
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        """
+        Return the TestPlanNodeParameters understood by this NodeDriver. This is used by
+        feditest info --nodedriver to help the user figure out what parameters to specify
+        and what their names are.
+        """
+        return [ APP_PAR, APP_VERSION_PAR, HOSTNAME_PAR ]
+
+
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         """
         Read the node data provided in test_plan_node and create a NodeConfiguration object
         from it. This will throw exceptions if the Node is misconfigured.
 
-        Override in subclasses.
+        May be overridden in subclasses.
         """
         return (
             NodeConfiguration(
                 self,
-                test_plan_node.parameter_or_raise('app'),
-                test_plan_node.parameter('app_version'),
-                test_plan_node.parameter('hostname')
+                test_plan_node.parameter_or_raise(APP_PAR),
+                test_plan_node.parameter(APP_VERSION_PAR),
+                test_plan_node.parameter(HOSTNAME_PAR)
             ),
             None
         )
