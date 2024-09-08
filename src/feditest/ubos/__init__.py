@@ -136,8 +136,8 @@ class UbosNodeConfiguration(NodeConfiguration):
         admin_credential: str,
         admin_email: str,
         app: str,
+        hostname: str, # Note: switched positions with app_version as it is required here
         app_version: str | None = None,
-        hostname: str | None = None,
         tlskey: str | None = None,
         tlscert: str | None = None,
         start_delay: float = 0.0,
@@ -224,8 +224,8 @@ class UbosNodeConfiguration(NodeConfiguration):
                 backupfile = backupfile,
                 backup_appconfigid = backup_appconfigid,
                 app = app,
-                app_version = test_plan_node.parameter(APP_VERSION_PAR, defaults=defaults),
                 hostname = hostname,
+                app_version = test_plan_node.parameter(APP_VERSION_PAR, defaults=defaults),
                 tlskey = test_plan_node.parameter(TLSKEY_PAR, defaults=defaults),
                 tlscert = test_plan_node.parameter(TLSCERT_PAR, defaults=defaults),
                 start_delay = start_delay,
@@ -247,8 +247,8 @@ class UbosNodeConfiguration(NodeConfiguration):
                 admin_credential = admin_credential,
                 admin_email = admin_email,
                 app = app,
-                app_version = test_plan_node.parameter(APP_VERSION_PAR, defaults=defaults),
                 hostname = hostname,
+                app_version = test_plan_node.parameter(APP_VERSION_PAR, defaults=defaults),
                 tlskey = test_plan_node.parameter(TLSKEY_PAR, defaults=defaults),
                 tlscert = test_plan_node.parameter(TLSCERT_PAR, defaults=defaults),
                 start_delay = start_delay,
@@ -300,7 +300,8 @@ class UbosNodeDeployConfiguration(UbosNodeConfiguration):
         tlscert = self._tlscert
         if tlskey is None or tlscert is None:
             # Obtain these as late as possible, so all hostnames etc in the constellation are known
-            info = registry.obtain_hostinfo(self.hostname)
+            hostname = cast(str, self.hostname) # In the UbosNodeConfiguration it is mandatory
+            info = registry.obtain_hostinfo(hostname)
             if tlskey is None:
                 tlskey = info.key
             if tlscert is None:
@@ -344,14 +345,29 @@ class UbosNodeFromBackupConfiguration(UbosNodeConfiguration):
         backupfile: str,
         backup_appconfigid: str,
         app: str,
+        hostname: str,
         app_version: str | None = None,
-        hostname: str | None = None,
         tlskey: str | None = None,
         tlscert: str | None = None,
         start_delay: float = 0.0,
         rshcmd: str | None = None,
     ):
-        super().__init__(node_driver, siteid, appconfigid, appconfigjson, admin_userid, admin_username, admin_credential, admin_email, app, app_version, hostname, tlskey, tlscert, start_delay, rshcmd)
+        super().__init__(
+            node_driver = node_driver,
+            siteid = siteid,
+            appconfigid = appconfigid,
+            appconfigjson = appconfigjson,
+            admin_userid = admin_userid,
+            admin_username = admin_username,
+            admin_credential = admin_credential,
+            admin_email = admin_email,
+            app = app,
+            hostname = hostname,
+            app_version = app_version,
+            tlskey = tlskey,
+            tlscert = tlscert,
+            start_delay = start_delay,
+            rshcmd = rshcmd)
 
         self._backupfile = backupfile
         self._backup_appconfigid = backup_appconfigid
@@ -362,7 +378,8 @@ class UbosNodeFromBackupConfiguration(UbosNodeConfiguration):
         tlscert = self._tlscert
         if tlskey is None or tlscert is None:
             # Obtain these as late as possible, so all hostnames etc in the constellation are known
-            info = registry.obtain_hostinfo(self.hostname)
+            hostname = cast(str, self.hostname) # In the UbosNodeConfiguration it is mandatory
+            info = registry.obtain_hostinfo(hostname)
             if tlskey is None:
                 tlskey = info.key
             if tlscert is None:
