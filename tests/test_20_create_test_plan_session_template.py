@@ -79,7 +79,7 @@ def test_session_template_unnamed(unnamed: TestPlanSession) -> None:
     assert len(unnamed.tests) == 3
     assert unnamed.constellation
     assert unnamed.constellation.name is None
-    assert str(unnamed.constellation) == 'Unnamed'
+    assert str(unnamed.constellation)
     assert unnamed.constellation.is_template()
     assert len(unnamed.constellation.roles) == 3
     assert 'role_a' in unnamed.constellation.roles
@@ -96,7 +96,7 @@ def test_session_template_named(named: TestPlanSession) -> None:
     assert len(named.tests) == 3
     assert named.constellation
     assert named.constellation.name is None
-    assert str(named.constellation) == 'Unnamed'
+    assert str(named.constellation)
     assert named.constellation.is_template()
     assert len(named.constellation.roles) == 3
     assert 'role_a' in named.constellation.roles

@@ -172,7 +172,7 @@ class TestPlanConstellation(msgspec.Struct):
         if self.name:
             return self.name
         # construct something that makes sense to the user
-        return ", ".join( [ f'{ role }: { node.nodedriver }' for role, node in self.roles.items() ] )
+        return ", ".join( [ f'{ role }: { node.nodedriver if node else "" }' for role, node in self.roles.items() ] )
 
 
     def is_template(self):

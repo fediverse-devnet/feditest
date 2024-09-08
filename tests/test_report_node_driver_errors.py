@@ -62,11 +62,14 @@ def init():
     feditest._loading_node_drivers = False
 
 
-def test_faulty_node_driver_reportiung() -> None:
+def test_faulty_node_driver_reporting() -> None:
     plan = TestPlan( [
         TestPlanSession(
             TestPlanConstellation( {
-                'node' : TestPlanConstellationNode('test_report_node_driver_errors.init.<locals>.Faulty_NodeDriver')
+                'node' : TestPlanConstellationNode(
+                    nodedriver = 'test_report_node_driver_errors.init.<locals>.Faulty_NodeDriver',
+                    parameters = { 'app' : 'Dummy for test_faulty_node_driver_reporting'}
+                )
             }),
             [
                 TestPlanTestSpec('test_report_node_driver_errors::init.<locals>.dummy')
