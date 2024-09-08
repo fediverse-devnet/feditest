@@ -94,7 +94,7 @@ class FallbackFediverseAccount(Account):
     def actor_uri(self):
         if self._actor_uri:
             return self._actor_uri
-        raise Exception(f'No value for { ACTOR_URI_ACCOUNT_FIELD.name } in non-existing account with role { self.role }.')
+        raise Exception(f'No value for { ACTOR_URI_ACCOUNT_FIELD.name } in account with role { self.role }.')
 
         # Perhaps perform WebFinger query here? But its unclear we can: feditest may not run on a host that has access to the same DNS info as the Nodes in the constellation')
         #     webfinger_response : WebFingerQueryResponse = self.perform_webfinger_query(uri)

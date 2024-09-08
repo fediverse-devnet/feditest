@@ -51,7 +51,7 @@ class TestPlanNodeAccountOrNonExistingAccountField(ABC):
     validate_error_msg: str = 'Value invalid.'
 
 
-    def get_validate_from(self, account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
+    def get_validate_from(self, account_info_in_testplan: dict[str, str | None], context_msg: str = '') -> str | None:
         """
         Get the value of this field from account_info_in_testplan.
         If there is no value, return None.
@@ -65,10 +65,11 @@ class TestPlanNodeAccountOrNonExistingAccountField(ABC):
         return ret
 
 
-    def get_validate_from_or_raise(self, account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
+    def get_validate_from_or_raise(self, account_info_in_testplan: dict[str, str | None], context_msg: str = '') -> str:
         ret = self.get_validate_from(account_info_in_testplan, context_msg)
         if ret is None:
             raise InvalidAccountSpecificationException(account_info_in_testplan, f'Missing field value for: { self.name }.', context_msg)
+        return ret
 
 
 @dataclass
