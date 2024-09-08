@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any, cast, final
 
-from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
 from feditest.reporting import warning, trace
 from feditest.utils import hostname_validate, appname_validate, appversion_validate
 
@@ -65,24 +65,6 @@ class NonExistingAccount(ABC):
         if self.node:
             raise ValueError(f'Node already set {self}')
         self.node = node
-
-
-class InvalidAccountSpecificationException(Exception):
-    """
-    Thrown if an account specification given in a TestPlan does not have sufficient information
-    to be used as an Account for a Node instantiated by this NodeDriver.
-    """
-    def __init__(self, account_info_from_testplan: dict[str, str | None], node_driver: 'NodeDriver', msg: str):
-        super().__init__(f'Invalid account specification for NodeDriver { node_driver }: { msg }')
-
-
-class InvalidNonExistingAccountSpecificationException(Exception):
-    """
-    Thrown if a non-existing account specification given in a TestPlan does not have sufficient information
-    to be used as an NonExistingAccount for a Node instantiated by this NodeDriver.
-    """
-    def __init__(self, non_existing_account_info_from_testplan: dict[str, str | None], node_driver: 'NodeDriver', msg: str):
-        super().__init__(f'Invalid non-existing account specification for NodeDriver { node_driver }: { msg }')
 
 
 class OutOfAccountsException(Exception):
@@ -445,11 +427,31 @@ class NodeDriver(ABC):
     @staticmethod
     def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
         """
-        Return the TestPlanNodeParameters understood by this NodeDriver. This is used by
-        feditest info --nodedriver to help the user figure out what parameters to specify
-        and what their names are.
+        Return the TestPlanNodeParameters that may be specified on TestPlanConstellationNodes.
+        This is used by "feditest info --nodedriver" to help the user figure out what parameters
+        to specify and what their names are.
         """
         return [ APP_PAR, APP_VERSION_PAR, HOSTNAME_PAR ]
+
+
+    @staticmethod
+    def test_plan_node_account_fields() -> list[TestPlanNodeAccountField]:
+        """
+        Return the TestPlanNodeAccountFields that may be specified on TestPlanConstellationNodes to identify existing Accounts.
+        This is used by "feditest info --nodedriver" to help the user figure out how to specify
+        pre-existing Accounts on a Node.
+        """
+        return [] # By default: cannot be done
+
+
+    @staticmethod
+    def test_plan_node_non_existing_account_fields() -> list[TestPlanNodeNonExistingAccountField]:
+        """
+        Return the TestPlanNodeNonExistingAccountFields that may be specified on TestPlanConstellationNodes to identify non-existing Accounts.
+        This is used by "feditest info --nodedriver" to help the user figure out how to specify
+        non-existing Accounts on a Node.
+        """
+        return [] # By default: cannot be done
 
 
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:

@@ -61,9 +61,24 @@ def run_info_node_driver(name: str) -> int:
         }
         pars = node_driver_class.test_plan_node_parameters()
         if pars:
-            node_driver_metadata['Parameters'] = {}
+            node_driver_metadata_pars = {}
             for par in pars:
-                node_driver_metadata['Parameters'][par.name] = par.description
+                node_driver_metadata_pars[par.name] = par.description
+            node_driver_metadata['Parameters:'] = node_driver_metadata_pars
+
+        account_fields = node_driver_class.test_plan_node_account_fields()
+        if account_fields:
+            node_driver_metadata_fields = {}
+            for field in account_fields:
+                node_driver_metadata_fields[field.name] = field.description
+            node_driver_metadata['Account fields:'] = node_driver_metadata_fields
+
+        non_existing_account_fields = node_driver_class.test_plan_node_non_existing_account_fields()
+        if non_existing_account_fields:
+            node_driver_metadata_non_fields = {}
+            for field in non_existing_account_fields:
+                node_driver_metadata_non_fields[field.name] = field.description
+            node_driver_metadata['Non-existing Account fields:'] = node_driver_metadata_non_fields
 
         print(format_name_value_string(node_driver_metadata), end='')
         return 0

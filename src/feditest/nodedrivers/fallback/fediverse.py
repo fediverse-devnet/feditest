@@ -2,14 +2,12 @@
 Fallback implementation for FediverseNode
 """
 
-from typing import Final, cast
+from typing import cast
 
 from feditest.protocols import (
     Account,
     AccountManager,
     DefaultAccountManager,
-    InvalidAccountSpecificationException,
-    InvalidNonExistingAccountSpecificationException,
     NodeConfiguration,
     NodeDriver,
     NonExistingAccount,
@@ -20,12 +18,40 @@ from feditest.protocols import (
 )
 from feditest.protocols.activitypub import ActivityPubNode
 from feditest.protocols.fediverse import FediverseNode
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
 from feditest.utils import appname_validate, hostname_validate, http_https_acct_uri_validate, https_uri_validate
 
-ROLE_KEY: Final[str] = 'role'
-URI_KEY: Final[str] = 'uri'
-ACTOR_URI_KEY: Final[str] = 'actor_uri'
+
+ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'role',
+        """A symbolic name for the Account as used by tests.""",
+        lambda x: len(x)
+)
+URI_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'uri',
+        """The acct: or https: URI that identifies the Account.""",
+        http_https_acct_uri_validate
+)
+ACTOR_URI_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'actor_uri',
+        """The https: Actor URI for this Account.""",
+        https_uri_validate
+)
+ROLE_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
+        'role',
+        """A symbolic name for the non-existing Account as used by tests.""",
+        lambda x: len(x)
+)
+URI_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
+        'uri',
+        """The acct: or https: URI that identifies the non-existing Account.""",
+        http_https_acct_uri_validate
+)
+ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
+        'actor_uri',
+        """The https: Actor URI for this non-existing Account.""",
+        https_uri_validate
+)
 
 """
 Pre-existing accounts in TestPlans are specified as follows:
@@ -50,19 +76,11 @@ class FallbackFediverseAccount(Account):
         """
         Parses the information provided in an "account" dict of TestPlanConstellationNode
         """
-        if URI_KEY not in account_info_in_testplan or not account_info_in_testplan[URI_KEY]:
-            raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Missing field value for: { URI_KEY }.')
-        uri = account_info_in_testplan[URI_KEY]
-        if not http_https_acct_uri_validate(uri):
-            raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { URI_KEY } must be acct, http or https URI, is: "{ uri }".')
+        uri = URI_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        actor_uri = ACTOR_URI_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
 
-        actor_uri = account_info_in_testplan.get(ACTOR_URI_KEY)
-        if actor_uri:
-            if not https_uri_validate(actor_uri):
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { ACTOR_URI_KEY } must be https URI, is: "{ actor_uri }".')
-        # We cannot perform a WebFinger query here: the Node may not exist yet
-
-        role = account_info_in_testplan.get(ROLE_KEY) # may or may not be there
+        # If actor_uri was not given, we cannot perform a WebFinger query here: the Node may not exist yet
 
         return FallbackFediverseAccount(uri, actor_uri, role)
 
@@ -74,8 +92,11 @@ class FallbackFediverseAccount(Account):
 
     @property
     def actor_uri(self):
-        if not self._actor_uri:
-            raise Exception('Perhaps perform WebFinger query here? But its unclear we can: feditest may not run on a host that has access to the same DNS info as the Nodes in the constellation')
+        if self._actor_uri:
+            return self._actor_uri
+        raise Exception(f'No value for { ACTOR_URI_ACCOUNT_FIELD.name } in non-existing account with role { self.role }.')
+
+        # Perhaps perform WebFinger query here? But its unclear we can: feditest may not run on a host that has access to the same DNS info as the Nodes in the constellation')
         #     webfinger_response : WebFingerQueryResponse = self.perform_webfinger_query(uri)
         #     if not webfinger_response.jrd:
         #         raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Cannot determine actor URI from { uri }: WebFinger query failed')
@@ -91,7 +112,6 @@ class FallbackFediverseAccount(Account):
         #         raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Cannot determine actor URI from { uri }: WebFinger query has no rel=self and type=application/activity+json entry')
         #     if not https_uri_validate(actor_uri):
         #         raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'URI determined from WebFinger query of { uri } is not a valid Actor HTTP URI: "{ actor_uri }".')
-        return self._actor_uri
 
 
     @property
@@ -111,19 +131,11 @@ class FallbackFediverseNonExistingAccount(NonExistingAccount):
         """
         Parses the information provided in an "non_existing_account" dict of TestPlanConstellationNode
         """
-        if URI_KEY not in non_existing_account_info_in_testplan or not non_existing_account_info_in_testplan[URI_KEY]:
-            raise InvalidNonExistingAccountSpecificationException(non_existing_account_info_in_testplan, node_driver, f'Missing field value for: { URI_KEY }.')
-        uri = non_existing_account_info_in_testplan[URI_KEY]
-        if not http_https_acct_uri_validate(uri):
-            raise InvalidAccountSpecificationException(non_existing_account_info_in_testplan, node_driver, f'Field { URI_KEY } must be acct, http or https URI, is: "{ uri }".')
+        uri = URI_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        actor_uri = ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        role = ROLE_NON_EXISTING_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
 
-        actor_uri = non_existing_account_info_in_testplan.get(ACTOR_URI_KEY)
-        if actor_uri:
-            if not https_uri_validate(actor_uri):
-                raise InvalidAccountSpecificationException(non_existing_account_info_in_testplan, node_driver, f'Field { ACTOR_URI_KEY } must be https URI, is: "{ actor_uri }".')
         # We cannot perform a WebFinger query: account does not exist
-
-        role = non_existing_account_info_in_testplan.get(ROLE_KEY) # may or may not be there
 
         return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
 
@@ -137,7 +149,7 @@ class FallbackFediverseNonExistingAccount(NonExistingAccount):
     def actor_uri(self):
         if self._actor_uri:
             return self._actor_uri
-        raise Exception(f'No value for { ACTOR_URI_KEY } in non-existing account with role { self.role }.')
+        raise Exception(f'No value for { ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD.name } in non-existing account with role { self.role }.')
 
 
     @property
@@ -151,11 +163,11 @@ class FallbackFediverseNode(FediverseNode):
         context_msg = f'Node { self }:'
         uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provision an account for account role "{ role }" and enter its URI here (with https: or acct: scheme) (node account field "{ URI_KEY }"): ',
+                + f' provision an account for account role "{ role }" and enter its URI here (with https: or acct: scheme) (node account field "{ URI_ACCOUNT_FIELD.name }"): ',
                 parse_validate=http_https_acct_uri_validate))
         actor_uri = cast(str, self.prompt_user(
                 context_msg
-                + f' for the account with account role "{ role }", enter its Actor URI here (with https: scheme) (node account field "{ ACTOR_URI_KEY }"): ',
+                + f' for the account with account role "{ role }", enter its Actor URI here (with https: scheme) (node account field "{ ACTOR_URI_ACCOUNT_FIELD.name }"): ',
                 parse_validate=https_uri_validate))
 
         return FallbackFediverseAccount(uri, actor_uri, role)
@@ -165,11 +177,11 @@ class FallbackFediverseNode(FediverseNode):
         context_msg = f'Node { self }:'
         uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_KEY }"): ',
+                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_NON_EXISTING_ACCOUNT_FIELD }"): ',
                 parse_validate=http_https_acct_uri_validate))
         actor_uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_KEY }"): ',
+                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD }"): ',
                 parse_validate=https_uri_validate))
 
         return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
@@ -246,6 +258,18 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
     Abstract superclass of NodeDrivers that support all web server-side protocols but don't
     automate anything.
     """
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_account_fields() -> list[TestPlanNodeAccountField]:
+        return [ ROLE_ACCOUNT_FIELD, URI_ACCOUNT_FIELD, ACTOR_URI_ACCOUNT_FIELD ]
+
+
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_non_existing_account_fields() -> list[TestPlanNodeNonExistingAccountField]:
+        return [ ROLE_NON_EXISTING_ACCOUNT_FIELD, URI_NON_EXISTING_ACCOUNT_FIELD, ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD ]
+
+
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         app = test_plan_node.parameter(APP_PAR)

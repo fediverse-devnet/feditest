@@ -7,10 +7,22 @@ import string
 import subprocess
 from typing import cast
 
-from feditest.nodedrivers.mastodon import MastodonNode, MastodonAccount, MastodonUserPasswordAccount, MastodonNonExistingAccount
+from feditest.nodedrivers.mastodon import (
+    MastodonAccount,
+    MastodonNode,
+    MastodonNonExistingAccount,
+    MastodonUserPasswordAccount,
+    EMAIL_ACCOUNT_FIELD,
+    OAUTH_TOKEN_ACCOUNT_FIELD,
+    PASSWORD_ACCOUNT_FIELD,
+    ROLE_ACCOUNT_FIELD,
+    ROLE_NON_EXISTING_ACCOUNT_FIELD,
+    USERID_ACCOUNT_FIELD,
+    USERID_NON_EXISTING_ACCOUNT_FIELD
+)
 from feditest.protocols import Account, NonExistingAccount, AccountManager, DefaultAccountManager, Node, NodeConfiguration
 from feditest.reporting import error, trace
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
 from feditest.ubos import UbosNodeConfiguration, UbosNodeDriver
 
 
@@ -103,6 +115,18 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate Mastodon via UBOS.
     """
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_account_fields() -> list[TestPlanNodeAccountField]:
+        return [ USERID_ACCOUNT_FIELD, EMAIL_ACCOUNT_FIELD, PASSWORD_ACCOUNT_FIELD, OAUTH_TOKEN_ACCOUNT_FIELD, ROLE_ACCOUNT_FIELD ]
+
+
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_non_existing_account_fields() -> list[TestPlanNodeNonExistingAccountField]:
+        return [ USERID_NON_EXISTING_ACCOUNT_FIELD, ROLE_NON_EXISTING_ACCOUNT_FIELD ]
+
+
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         accounts : list[Account] = []

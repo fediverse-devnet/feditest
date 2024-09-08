@@ -9,16 +9,14 @@ import re
 import requests
 import sys
 import time
-from typing import Any, Callable, Final, cast
+from typing import Any, Callable, cast
 from urllib.parse import urlparse
 
 from feditest import AssertionFailure, InteropLevel, SpecLevel
-from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver
 from feditest.protocols import (
     Account,
     AccountManager,
     DefaultAccountManager,
-    InvalidAccountSpecificationException,
     Node,
     NodeConfiguration,
     NodeDriver,
@@ -31,7 +29,7 @@ from feditest.protocols import (
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
 from feditest.utils import email_validate, hostname_validate
 
 
@@ -52,6 +50,7 @@ if "mastodon" in sys.modules:
         sys.modules["mastodon"] = m
 else:
     from mastodon import Mastodon
+
 
 
 def _oauth_token_validate(candidate: str) -> str | None:
@@ -80,31 +79,43 @@ def _password_validate(candidate: str) -> str | None:
     candidate = candidate.strip()
     return candidate if len(candidate)>4 else None
 
-"""
-Pre-existing username/password accounts in TestPlans are specified as follows:
 
-* USERID_KEY: Mastodon userid for a user (e.g. "joe")
-* EMAIL_KEY: E-mail for a user (needed because logging into Mastodon is by e-mail address)
-* PASSWORD_KEY: Password of a user
-* ROLE_KEY: optional account role
+USERID_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'userid',
+        """Mastodon userid for a user (e.g. "joe"). Must be provided.""",
+        _userid_validate
+)
+EMAIL_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'email',
+        """E-mail for the user on an Account. Needed for accounts specified with a password (not a token) because logging into Mastodon is by e-mail address.""",
+        email_validate
+)
+PASSWORD_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'password',
+        """Password for a user. Needed for accounts that also have an e-mail address and no token.""",
+        _password_validate
+)
+OAUTH_TOKEN_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'oauth_token',
+        """OAuth token of a user, obtained out of band, for users not specified with e-mail address and password.""",
+        _oauth_token_validate
+)
+ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
+        'role',
+        """A symbolic name for the Account as used by tests.""",
+        lambda x: len(x)
+)
 
-Pre-existing OAuth token accounts in TestPlans are specified as follows:
-
-* USERID_KEY: Mastodon userid for a user (e.g. "joe")
-* OAUTH_TOKEN_KEY: OAuth token of a user, obtained out of band
-* ROLE_KEY: optional account role
-
-Known non-existing accounts are specified as follows:
-* USERID_KEY: Mastodon userid for a non-existing user (e.g. "joe")
-* ROLE_KEY: optional non-existing account role
-
-"""
-
-USERID_KEY: Final[str] = 'userid'
-EMAIL_KEY: Final[str] = 'email'
-PASSWORD_KEY: Final[str] = 'password'
-OAUTH_TOKEN_KEY: Final[str] = 'oauth_token'
-ROLE_KEY: Final[str] = 'role'
+USERID_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
+        'userid',
+        """Mastodon userid for a non-existing user (e.g. "joe"). Must be provided.""",
+        _userid_validate
+)
+ROLE_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
+        'role',
+        """A symbolic name for the non-existing Account as used by tests.""",
+        lambda x: len(x)
+)
 
 
 @dataclass
@@ -135,36 +146,17 @@ class MastodonAccount(Account): # this is intended to be abstract
         """
         Parses the information provided in an "account" dict of TestPlanConstellationNode
         """
-        if USERID_KEY not in account_info_in_testplan or not account_info_in_testplan[USERID_KEY]:
-            raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Missing field value for: { USERID_KEY }.')
-        userid = account_info_in_testplan[USERID_KEY]
-        if not _userid_validate(userid):
-            raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { USERID_KEY } must be a valid Mastodon userid, is: "{ userid }".')
+        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
 
-        role = account_info_in_testplan.get(ROLE_KEY) # may or may not be there
-
-        if OAUTH_TOKEN_KEY in account_info_in_testplan:
-            if not account_info_in_testplan[OAUTH_TOKEN_KEY]:
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Either { OAUTH_TOKEN_KEY } is empty.')
-            oauth_token = account_info_in_testplan[OAUTH_TOKEN_KEY]
-            if not _oauth_token_validate(oauth_token):
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { OAUTH_TOKEN_KEY } must be a valid Mastodon OAuth token, is: "{ oauth_token }".')
-
+        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        if oauth_token:
+            # FIXME: Raise error if email or password are given
             return MastodonOAuthTokenAccount(role, userid, oauth_token)
 
         else:
-            if EMAIL_KEY not in account_info_in_testplan or not account_info_in_testplan[EMAIL_KEY]:
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Either field { EMAIL_KEY } or { OAUTH_TOKEN_KEY } must ben given.')
-            email = account_info_in_testplan[EMAIL_KEY]
-            if not email_validate(email):
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { EMAIL_KEY } must be a valid e-mail address, is: "{ email }".')
-
-            if PASSWORD_KEY not in account_info_in_testplan or not account_info_in_testplan[PASSWORD_KEY]:
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Missing field value for: { PASSWORD_KEY }.')
-            password = account_info_in_testplan[PASSWORD_KEY]
-            if not _password_validate(password):
-                raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'Field { PASSWORD_KEY } must be a valid Mastodon password, is: "{ password }".')
-
+            email = EMAIL_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+            password = PASSWORD_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
             return MastodonUserPasswordAccount(role, userid, password, email)
 
 
@@ -235,13 +227,8 @@ class MastodonNonExistingAccount(NonExistingAccount):
         """
         Parses the information provided in an "non_existing_account" dict of TestPlanConstellationNode
         """
-        if USERID_KEY not in non_existing_account_info_in_testplan or not non_existing_account_info_in_testplan[USERID_KEY]:
-            raise InvalidAccountSpecificationException(non_existing_account_info_in_testplan, node_driver, f'Missing field value for: { USERID_KEY }.')
-        userid = non_existing_account_info_in_testplan[USERID_KEY]
-        if not _userid_validate(userid):
-            raise InvalidAccountSpecificationException(non_existing_account_info_in_testplan, node_driver, f'Field { USERID_KEY } must be a valid Mastodon userid, is: "{ userid }".')
-
-        role = non_existing_account_info_in_testplan.get(ROLE_KEY) # may or may not be there
+        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
 
         return MastodonNonExistingAccount(role, userid)
 
@@ -343,19 +330,24 @@ class NodeWithMastodonAPI(FediverseNode):
             (b for b in results.get("accounts", []) if b.uri == b_uri_there), None
         ):
             relationship = mastodon_client.account_follow(b_account)
-            if not relationship["following"]:
-                def f(): # I thought I could make this a lambda but python and I don't get along
-                    relationship = mastodon_client.account_relationships(b_account)
-                    if relationship["following"]:
-                        return relationship["following"]
-                    return None
-
-                self._poll_until_result( # may throw
-                    f,
-                    int(self.parameter('follow_wait_retry_count') or '5'),
-                    int(self.parameter('follow_wait_retry_interval') or '1'),
-                    f'Expected follow relationship was not established between { a_uri_here } and { b_uri_there }')
-                trace('make_a_follow_b returns')
+            # FIXME: rethink whether the semantics of this make_a_follow_b() should include some version of
+            # the following code, or not. There is the second leg ("config") to be taken into
+            # consideration.
+            #
+            # if not relationship["following"]:
+            #     def f(): # I thought I could make this a lambda but python and I don't get along
+            #         relationship = mastodon_client.account_relationships(b_account)
+            #         if relationship["following"]:
+            #             return relationship["following"]
+            #         return None
+            #
+            #     self._poll_until_result( # may throw
+            #         f,
+            #         int(self.parameter('follow_wait_retry_count') or '5'),
+            #         int(self.parameter('follow_wait_retry_interval') or '1'),
+            #         f'Expected follow relationship was not established between { a_uri_here } and { b_uri_there }')
+            #     trace('make_a_follow_b returns')
+            return
         raise ValueError(f'Actor URI not found: { b_uri_there }')
 
 
@@ -453,15 +445,15 @@ class NodeWithMastodonAPI(FediverseNode):
         context_msg = f'Mastodon Node { self }: '
         userid = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the userid of an existing account for account role "{ role }" (node account field "{ USERID_KEY }"): ',
+                + f' provide the userid of an existing account for account role "{ role }" (node account field "{ USERID_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_userid_validate))
         password = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the password for account "{ userid }", account role "{ role }" (node account field "{ PASSWORD_KEY }"): ',
+                + f' provide the password for account "{ userid }", account role "{ role }" (node account field "{ PASSWORD_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_password_validate))
         email = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the email for account "{ userid }", account role "{ role }" (node account field "{ EMAIL_KEY }"): ',
+                + f' provide the email for account "{ userid }", account role "{ role }" (node account field "{ EMAIL_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_password_validate))
 
         return MastodonUserPasswordAccount(role, userid, password, email)
@@ -471,7 +463,7 @@ class NodeWithMastodonAPI(FediverseNode):
         context_msg = f'Mastodon Node { self }: '
         userid = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_KEY }"): ',
+                + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD }"): ',
                 parse_validate=_userid_validate))
 
         return MastodonNonExistingAccount(role, userid)
@@ -534,10 +526,22 @@ class MastodonNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
+class MastodonManualNodeDriver(NodeDriver):
     """
     Create a manually provisioned Mastodon Node
     """
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_account_fields() -> list[TestPlanNodeAccountField]:
+        return [ USERID_ACCOUNT_FIELD, EMAIL_ACCOUNT_FIELD, PASSWORD_ACCOUNT_FIELD, OAUTH_TOKEN_ACCOUNT_FIELD, ROLE_ACCOUNT_FIELD ]
+
+
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_non_existing_account_fields() -> list[TestPlanNodeNonExistingAccountField]:
+        return [ USERID_NON_EXISTING_ACCOUNT_FIELD, ROLE_NON_EXISTING_ACCOUNT_FIELD ]
+
+
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         app = test_plan_node.parameter(APP_PAR) or 'Mastodon' # Let user give a more descriptive name if they want to
@@ -560,7 +564,7 @@ class MastodonManualNodeDriver(AbstractFallbackFediverseNodeDriver):
 
         return (
             NodeConfiguration(
-            self,
+                self,
                 cast(str, app),
                 cast(str, app_version),
                 hostname

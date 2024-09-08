@@ -2,6 +2,7 @@
 Classes that represent a TestPlan and its parts.
 """
 
+from abc import ABC
 from dataclasses import dataclass
 import json
 from typing import Any, Callable, Final
@@ -12,16 +13,82 @@ import feditest
 from feditest.utils import hostname_validate, FEDITEST_VERSION
 
 
+class InvalidAccountSpecificationException(Exception):
+    """
+    Thrown if an account specification given in a TestPlan does not have sufficient information
+    to be used as an Account for a Node instantiated by this NodeDriver.
+    """
+    def __init__(self, account_info_from_testplan: dict[str, str | None], msg: str, context_msg: str = ''):
+        super().__init__(f'{ context_msg }Invalid account specification: { msg }')
+
+
+class InvalidNonExistingAccountSpecificationException(Exception):
+    """
+    Thrown if a non-existing account specification given in a TestPlan does not have sufficient information
+    to be used as an NonExistingAccount for a Node instantiated by this NodeDriver.
+    """
+    def __init__(self, non_existing_account_info_from_testplan: dict[str, str | None], msg: str, context_msg: str = ''):
+        super().__init__(f'{ context_msg }Invalid non-existing account specification: { msg }')
+
+
 @dataclass
 class TestPlanNodeParameter:
     """
     Captures everything that's there to know about a parameter in a Node specification in a test plan.
-    This centralizes error checking functionality and makes emitting helpful output simpler
+    This centralizes error checking functionality and makes emitting helpful output simpler.
     """
     name: str
     description: str
     validate: Callable[[str],Any] | None = None
     default: str | None = None
+
+
+@dataclass
+class TestPlanNodeAccountOrNonExistingAccountField(ABC):
+    name: str
+    description: str
+    validate: Callable[[str],Any] | None = None
+    validate_error_msg: str = 'Value invalid.'
+
+
+    def get_validate_from(self, account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
+        """
+        Get the value of this field from account_info_in_testplan.
+        If there is no value, return None.
+        If there is a value, and it does not pass validation, raise an exception.
+        """
+        if account_info_in_testplan is None or self.name not in account_info_in_testplan or not account_info_in_testplan[self.name]:
+            return None
+        ret = account_info_in_testplan[self.name]
+        if ret and self.validate and not self.validate(ret):
+            raise InvalidAccountSpecificationException(account_info_in_testplan, f'Field { self.name }: { self.validate_error_msg } Is: "{ ret }".', context_msg)
+        return ret
+
+
+    def get_validate_from_or_raise(self, account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
+        ret = self.get_validate_from(account_info_in_testplan, context_msg)
+        if ret is None:
+            raise InvalidAccountSpecificationException(account_info_in_testplan, f'Missing field value for: { self.name }.', context_msg)
+
+
+@dataclass
+class TestPlanNodeAccountField(TestPlanNodeAccountOrNonExistingAccountField):
+    """
+    Captures everything that's there to know about a field providing information about a pre-existing
+    Account on a Node specification in a test plan.
+    This centralizes error checking functionality and makes emitting helpful output simpler.
+    """
+    pass
+
+
+@dataclass
+class TestPlanNodeNonExistingAccountField(TestPlanNodeAccountOrNonExistingAccountField):
+    """
+    Captures everything that's there to know about a field providing information about a non-existing
+    Account on a Node specification in a test plan.
+    This centralizes error checking functionality and makes emitting helpful output simpler.
+    """
+    pass
 
 
 class TestPlanError(RuntimeError):
