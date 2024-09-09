@@ -526,7 +526,7 @@ class MastodonNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-class MastodonManualNodeDriver(NodeDriver):
+class MastodonSaasNodeDriver(NodeDriver):
     """
     Create a manually provisioned Mastodon Node
     """

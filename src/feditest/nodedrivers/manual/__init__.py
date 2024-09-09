@@ -7,7 +7,7 @@ from feditest.protocols import AccountManager, Node, NodeConfiguration
 from feditest.protocols.fediverse import FediverseNode
 
 
-class ManualFediverseNodeDriver(AbstractFallbackFediverseNodeDriver):
+class FediverseManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     A NodeDriver that supports all web server-side protocols but doesn't automate anything.
     """

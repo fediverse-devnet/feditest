@@ -35,7 +35,7 @@ class WordPressPlusActivityPubPluginNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-class WordPressPlusActivityPubPluginManualNodeDriver(AbstractManualWebServerNodeDriver):
+class WordPressPlusActivityPubPluginSaasNodeDriver(NodeDriver):
     """
     Create a manually provisioned WordPress + ActivityPubPlugin Node
     """

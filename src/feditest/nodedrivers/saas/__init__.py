@@ -5,7 +5,7 @@ from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNod
 from feditest.protocols import AccountManager, NodeConfiguration
 
 
-class SaasFediverseNodeDriver(AbstractFallbackFediverseNodeDriver):
+class FediverseSaasNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     A NodeDriver that supports all protocols but doesn't automate anything and assumes the
     Node under test exists as a website that we don't have/can provision/unprovision.

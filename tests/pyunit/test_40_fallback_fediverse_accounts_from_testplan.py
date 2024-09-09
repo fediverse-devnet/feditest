@@ -18,7 +18,7 @@ from feditest.nodedrivers.fallback.fediverse import (
     ROLE_NON_EXISTING_ACCOUNT_FIELD,
     URI_NON_EXISTING_ACCOUNT_FIELD,
 )
-from feditest.nodedrivers.manual import ManualFediverseNodeDriver
+from feditest.nodedrivers.saas import FediverseSaasNodeDriver
 from feditest.protocols import StaticAccountManager
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
 
@@ -41,7 +41,7 @@ def init():
 
 @pytest.fixture(autouse=True)
 def the_test_plan() -> TestPlan:
-    node_driver = ManualFediverseNodeDriver()
+    node_driver = FediverseSaasNodeDriver()
     parameters = {
         'hostname' : 'localhost', # Avoid interactive question
         'app' : 'test-dummy' # Avoid interactive question

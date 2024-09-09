@@ -218,14 +218,14 @@ def nodedriver(to_register: Type[TNodeDriver]) -> Type[TNodeDriver]:
 
 def load_default_node_drivers() -> None:
     for d in [ 'feditest.nodedrivers.imp.ImpInProcessNodeDriver',
-               'feditest.nodedrivers.manual.ManualFediverseNodeDriver',
-               'feditest.nodedrivers.mastodon.MastodonManualNodeDriver',
+               'feditest.nodedrivers.manual.FediverseManualNodeDriver',
+               'feditest.nodedrivers.mastodon.MastodonSaasNodeDriver',
                'feditest.nodedrivers.mastodon.ubos.MastodonUbosNodeDriver',
-               'feditest.nodedrivers.saas.SaasFediverseNodeDriver',
+               'feditest.nodedrivers.saas.FediverseSaasNodeDriver',
                'feditest.nodedrivers.sandbox.SandboxMultClientDriver_ImplementationA',
                'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation1',
                'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation2Faulty',
-               'feditest.nodedrivers.wordpress.WordPressPlusActivityPubPluginManualNodeDriver',
+               'feditest.nodedrivers.wordpress.WordPressPlusActivityPubPluginSaasNodeDriver',
                'feditest.nodedrivers.wordpress.ubos.WordPressPlusActivityPubPluginUbosNodeDriver']:
 
         module_name, class_name = d.rsplit('.', 1)
