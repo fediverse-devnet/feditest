@@ -1,8 +1,6 @@
-# def pytest_pycollect_makeitem(collector, name, obj):
-#     module_name = getattr(obj, "__module__") if hasattr(obj, "__module__") else None
-#     if module_name and module_name.startswith("feditest."):
-#         print("@@@@@ Not collecting", obj, module_name)
-#         return None
+"""
+Don't accidentally consider anything below feditest to be a pyunit test.
+"""
 
 import inspect
 
