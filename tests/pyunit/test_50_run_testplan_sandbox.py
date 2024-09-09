@@ -15,6 +15,7 @@ from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
 from feditest.testruntranscript import TestRunTranscript
 
+
 @pytest.fixture(scope="module", autouse=True)
 def init_node_drivers():
     """
