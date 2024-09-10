@@ -133,6 +133,24 @@ class AccountManager(ABC):
         ...
 
 
+    @abstractmethod
+    def get_account_by_match(self, match_function: Callable[[Account],bool]) -> Account | None:
+        """
+        Provide a matching function. Return the first Account known by this AccountManager and
+        allocated to a role that matches the matching function.
+        """
+        ...
+
+
+    @abstractmethod
+    def get_non_existing_account_by_match(self, match_function: Callable[[NonExistingAccount],bool]) -> NonExistingAccount | None:
+        """
+        Provide a matching function. Return the first NonExistingAccount known by this AccountManager and
+        allocated to a role that matches the matching function.
+        """
+        ...
+
+
 class AbstractAccountManager(AccountManager):
     """
     An AccountManager implementation that is initialized from lists of inital accounts and non-accounts
@@ -216,6 +234,22 @@ class AbstractAccountManager(AccountManager):
         if ret:
             return ret
         raise OutOfNonExistingAccountsException()
+
+
+    # Python 3.12 @override
+    def get_account_by_match(self, match_function: Callable[[Account],bool]) -> Account | None:
+        for account in self._accounts_allocated_to_role.values():
+            if match_function(account):
+                return account
+        return None
+
+
+    # Python 3.12 @override
+    def get_non_existing_account_by_match(self, match_function: Callable[[NonExistingAccount],bool]) -> NonExistingAccount | None:
+        for non_existing_account in self._non_existing_accounts_allocated_to_role.values():
+            if match_function(non_existing_account):
+                return non_existing_account
+        return None
 
 
     @abstractmethod
