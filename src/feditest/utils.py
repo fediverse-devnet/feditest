@@ -10,7 +10,7 @@ import re
 import sys
 import importlib.metadata
 from types import ModuleType
-from typing import List, Optional
+from typing import Any, List, Optional
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
@@ -180,6 +180,26 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
                     spec.loader.exec_module(module)
         finally:
             sys.path = sys_path_before
+
+
+def boolean_parse_validate(candidate: Any | None) -> bool | None:
+    """
+    Validate that the provided string represents a boolean.
+    Return the boolean if valid, None otherwise
+    """
+    if candidate is None:
+        return False
+    if isinstance(candidate, bool):
+        return candidate
+    if isinstance(candidate,str):
+        lower = candidate.lower()
+    else:
+        lower = str(candidate).lower()
+    if lower in ("yes", "true", "y", "t", "1"):
+        return True
+    if lower in ("no", "false", "n", "f", "0"):
+        return False
+    return None
 
 
 def account_id_parse_validate(candidate: str) -> ParsedUri | None:

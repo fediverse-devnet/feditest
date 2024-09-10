@@ -29,8 +29,8 @@ from feditest.protocols import (
 from feditest.protocols.activitypub import ActivityPubNode, AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
-from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
-from feditest.utils import email_validate, hostname_validate
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
+from feditest.utils import boolean_parse_validate, email_validate, hostname_validate
 
 
 # We use the Mastodon.py module primarily because of its built-in support for rate limiting.
@@ -51,6 +51,12 @@ if "mastodon" in sys.modules:
 else:
     from mastodon import Mastodon
 
+
+VERIFY_API_TLS_CERTIFICATE_PAR = TestPlanNodeParameter(
+    'verify_api_tls_certificate',
+    """If set to false, accessing the Mastodon API will be performed without checking TLS certificates.""",
+    validate=boolean_parse_validate
+)
 
 
 def _oauth_token_validate(candidate: str) -> str | None:
@@ -241,6 +247,24 @@ class MastodonNonExistingAccount(NonExistingAccount):
     @property
     def actor_uri(self):
         return f'https://{ self.node.hostname }/users/{ self.userid }'
+
+
+class NodeWithMastodonApiConfiguration(NodeConfiguration):
+    def __init__(self,
+        node_driver: 'NodeDriver',
+        app: str,
+        app_version: str | None = None,
+        hostname: str | None = None,
+        start_delay: float = 0.0,
+        verify_tls_certificate: bool = True
+    ):
+        super().__init__(node_driver=node_driver, app=app, app_version=app_version, hostname=hostname, start_delay=start_delay)
+        self._verify_tls_certificate = verify_tls_certificate
+
+
+    @property
+    def verify_tls_certificate(self) -> bool:
+        return self._verify_tls_certificate
 
 
 class NodeWithMastodonAPI(FediverseNode):
@@ -528,8 +552,14 @@ class MastodonNode(NodeWithMastodonAPI):
 
 class MastodonSaasNodeDriver(NodeDriver):
     """
-    Create a manually provisioned Mastodon Node
+    Create a Mastodon Node that already runs as SaaS
     """
+    # Python 3.12 @override
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ APP_PAR, APP_VERSION_PAR, HOSTNAME_PAR, VERIFY_API_TLS_CERTIFICATE_PAR ]
+
+
     # Python 3.12 @override
     @staticmethod
     def test_plan_node_account_fields() -> list[TestPlanNodeAccountField]:
@@ -544,9 +574,10 @@ class MastodonSaasNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
-        app = test_plan_node.parameter(APP_PAR) or 'Mastodon' # Let user give a more descriptive name if they want to
+        app = test_plan_node.parameter_or_raise(APP_PAR, { APP_PAR.name:  'Mastodon' }) # Let user give a more descriptive name if they want to
         app_version = test_plan_node.parameter(APP_VERSION_PAR)
-        hostname = test_plan_node.parameter(HOSTNAME_PAR)
+        hostname = test_plan_node.parameter_or_raise(HOSTNAME_PAR)
+        verify_tls_certificate = test_plan_node.parameter_or_raise(VERIFY_API_TLS_CERTIFICATE_PAR, { VERIFY_API_TLS_CERTIFICATE_PAR.name: 'true' })
 
         if not hostname:
             hostname = self.prompt_user(f'Enter the hostname for the Mastodon Node of constellation role "{ rolename }" (node parameter "hostname"): ',
@@ -563,11 +594,12 @@ class MastodonSaasNodeDriver(NodeDriver):
                 non_existing_accounts.append(MastodonNonExistingAccount.create_from_non_existing_account_info_in_testplan(non_existing_account_info, self))
 
         return (
-            NodeConfiguration(
-                self,
-                cast(str, app),
-                cast(str, app_version),
-                hostname
+            NodeWithMastodonApiConfiguration(
+                node_driver=self,
+                app=cast(str, app),
+                app_version=cast(str, app_version),
+                hostname=hostname,
+                verify_tls_certificate=verify_tls_certificate
             ),
             DefaultAccountManager(accounts, non_existing_accounts)
         )

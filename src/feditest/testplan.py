@@ -138,7 +138,7 @@ class TestPlanConstellationNode(msgspec.Struct):
     TestRun delegates it to the NodeDrivers that will instantiate the Nodes.
     """
     nodedriver: str | None = None # if we allow this to be None, we can do better error reporting
-    parameters: dict[str,Any | None] | None = None
+    parameters: dict[str, Any | None] | None = None
     accounts: list[dict[str, str | None]] | None = None
     non_existing_accounts: list[dict[str, str | None]] | None = None
 
@@ -158,12 +158,12 @@ class TestPlanConstellationNode(msgspec.Struct):
         ret = None
         if self.parameters:
             ret = self.parameters.get(par.name)
-        if not ret and defaults:
+        if ret is None and defaults:
             ret = defaults.get(par.name)
-        if not ret:
+        if ret is None:
             ret = par.default
-        if ret:
-            if par.validate and not par.validate(ret):
+        if ret is not None:
+            if par.validate and par.validate(ret) is None:
                 raise TestPlanNodeParameterMalformedError(par)
             return ret
         return None
