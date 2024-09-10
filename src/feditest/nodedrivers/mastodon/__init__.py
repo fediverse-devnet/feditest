@@ -577,11 +577,6 @@ class MastodonNode(NodeWithMastodonAPI):
     """
     # Python 3.12 @override
     def _actor_uri_to_userid(self, actor_uri: str) -> str:
-        """
-        The algorithm by which this application maps userids to ActivityPub actor URIs in reverse.
-        Apparently this is different between Mastodon and other implementations, such as WordPress,
-        so this is abstract here and must be overridden.
-        """
         if m:= re.match('^https://([^/]+)/users/(.+)$', actor_uri):
             if m.group(1) == self._config.hostname:
                 return m.group(2)
