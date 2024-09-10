@@ -24,32 +24,32 @@ from feditest.utils import appname_validate, hostname_validate, http_https_acct_
 
 ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'role',
-        """A symbolic name for the Account as used by tests.""",
+        """A symbolic name for the Account as used by tests (optional).""",
         lambda x: len(x)
 )
 URI_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'uri',
-        """The acct: or https: URI that identifies the Account.""",
+        """The acct: or https: URI that identifies the Account (required).""",
         http_https_acct_uri_validate
 )
 ACTOR_URI_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'actor_uri',
-        """The https: Actor URI for this Account.""",
+        """The https: Actor URI for this Account (required for ActivityPub tests).""",
         https_uri_validate
 )
 ROLE_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
         'role',
-        """A symbolic name for the non-existing Account as used by tests.""",
+        """A symbolic name for the non-existing Account as used by tests (optional).""",
         lambda x: len(x)
 )
 URI_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
         'uri',
-        """The acct: or https: URI that identifies the non-existing Account.""",
+        """The acct: or https: URI that identifies the non-existing Account (required).""",
         http_https_acct_uri_validate
 )
 ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
         'actor_uri',
-        """The https: Actor URI for this non-existing Account.""",
+        """The https: Actor URI for this non-existing Account (required for ActivityPub tests).""",
         https_uri_validate
 )
 

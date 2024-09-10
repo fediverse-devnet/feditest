@@ -88,17 +88,17 @@ def _password_validate(candidate: str) -> str | None:
 
 USERID_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'userid',
-        """Mastodon userid for a user (e.g. "joe"). Must be provided.""",
+        """Mastodon userid for a user (e.g. "joe") (required).""",
         _userid_validate
 )
 EMAIL_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'email',
-        """E-mail for the user on an Account. Needed for accounts specified with a password (not a token) because logging into Mastodon is by e-mail address.""",
+        """E-mail for the user on an Account. Required for accounts specified with a password (not a token) because logging into Mastodon is by e-mail address.""",
         email_validate
 )
 PASSWORD_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'password',
-        """Password for a user. Needed for accounts that also have an e-mail address and no token.""",
+        """Password for a user. Required for accounts that also have an e-mail address and no token.""",
         _password_validate
 )
 OAUTH_TOKEN_ACCOUNT_FIELD = TestPlanNodeAccountField(
@@ -108,18 +108,18 @@ OAUTH_TOKEN_ACCOUNT_FIELD = TestPlanNodeAccountField(
 )
 ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'role',
-        """A symbolic name for the Account as used by tests.""",
+        """A symbolic name for the Account as used by tests (optional).""",
         lambda x: len(x)
 )
 
 USERID_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
         'userid',
-        """Mastodon userid for a non-existing user (e.g. "joe"). Must be provided.""",
+        """Mastodon userid for a non-existing user (e.g. "joe")  (required).""",
         _userid_validate
 )
 ROLE_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
         'role',
-        """A symbolic name for the non-existing Account as used by tests.""",
+        """A symbolic name for the non-existing Account as used by tests (optional).""",
         lambda x: len(x)
 )
 
