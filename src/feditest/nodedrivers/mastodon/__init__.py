@@ -17,7 +17,6 @@ from feditest.protocols import (
     Account,
     AccountManager,
     DefaultAccountManager,
-    Node,
     NodeConfiguration,
     NodeDriver,
     NonExistingAccount,
@@ -135,9 +134,9 @@ class MastodonOAuthApp:
     session : requests.Session # Use this session which has the right CA certs
 
     @staticmethod
-    def create(api_base_url: str, session: requests.Session):
-        client_id_secret = Mastodon.create_app('feditest', api_base_url=api_base_url, session=session)
-        return MastodonOAuthApp(client_id_secret[0], client_id_secret[1], api_base_url, session)
+    def create(api_base_url: str, session: requests.Session) -> 'MastodonOAuthApp':
+        client_id, client_secret = Mastodon.create_app('feditest', api_base_url=api_base_url, session=session)
+        return MastodonOAuthApp(client_id, client_secret, api_base_url, session)
 
 
 class MastodonAccount(Account): # this is intended to be abstract
@@ -191,14 +190,17 @@ class MastodonUserPasswordAccount(MastodonAccount):
     # Python 3.12 @override
     def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
         if self._mastodon_user_client is None:
+            trace(f'Logging into Mastodon at { oauth_app.api_base_url } as { self.email }')
             client = Mastodon(
                 client_id = oauth_app.client_id,
-                client_secret=oauth_app.client_secret,
-                api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session
+                client_secret = oauth_app.client_secret,
+                api_base_url = oauth_app.api_base_url,
+                session = oauth_app.session # , debug_requests = True
             )
-            client.log_in(self.email, self.password)
+            client.log_in(username = self.email, password = self.password) # returns the token
+
             self._mastodon_user_client = client
+
         return self._mastodon_user_client
 
 
@@ -353,7 +355,7 @@ class NodeWithMastodonAPI(FediverseNode):
         if b_account := next(
             (b for b in results.get("accounts", []) if b.uri == b_uri_there), None
         ):
-            relationship = mastodon_client.account_follow(b_account)
+            relationship = mastodon_client.account_follow(b_account) # # noqa: F841
             # FIXME: rethink whether the semantics of this make_a_follow_b() should include some version of
             # the following code, or not. There is the second leg ("config") to be taken into
             # consideration.
@@ -492,19 +494,55 @@ class NodeWithMastodonAPI(FediverseNode):
 
         return MastodonNonExistingAccount(role, userid)
 
+# Test support
+
+    def delete_all_followers_of(self, actor_uri: str):
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+        actor = mastodon_client.account_verify_credentials()
+        for followed in mastodon_client.account_followers(actor.id):
+            mastodon_client.account_unfollow(followed.id)
+
+
+    def delete_all_following_of(self, actor_uri: str):
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+        actor = mastodon_client.account_verify_credentials()
+        for following in mastodon_client.account_following(actor.id):
+            mastodon_client.account_unfollow(following.id)
+
+
+    def delete_all_statuses_by(self, actor_uri: str):
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+        actor = mastodon_client.account_verify_credentials()
+        for status in mastodon_client.account_statuses(actor.id):
+            mastodon_client.status_delete(status)
+
 # Internal implementation helpers
 
     def _get_mastodon_client_by_actor_uri(self, actor_uri: str) -> Mastodon:
         """
         Convenience method to get the instance of the Mastodon client object for a given actor URI.
         """
-        if self._requests_session is None:
-            self._requests_session = requests.Session()
-            self._requests_session.verify = certifi.where() # force re-read of cacert file, which the requests library reads upon first import
-
+        config = cast(NodeWithMastodonApiConfiguration, self.config)
         userid = self._actor_uri_to_userid(actor_uri)
         if not userid:
             raise ValueError(f'Cannot find actor { actor_uri }')
+
+        if self._requests_session is None:
+            self._requests_session = requests.Session()
+            if config.verify_tls_certificate:
+                self._requests_session.verify = certifi.where() # force re-read of cacert file, which the requests library reads upon first import
+            else:
+                self._requests_session.verify = None
+
+        if not self._mastodon_oauth_app:
+            self._mastodon_oauth_app = MastodonOAuthApp.create(f'https://{ self.hostname}', self._requests_session)
+
+        account = self._account_manager.get_account_by_match( lambda candidate: isinstance(candidate, MastodonAccount) and candidate.userid == userid )
+        if account is None:
+            return None
+
+        ret = cast(MastodonAccount, account).mastodon_user_client(self._mastodon_oauth_app)
+        return ret
 
 
     def _poll_until_result(self,
