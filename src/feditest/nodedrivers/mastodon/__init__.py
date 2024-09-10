@@ -496,21 +496,21 @@ class NodeWithMastodonAPI(FediverseNode):
 
 # Test support
 
-    def delete_all_followers_of(self, actor_uri: str):
+    def delete_all_followers_of(self, actor_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
         actor = mastodon_client.account_verify_credentials()
         for followed in mastodon_client.account_followers(actor.id):
             mastodon_client.account_unfollow(followed.id)
 
 
-    def delete_all_following_of(self, actor_uri: str):
+    def delete_all_following_of(self, actor_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
         actor = mastodon_client.account_verify_credentials()
         for following in mastodon_client.account_following(actor.id):
             mastodon_client.account_unfollow(following.id)
 
 
-    def delete_all_statuses_by(self, actor_uri: str):
+    def delete_all_statuses_by(self, actor_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
         actor = mastodon_client.account_verify_credentials()
         for status in mastodon_client.account_statuses(actor.id):

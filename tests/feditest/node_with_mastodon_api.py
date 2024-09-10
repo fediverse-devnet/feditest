@@ -1,11 +1,22 @@
 """
-Tests for our implementation of the NodeWithMastodonAPI implementatin
+Tests for our implementation of the NodeWithMastodonAPI.
+This tests produces regular Python assertion errors, not feditest assertion errors, because
+problems here are problems in our NodeDriver, not Fediverse interop problems.
 """
 
 from datetime import datetime
+# import re
 
 from feditest import step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
+
+# @test
+# def app_version(
+#         server: NodeWithMastodonAPI
+#     ) -> None:
+#         # FIXME: need to implement property mastodon_api_app_version
+#         # This should access Mastodon without an authenticated user and we don't currently have code for how to do that
+#         assert re.match(r'\d+\.\d+\.\d+', server.mastodon_api_app_version), "Invalid version"
 
 
 @test
@@ -24,6 +35,7 @@ class CreateNoteTest:
     @step
     def provision_actor(self):
         self.actor_uri = self.server.obtain_actor_document_uri()
+        assert self.actor_uri
 
 
     @step
@@ -34,6 +46,7 @@ class CreateNoteTest:
     @step
     def create_note(self):
         self.note_uri = self.server.make_create_note(self.actor_uri, f"testing make_create_note {datetime.now()}")
+        assert self.note_uri
 
 
     @step
