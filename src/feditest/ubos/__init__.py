@@ -448,7 +448,7 @@ class UbosNodeDriver(NodeDriver):
             raise RuntimeError(f'No AccountManager set for rolename { rolename } with UbosNodeDriver { self }')
 
         # We currently have 2 modes
-        if isinstance(config,UbosNodeFromBackupConfiguration):
+        if isinstance(config, UbosNodeFromBackupConfiguration):
             self._provision_node_from_backupfile(config, account_manager)
         elif isinstance(config, UbosNodeDeployConfiguration):
             self._provision_node_with_generated_sitejson(config, account_manager)
