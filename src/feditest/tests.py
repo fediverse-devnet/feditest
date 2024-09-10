@@ -75,6 +75,10 @@ class TestStepInTestClass:
         self.test_step_function: Callable[[Any], None] = test_step_function
 
 
+    def __str__(self):
+        return self.name
+
+
 class TestFromTestClass(Test):
     def __init__(self, name: str, description: str | None, clazz: type) -> None:
         super().__init__(name, description)
