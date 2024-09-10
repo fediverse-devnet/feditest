@@ -564,7 +564,7 @@ class UbosNodeDriver(NodeDriver):
         return ret
 
 
-    def add_cert_to_trust_store(self, root_cert: str, rshcmd: str | None = None) -> None:
+    def add_cert_to_trust_store_via(self, root_cert: str, rshcmd: str | None) -> None:
         """
         On behalf of the UbosNode (which isn't a class, by conceptually is a thing), save this
         root_cert in PEM format to the Device's trust store.
@@ -584,7 +584,7 @@ class UbosNodeDriver(NodeDriver):
             error(f'Failed to execute cmd {cmd}')
 
 
-    def remove_cert_from_trust_store(self, root_cert: str, rshcmd: str | None = None) -> None:
+    def remove_cert_from_trust_store_via(self, root_cert: str, rshcmd: str | None) -> None:
         """
         Note: This may be invoked more than once on the same Device with the same data. We are
         lazy, delete it the first time and silently do nothing after.
