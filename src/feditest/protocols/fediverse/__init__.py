@@ -45,7 +45,10 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.make_a_follow_b)
 
 
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
         """
+        Wait until the object at object_uri has arrived in the inbox of actor_uri.
+        If the object has not arrived by the time max_wait seconds have passed, throw
+        a TimeoutException.
         """
         raise NotImplementedByNodeError(self, FediverseNode.wait_for_object_in_inbox)

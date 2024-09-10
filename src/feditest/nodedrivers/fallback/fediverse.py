@@ -2,6 +2,7 @@
 Fallback implementation for FediverseNode
 """
 
+import sys
 from typing import cast
 
 from feditest.protocols import (
@@ -247,10 +248,10 @@ class FallbackFediverseNode(FediverseNode):
 
 
     # Python 3.12 @override
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
-        return cast(str, self.prompt_user(
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = sys.float_info.max) -> None:
+        self.prompt_user(
                 f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
-                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:'))
+                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:')
 
 
 class AbstractFallbackFediverseNodeDriver(NodeDriver):

@@ -376,7 +376,7 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, retry_count: int = 5, retry_interval: int = 1) -> str:
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
         trace('wait_for_object_in_inbox:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
         response = self._poll_until_result( # may throw
@@ -388,11 +388,11 @@ class NodeWithMastodonAPI(FediverseNode):
                 ),
                 None,
             ),
-            retry_count,
-            retry_interval,
-            f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }')
+            int(max_wait),
+            1.0,
+            f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }'
+        )
         trace(f'wait_for_object_in_inbox returns with { response }')
-        return response
 
 # From ActivityPubNode
 
@@ -510,7 +510,7 @@ class NodeWithMastodonAPI(FediverseNode):
     def _poll_until_result(self,
         condition: Callable[[], Any | None],
         retry_count: int,
-        retry_interval: int,
+        retry_interval: float,
         msg: str | None = None
     ) -> Any:
         for _ in range(retry_count):

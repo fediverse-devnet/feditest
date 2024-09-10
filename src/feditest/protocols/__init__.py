@@ -650,5 +650,5 @@ class TimeoutException(RuntimeError):
     """
     A result has not arrived within the expected time period.
     """
-    def __init__(self, msg: str, timeout: int):
+    def __init__(self, msg: str, timeout: float):
         super().__init__(f'{ msg } (timeout: { timeout })')
