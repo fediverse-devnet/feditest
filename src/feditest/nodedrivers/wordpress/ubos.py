@@ -1,9 +1,8 @@
 """
 """
 
-from typing import Any, cast
+from typing import cast
 
-from feditest import registry
 from feditest.nodedrivers.mastodon import (
     MastodonAccount,
     MastodonNonExistingAccount,
@@ -24,7 +23,7 @@ from feditest.protocols import (
     Node,
     NodeConfiguration
 )
-from feditest.reporting import error, trace
+from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
 from feditest.ubos import UbosNodeConfiguration, UbosNodeDriver
 

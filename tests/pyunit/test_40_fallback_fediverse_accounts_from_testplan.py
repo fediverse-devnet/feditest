@@ -19,7 +19,6 @@ from feditest.nodedrivers.fallback.fediverse import (
     URI_NON_EXISTING_ACCOUNT_FIELD,
 )
 from feditest.nodedrivers.saas import FediverseSaasNodeDriver
-from feditest.protocols import StaticAccountManager
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
 
 

@@ -2,8 +2,6 @@
 Test that NodeDriver errors are reported in the test reports
 """
 
-from typing import Any
-
 import feditest
 import pytest
 from feditest import nodedriver

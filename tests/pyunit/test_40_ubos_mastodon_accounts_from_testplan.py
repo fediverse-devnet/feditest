@@ -22,7 +22,6 @@ from feditest.nodedrivers.mastodon import (
     USERID_NON_EXISTING_ACCOUNT_FIELD
 )
 from feditest.nodedrivers.mastodon.ubos import MastodonUbosNodeDriver
-from feditest.protocols import StaticAccountManager
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
 
 

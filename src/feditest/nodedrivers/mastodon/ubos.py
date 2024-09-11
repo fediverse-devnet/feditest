@@ -123,9 +123,9 @@ class MastodonUbosNodeConfiguration(UbosNodeDeployConfiguration, NodeWithMastodo
             start_delay = 0.0
 
         if test_plan_node.parameter(BACKUPFILE_PAR):
-            raise TestPlanNodeParameterMalformedError(BACKUP_APPCONFIGID_PAR, f' must not be given for MastodonUbosNodeDriver')
+            raise TestPlanNodeParameterMalformedError(BACKUP_APPCONFIGID_PAR, ' must not be given for MastodonUbosNodeDriver')
         if test_plan_node.parameter(BACKUP_APPCONFIGID_PAR):
-            raise TestPlanNodeParameterMalformedError(BACKUP_APPCONFIGID_PAR, f' must not be given for MastodonUbosNodeDriver')
+            raise TestPlanNodeParameterMalformedError(BACKUP_APPCONFIGID_PAR, ' must not be given for MastodonUbosNodeDriver')
 
         return MastodonUbosNodeConfiguration(
             node_driver = node_driver,

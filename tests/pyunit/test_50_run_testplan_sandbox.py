@@ -13,7 +13,6 @@ from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, Sandb
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
-from feditest.testruntranscript import TestRunTranscript
 
 
 @pytest.fixture(scope="module", autouse=True)
