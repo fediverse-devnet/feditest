@@ -133,6 +133,7 @@ class Registry(msgspec.Struct):
 
         return self.ca
 
+
     def obtain_new_hostinfo(self, appname: str | None = None ) -> RegistryHostInfo:
         host = self.obtain_new_hostname(appname)
         return self.obtain_hostinfo(host)

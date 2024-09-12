@@ -9,8 +9,8 @@ from hamcrest import is_not
 from feditest.protocols.activitypub.utils import is_member_of_collection_at
 
 from feditest import InteropLevel, SpecLevel, assert_that
+from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebServer
-from feditest.utils import http_https_uri_validate
 
 # Note:
 # The data elements held by the classes here are all untyped. That's because we want to be able
@@ -173,16 +173,7 @@ class ActivityPubNode(WebServer):
            Actors on the same server by how they are used in tests
         return: the URI
         """
-        if rolename:
-            return cast(str, self.prompt_user(
-                    f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{rolename}": ',
-                    self.parameter('node-uri'),
-                    http_https_uri_validate))
-
-        return cast(str, self.prompt_user(
-                f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
-                self.parameter('node-uri'),
-                http_https_uri_validate))
+        raise NotImplementedByNodeError(self, ActivityPubNode.obtain_actor_document_uri)
 
 
     def obtain_followers_collection_uri(self, actor_uri: str) -> str:

@@ -8,7 +8,6 @@ from urllib.parse import quote, urlparse
 from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
-from feditest.utils import http_https_acct_uri_validate
 
 
 class WebFingerServer(WebServer):
@@ -28,19 +27,7 @@ class WebFingerServer(WebServer):
            accounts on the same server by how they are used in tests
         return: the identifier
         """
-        if rolename:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an existing or new account for role "{rolename}" at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
-                    self.parameter('existing-account-uri'),
-                    http_https_acct_uri_validate)
-        else:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an existing or new account at Node "{self._rolename}" (e.g. "acct:testuser@example.local" ): ',
-                    self.parameter('existing-account-uri'),
-                    http_https_acct_uri_validate)
-        assert ret
-        self.set_parameter('existing-account-uri', ret)
-        return ret
+        raise NotImplementedByNodeError(self, WebFingerServer.obtain_account_identifier)
 
 
     def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
@@ -53,19 +40,7 @@ class WebFingerServer(WebServer):
            accounts on the same server by how they are used in tests
         return: the identifier
         """
-        if rolename:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an non-existing account for role "{rolename}" at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
-                    self.parameter('nonexisting-account-uri'),
-                    http_https_acct_uri_validate)
-        else:
-            ret = self.prompt_user(
-                    f'Please enter the URI of an non-existing account at Node "{self._rolename}" (e.g. "acct:does-not-exist@example.local" ): ',
-                    self.parameter('nonexisting-account-uri'),
-                    http_https_acct_uri_validate)
-        assert ret
-        self.set_parameter('nonexisting-account-uri', ret)
-        return ret
+        raise NotImplementedByNodeError(self, WebFingerServer.obtain_non_existing_account_identifier)
 
 
     def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
@@ -136,7 +111,7 @@ class WebFingerClient(WebClient):
                     raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
 
         if not hostname:
-            raise WebFingerClient.CannotDetermineWebfingerHostError(resource_uri)
+            raise WebFingerClient.CannotDetermineWebFingerHostError(resource_uri)
 
         uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
         if rels:
@@ -154,7 +129,7 @@ class WebFingerClient(WebClient):
             self.resource_uri = resource_uri
 
 
-    class CannotDetermineWebfingerHostError(RuntimeError):
+    class CannotDetermineWebFingerHostError(RuntimeError):
         """
         Raised when the WebFinger host could not be determined.
         """

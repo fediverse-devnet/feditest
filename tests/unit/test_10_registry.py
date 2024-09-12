@@ -54,7 +54,7 @@ def test_new_host_and_cert():
     D = 'something.example'
     r = Registry.create( D )
 
-    h1info = r.obtain_new_hostinfo('')
+    h1info = r.obtain_new_hostinfo()
 
     assert h1info.host.startswith('unnamed')
     assert h1info.host.endswith('.' + D)

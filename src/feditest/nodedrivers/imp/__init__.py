@@ -2,12 +2,12 @@
 An in-process Node implementation for now.
 """
 
-from typing import Any, cast
+from typing import cast
 
 import httpx
 from multidict import MultiDict
 
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver, HOSTNAME_PAR
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,
@@ -17,7 +17,7 @@ from feditest.protocols.web.traffic import (
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
 from feditest.reporting import trace
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
 from feditest.utils import FEDITEST_VERSION
 
 _HEADERS = {
@@ -30,10 +30,6 @@ class Imp(WebFingerClient):
     Our placeholder test client. Its future is to ~~tbd~~ be factored out of here.
     """
     # use superclass constructor
-
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
 
 
     # @override # from WebClient
@@ -138,14 +134,27 @@ class ImpInProcessNodeDriver(NodeDriver):
     Knows how to instantiate an Imp.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'Imp'
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return []
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> Imp:
-        return Imp(rolename, parameters, self)
+    def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
+        return (
+            NodeConfiguration(
+                self,
+                'Imp',
+                FEDITEST_VERSION,
+                test_plan_node.parameter(HOSTNAME_PAR)
+            ),
+            None
+        )
+
+
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> Imp:
+        return Imp(rolename, config, account_manager)
 
 
     # Python 3.12 @override

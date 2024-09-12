@@ -10,7 +10,7 @@ import re
 import sys
 import importlib.metadata
 from types import ModuleType
-from typing import List, Optional
+from typing import Any, List, Optional
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
@@ -19,7 +19,7 @@ def _version(default_version="0.0.0"):
         return importlib.metadata.version("feditest")
     except importlib.metadata.PackageNotFoundError:
         return default_version
-    
+
 FEDITEST_VERSION = _version('feditest')
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
@@ -182,6 +182,26 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
             sys.path = sys_path_before
 
 
+def boolean_parse_validate(candidate: Any | None) -> bool | None:
+    """
+    Validate that the provided string represents a boolean.
+    Return the boolean if valid, None otherwise
+    """
+    if candidate is None:
+        return False
+    if isinstance(candidate, bool):
+        return candidate
+    if isinstance(candidate,str):
+        lower = candidate.lower()
+    else:
+        lower = str(candidate).lower()
+    if lower in ("yes", "true", "y", "t", "1"):
+        return True
+    if lower in ("no", "false", "n", "f", "0"):
+        return False
+    return None
+
+
 def account_id_parse_validate(candidate: str) -> ParsedUri | None:
     """
     Validate that the provided string is of the form 'acct:foo@bar.com'.
@@ -195,6 +215,24 @@ def account_id_parse_validate(candidate: str) -> ParsedUri | None:
 
 def account_id_validate(candidate: str) -> str | None:
     parsed = account_id_parse_validate(candidate)
+    if parsed:
+        return parsed.get_uri()
+    return None
+
+
+def https_uri_parse_validate(candidate: str) -> ParsedUri | None:
+    """
+    Validate that the provided string is a valid HTTPS URI.
+    return: ParsedUri if valid, None otherwise
+    """
+    parsed = ParsedUri.parse(candidate)
+    if isinstance(parsed, ParsedNonAcctUri) and parsed.scheme == 'https' and len(parsed.netloc) > 0:
+        return parsed
+    return None
+
+
+def https_uri_validate(candidate: str) -> str | None:
+    parsed = https_uri_parse_validate(candidate)
     if parsed:
         return parsed.get_uri()
     return None
@@ -324,6 +362,14 @@ def appname_validate(candidate: str) -> str | None:
     """
     Validate that the provided string is a valid application name.
     return: string if valid, None otherwise
+    """
+    return candidate if len(candidate) > 0 else None
+
+
+def appversion_validate(candidate: str) -> str | None:
+    """
+    Validate that the provided string is a valid application version.
+    return: string if value, None otherwise
     """
     return candidate if len(candidate) > 0 else None
 

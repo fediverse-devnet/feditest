@@ -2,12 +2,10 @@
 Test that NodeDriver errors are reported in the test reports
 """
 
-from typing import Any
-
 import feditest
 import pytest
 from feditest import nodedriver
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,
@@ -53,23 +51,28 @@ def init():
     class Faulty_NodeDriver(NodeDriver):
         def _provision_node(
             self,
-            olename: str,
-            test_plan_node: TestPlanConstellationNode,
-            parameters: dict[str, Any],
+            rolename: str,
+            config: NodeConfiguration,
+            account_manager: AccountManager | None
         ) -> Node:
             raise NodeDriverTestException()
 
     feditest._loading_node_drivers = False
 
+    for t in feditest.all_tests:
+        print( f'TEST: { t }')
 
-def test_faulty_node_driver_reportiung() -> None:
+def test_faulty_node_driver_reporting() -> None:
     plan = TestPlan( [
         TestPlanSession(
             TestPlanConstellation( {
-                'node' : TestPlanConstellationNode('test_report_node_driver_errors.init.<locals>.Faulty_NodeDriver')
+                'node' : TestPlanConstellationNode(
+                    nodedriver = 'test_40_report_node_driver_errors.init.<locals>.Faulty_NodeDriver',
+                    parameters = { 'app' : 'Dummy for test_faulty_node_driver_reporting'}
+                )
             }),
             [
-                TestPlanTestSpec('test_report_node_driver_errors::init.<locals>.dummy')
+                TestPlanTestSpec('test_40_report_node_driver_errors::init.<locals>.dummy')
             ]
         )
     ])

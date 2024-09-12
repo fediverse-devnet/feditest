@@ -1,5 +1,5 @@
 """
-Webfinger testing utils
+WebFinger testing utils
 """
 
 from typing import Any, Type

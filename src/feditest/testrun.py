@@ -14,7 +14,7 @@ from feditest import registry
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
-from feditest.protocols import Node, NodeDriver
+from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (
     TestPlan,
@@ -61,7 +61,7 @@ class TestRunConstellation:
     def __init__(self, plan_constellation: TestPlanConstellation ):
         self._plan_constellation = plan_constellation
         self._nodes : dict[str, Node] = {}
-        self._appdata : dict[str,dict[str,str | None]] = {} # Record what apps and versions are running here. Preserved beyond teardown.
+        self._appdata : dict[str, dict[str, str | None]] = {} # Record what apps and versions are running here. Preserved beyond teardown.
 
 
     def setup(self) -> None:
@@ -73,7 +73,10 @@ class TestRunConstellation:
         else:
             trace('Setting up constellation')
 
-        wait_time = 0
+        # Two stages:
+        # 1. check
+        # 2. instantiate
+        role_to_config_account_mgr : dict[str, tuple[NodeConfiguration,AccountManager | None]] = {}
         for plan_role_name, plan_node in self._plan_constellation.roles.items():
             if plan_node is None:
                 raise ValueError('Unexpected null node')
@@ -81,19 +84,34 @@ class TestRunConstellation:
                 raise ValueError('Unexpected null nodedriver')
 
             node_driver : NodeDriver = nodedriver_singleton(plan_node.nodedriver)
-            node : Node = node_driver.provision_node(plan_role_name, plan_node)
+            config_account_mgr = node_driver.create_configuration_account_manager(plan_role_name, plan_node) # may raise
+            role_to_config_account_mgr[plan_role_name] = config_account_mgr
+
+        wait_time = 0.0
+        for plan_role_name, plan_node in self._plan_constellation.roles.items():
+            if plan_node is None: # It's either repeat this here or do a cast to make the linter happy
+                raise ValueError('Unexpected null node')
+            if plan_node.nodedriver is None:
+                raise ValueError('Unexpected null nodedriver')
+
+            node_driver = nodedriver_singleton(plan_node.nodedriver)
+            config_account_mgr = role_to_config_account_mgr[plan_role_name]
+            config = config_account_mgr[0]
+            account_mgr = config_account_mgr[1]
+            node : Node = node_driver.provision_node(plan_role_name, config, account_mgr)
             self._nodes[plan_role_name] = node
-            self._appdata[plan_role_name] = {
-                'app' : node.app_name,
-                'app_version' : node.app_version
+            self._appdata[plan_role_name] = { # FIXME? Replace this with the NodeConfiguration object instead?
+                'app' : config.app,
+                'app_version' : config.app_version
             }
-            wait_time = max(wait_time, node.start_delay())
+            wait_time = max(wait_time, config.start_delay)
 
         if wait_time:
             info(f'Sleeping for { wait_time } sec to give the Nodes some time to get ready.')
             time.sleep(wait_time) # Apparently some applications take some time
                                   # after deployment before they are ready to communicate.
 
+        # set up CA and distribute it to all nodes if needed
         root_cert = registry.root_cert_for_trust_root()
         if root_cert:
             registry.memoize_system_trust_root()

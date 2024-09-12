@@ -1,13 +1,11 @@
 """
 """
 
-# pylint: disable=invalid-name
+from typing import List
 
-from typing import Any, List
-
-from feditest.protocols import NodeDriver
+from feditest.protocols import AccountManager, NodeConfiguration, NodeDriver, HOSTNAME_PAR
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
-from feditest.testplan import TestPlanConstellationNode
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
 from feditest.utils import FEDITEST_VERSION
 
 
@@ -20,25 +18,33 @@ class SandboxMultClient_ImplementationA(SandboxMultClient):
         return c
 
 
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
-
-
 class SandboxMultClientDriver_ImplementationA(NodeDriver):
     """
     Driver for the client implementation, so the client can be provisioned and unprovisioned for
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'SandboxMultClient_ImplementationA'
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> SandboxMultClient_ImplementationA:
-        return SandboxMultClient_ImplementationA(rolename, parameters, self)
+    def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
+        return (
+            NodeConfiguration(
+                self,
+                'SandboxMultClient_ImplementationA',
+                FEDITEST_VERSION,
+                test_plan_node.parameter(HOSTNAME_PAR)
+            ),
+            None
+        )
+
+
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) ->  SandboxMultClient_ImplementationA:
+        return SandboxMultClient_ImplementationA(rolename, config, account_manager)
 
 
 class SandboxMultServer_Implementation1(SandboxMultServer):
@@ -46,14 +52,9 @@ class SandboxMultServer_Implementation1(SandboxMultServer):
     First server implementation in the Sandbox protocol with some test instrumentation.
     This server implementation simply calculates a*b.
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation1'):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, config: NodeConfiguration):
+        super().__init__(rolename, config) # Has no AccountManager
         self._log : List[SandboxLogEvent] | None = None
-
-
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
 
 
     def mult(self, a: float, b: float) -> float:
@@ -80,14 +81,27 @@ class SandboxMultServerDriver_Implementation1(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'SandboxMultServer_Implementation1'
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any] ) -> SandboxMultServer_Implementation1:
-        return SandboxMultServer_Implementation1(rolename, parameters, self)
+    def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
+        return (
+            NodeConfiguration(
+                self,
+                'SandboxMultServer_Implementation1',
+                FEDITEST_VERSION,
+                test_plan_node.parameter(HOSTNAME_PAR)
+            ),
+            None
+        )
+
+
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) ->  SandboxMultServer_Implementation1:
+        return SandboxMultServer_Implementation1(rolename, config)
 
 
 class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
@@ -95,14 +109,9 @@ class SandboxMultServer_Implementation2Faulty(SandboxMultServer):
     Second server implementation in the Sandbox protocol with some test instrumentation.
     This server calculates a*b through a for loop using integers rather than floats
     """
-    def __init__(self, rolename: str, parameters: dict[str,Any], node_driver: 'SandboxMultServerDriver_Implementation2Faulty'):
-        super().__init__(rolename, parameters, node_driver)
+    def __init__(self, rolename: str, config: NodeConfiguration):
+        super().__init__(rolename, config) # Has no AccountManager
         self._log : List[SandboxLogEvent] | None = None
-
-
-    @property
-    def app_version(self):
-        return FEDITEST_VERSION
 
 
     def mult(self, a: float, b: float) -> float:
@@ -132,11 +141,24 @@ class SandboxMultServerDriver_Implementation2Faulty(NodeDriver):
     test sessions.
     """
     # Python 3.12 @override
-    def _fill_in_parameters(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]):
-        super()._fill_in_parameters(rolename, test_plan_node, parameters)
-        parameters['app'] = 'SandboxMultServer_Implementation2Faulty'
+    @staticmethod
+    def test_plan_node_parameters() -> list[TestPlanNodeParameter]:
+        return [ HOSTNAME_PAR ]
 
 
     # Python 3.12 @override
-    def _provision_node(self, rolename: str, test_plan_node: TestPlanConstellationNode, parameters: dict[str,Any]) -> SandboxMultServer_Implementation2Faulty:
-        return SandboxMultServer_Implementation2Faulty(rolename, parameters, self)
+    def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
+        return (
+            NodeConfiguration(
+                self,
+                'SandboxMultServer_Implementation2Faulty',
+                FEDITEST_VERSION,
+                test_plan_node.parameter(HOSTNAME_PAR)
+            ),
+            None
+        )
+
+
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) ->  SandboxMultServer_Implementation2Faulty:
+        return SandboxMultServer_Implementation2Faulty(rolename, config)

@@ -2,13 +2,12 @@
 Abstractions for nodes that speak today's Fediverse protocol stack.
 """
 
-from typing import cast
-
+from feditest.protocols import NotImplementedByNodeError
 from feditest.protocols.activitypub import ActivityPubNode
-from feditest.protocols.webfinger import WebFingerServer
+from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
 
-class FediverseNode(WebFingerServer, ActivityPubNode):
+class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
     """
     A Node that can participate in today's Fediverse.
     The methods defined on FediverseNode reflect -- well, try to start reflecting, we are only
@@ -21,41 +20,19 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         on this Node. The optional arguments allow the creation of variations.
         deliver_to: make sure the Node is delivered to these Actors (i.e. in arrives in their inbox)
         """
-        if deliver_to :
-            return cast(str, self.prompt_user(
-                    f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
-                    + ' to be delivered to ' + ", ".join(deliver_to)
-                    + ' and enter its URI when created.'
-                    + f' Note content:"""\n{ content }\n"""' ))
-        return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
-                + ' and enter its URI when created.'
-                + f' Note content:"""\n{ content }\n"""' ))
-
-
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str) -> str:
-        """
-        """
-        return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
-                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:'))
+        raise NotImplementedByNodeError(self, FediverseNode.make_create_note)
 
 
     def make_announce_object(self, actor_uri, note_uri: str) -> str:
         """
         """
-        return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ note_uri }"'
-                + ' and enter the boost activity\' local URI:'))
+        raise NotImplementedByNodeError(self, FediverseNode.make_announce_object)
 
 
     def make_reply(self, actor_uri, note_uri: str, reply_content: str) -> str:
         """
         """
-        return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" reply to object with "{ note_uri }"'
-                + ' and enter its URI when created.'
-                + f' Reply content:"""\n{ reply_content }\n"""' ))
+        raise NotImplementedByNodeError(self, FediverseNode.make_reply)
 
 
     def make_a_follow_b(self, a_uri_here: str, b_uri_there: str, node_there: 'ActivityPubNode') -> None:
@@ -65,5 +42,13 @@ class FediverseNode(WebFingerServer, ActivityPubNode):
         which is hosted on ActivityPubNode node_there. Only return when the follow
         relationship is fully established.
         """
-        self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ a_uri_here }" follow actor "{ b_uri_there }" and hit return once the relationship is fully established.' )
+        raise NotImplementedByNodeError(self, FediverseNode.make_a_follow_b)
+
+
+    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
+        """
+        Wait until the object at object_uri has arrived in the inbox of actor_uri.
+        If the object has not arrived by the time max_wait seconds have passed, throw
+        a TimeoutException.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.wait_for_object_in_inbox)
