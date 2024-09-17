@@ -10,11 +10,11 @@ from abc import ABC
 from datetime import UTC, datetime, timezone
 from typing import cast
 
-from feditest import registry
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
 from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
+from feditest.registry import registry_singleton
 from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (
     TestPlan,
@@ -112,6 +112,7 @@ class TestRunConstellation:
                                   # after deployment before they are ready to communicate.
 
         # set up CA and distribute it to all nodes if needed
+        registry = registry_singleton()
         root_cert = registry.root_cert_for_trust_root()
         if root_cert:
             registry.memoize_system_trust_root()
@@ -126,6 +127,7 @@ class TestRunConstellation:
         else:
             trace('Tearing down constellation')
 
+        registry = registry_singleton()
         root_cert = registry.root_cert_for_trust_root()
         for plan_role_name in self._plan_constellation.roles:
             if plan_role_name in self._nodes: # setup may never have succeeded

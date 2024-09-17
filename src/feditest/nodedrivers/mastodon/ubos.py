@@ -7,7 +7,6 @@ import string
 import subprocess
 from typing import Any, cast
 
-from feditest import registry
 from feditest.nodedrivers.mastodon import (
     MastodonAccount,
     MastodonNode,
@@ -33,6 +32,7 @@ from feditest.protocols import (
     APP_VERSION_PAR,
     HOSTNAME_PAR,
 )
+from feditest.registry import registry_singleton
 from feditest.reporting import error, trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameterMalformedError
 from feditest.ubos import (
@@ -108,7 +108,7 @@ class MastodonUbosNodeConfiguration(UbosNodeDeployConfiguration, NodeWithMastodo
         siteid = test_plan_node.parameter(SITEID_PAR, defaults=defaults) or UbosNodeConfiguration._generate_siteid()
         appconfigid = test_plan_node.parameter(APPCONFIGID_PAR, defaults=defaults) or UbosNodeConfiguration._generate_appconfigid()
         app = test_plan_node.parameter_or_raise(APP_PAR, defaults=defaults)
-        hostname = test_plan_node.parameter(HOSTNAME_PAR) or registry.obtain_new_hostname(app)
+        hostname = test_plan_node.parameter(HOSTNAME_PAR) or registry_singleton().obtain_new_hostname(app)
         admin_userid = test_plan_node.parameter(ADMIN_USERID_PAR, defaults=defaults) or 'feditestadmin'
         admin_username = test_plan_node.parameter(ADMIN_USERNAME_PAR, defaults=defaults) or 'feditestadmin'
         admin_credential = test_plan_node.parameter(ADMIN_CREDENTIAL_PAR, defaults=defaults) or UbosNodeConfiguration._generate_credential()

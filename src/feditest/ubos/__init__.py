@@ -13,7 +13,6 @@ import shutil
 import string
 from typing import Any, cast
 
-from feditest import registry
 from feditest.protocols import (
     APP_PAR,
     APP_VERSION_PAR,
@@ -23,7 +22,7 @@ from feditest.protocols import (
     NodeConfiguration,
     NodeDriver
 )
-
+from feditest.registry import registry_singleton
 from feditest.reporting import error, info, trace, warning
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeParameterMalformedError, TestPlanNodeParameterRequiredError
 from feditest.utils import email_validate
@@ -192,7 +191,7 @@ class UbosNodeConfiguration(NodeConfiguration):
         siteid = test_plan_node.parameter(SITEID_PAR, defaults=defaults) or UbosNodeConfiguration._generate_siteid()
         appconfigid = test_plan_node.parameter(APPCONFIGID_PAR, defaults=defaults) or UbosNodeConfiguration._generate_appconfigid()
         app = test_plan_node.parameter_or_raise(APP_PAR, defaults=defaults)
-        hostname = test_plan_node.parameter(HOSTNAME_PAR) or registry.obtain_new_hostname(app)
+        hostname = test_plan_node.parameter(HOSTNAME_PAR) or registry_singleton().obtain_new_hostname(app)
         admin_userid = test_plan_node.parameter(ADMIN_USERID_PAR, defaults=defaults) or 'feditestadmin'
         admin_username = test_plan_node.parameter(ADMIN_USERNAME_PAR, defaults=defaults) or 'feditestadmin'
         admin_credential = test_plan_node.parameter(ADMIN_CREDENTIAL_PAR, defaults=defaults) or UbosNodeConfiguration._generate_credential()
@@ -301,7 +300,7 @@ class UbosNodeDeployConfiguration(UbosNodeConfiguration):
         if tlskey is None or tlscert is None:
             # Obtain these as late as possible, so all hostnames etc in the constellation are known
             hostname = cast(str, self.hostname) # In the UbosNodeConfiguration it is mandatory
-            info = registry.obtain_hostinfo(hostname)
+            info = registry_singleton().obtain_hostinfo(hostname)
             if tlskey is None:
                 tlskey = info.key
             if tlscert is None:
@@ -379,7 +378,7 @@ class UbosNodeFromBackupConfiguration(UbosNodeConfiguration):
         if tlskey is None or tlscert is None:
             # Obtain these as late as possible, so all hostnames etc in the constellation are known
             hostname = cast(str, self.hostname) # In the UbosNodeConfiguration it is mandatory
-            info = registry.obtain_hostinfo(hostname)
+            info = registry_singleton().obtain_hostinfo(hostname)
             if tlskey is None:
                 tlskey = info.key
             if tlscert is None:

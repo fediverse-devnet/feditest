@@ -17,7 +17,7 @@ import re
 import shutil
 from typing import cast
 
-from feditest.reporting import error, warning
+from feditest.reporting import error, trace, warning
 from feditest.utils import FEDITEST_VERSION
 
 
@@ -55,6 +55,7 @@ class Registry(msgspec.Struct):
         """
         Read a file, and instantiate a Registry from what we find.
         """
+        trace(f'Registry.load({ filename })')
         with open(filename, 'r', encoding='utf-8') as f:
             registry_json = json.load(f)
 
@@ -64,6 +65,7 @@ class Registry(msgspec.Struct):
 
     @staticmethod
     def create(rootdomain: str | None = None) -> 'Registry':
+        trace(f'Registry.create({ rootdomain or "None" })')
         if not rootdomain:
             rootdomain = f'{ random.randint(10000, 99999) }.lan'
 
@@ -144,6 +146,7 @@ class Registry(msgspec.Struct):
         Give out a new hostname in the root domain. Does not create a cert
         This implementation will return sequentially indexed hostnames for each app
         """
+        trace(f'Registry.obtain_new_hostname( { appname or "None" }) with domain { self.ca.domain }')
         if not appname:
             safe_appname = 'unnamed'
         elif m := re.match('^([0-9A-Za-z]*)', appname):
@@ -163,6 +166,7 @@ class Registry(msgspec.Struct):
 
 
     def obtain_hostinfo(self, host: str) -> RegistryHostInfo:
+        trace(f'Registry.obtain_hostinfo( { host }) with domain { self.ca.domain }')
         ret = self.hosts.get(host)
         if ret is None:
             raise Exception(f'Unknown host: {host}')
@@ -244,3 +248,24 @@ class Registry(msgspec.Struct):
             shutil.move(cacert_backup, cacert_file)
             return
         error(f'No cacert backup file, cannot restore: { cacert_backup }')
+
+
+_singleton = Registry.create()
+"""
+The global singleton. Only access with functions below.
+By default, we use a random domain.
+"""
+
+
+def registry_singleton():
+    """
+    This needs to be a function, otherwise different modules may end up with old values.
+    """
+    return _singleton
+
+
+def set_registry_singleton(new_singleton: Registry):
+    global _singleton
+    ret = _singleton
+    _singleton = new_singleton
+    return ret
