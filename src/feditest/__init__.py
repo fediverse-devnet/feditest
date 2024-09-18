@@ -13,7 +13,6 @@ from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
 
 import feditest.protocols
-from feditest.registry import Registry
 from feditest.reporting import fatal, warning
 from feditest.tests import (
     Test,
@@ -231,9 +230,6 @@ def load_default_node_drivers() -> None:
         module_name, class_name = d.rsplit('.', 1)
         if class_name not in all_node_drivers:
             all_node_drivers[class_name] = getattr(importlib.import_module(module_name), class_name)
-
-
-registry = Registry.create() # May be re-assigned by cli.run
 
 
 class SpecLevel(Enum):

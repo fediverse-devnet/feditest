@@ -5,7 +5,7 @@ Run one or more tests
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
-from feditest.registry import Registry
+from feditest.registry import Registry, set_registry_singleton
 from feditest.reporting import warning
 from feditest.testplan import TestPlan
 from feditest.testrun import TestRun
@@ -38,7 +38,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         feditest.load_node_drivers_from(args.nodedriversdir)
 
     if args.domain:
-        feditest.registry = Registry.create(args.domain) # overwrite
+        set_registry_singleton(Registry.create(args.domain)) # overwrite
 
     plan = TestPlan.load(args.testplan)
     if not plan.is_compatible_type():
