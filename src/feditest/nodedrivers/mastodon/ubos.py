@@ -277,6 +277,9 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
                         "mastodon" : {
                             "singleusermode" : {
                                 "value" : False
+                            },
+                            "allowed_private_addresses" : {
+                                "value" : "192.168.1.1/16" # Allow testing in a Linux container
                             }
                         }
                     }
