@@ -23,7 +23,7 @@ from feditest.protocols import (
     NodeDriver
 )
 from feditest.registry import registry_singleton
-from feditest.reporting import error, info, trace, warning
+from feditest.reporting import error, trace, warning
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeParameterMalformedError, TestPlanNodeParameterRequiredError
 from feditest.utils import email_validate
 
