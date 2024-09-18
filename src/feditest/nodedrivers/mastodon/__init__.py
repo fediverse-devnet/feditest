@@ -381,15 +381,9 @@ class NodeWithMastodonAPI(FediverseNode):
     def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
         trace('wait_for_object_in_inbox:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
         response = self._poll_until_result( # may throw
-            lambda: next(
-                (
-                    s
-                    for s in mastodon_client.timeline("local")
-                    if s.uri == object_uri
-                ),
-                None,
-            ),
+            lambda: any( s.uri == object_uri for s in mastodon_client.timeline_home(local=True, remote=True)),
             int(max_wait),
             1.0,
             f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }'

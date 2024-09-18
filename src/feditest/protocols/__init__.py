@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import Any, cast, final
 
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
-from feditest.reporting import warning, trace
+from feditest.reporting import info, warning
 from feditest.utils import hostname_validate, appname_validate, appversion_validate
 
 
@@ -352,6 +352,10 @@ class NodeConfiguration:
         return self._start_delay
 
 
+    def __str__(self) -> str:
+        return f'NodeConfiguration ({ type(self).__name__ }): node driver: "{ self.node_driver }", app: "{ self.app }", hostname: "{ self.hostname }"'
+
+
 class Node(ABC):
     """
     A Node is the interface through which FediTest talks to an application instance.
@@ -513,7 +517,7 @@ class NodeDriver(ABC):
         rolename: the name of this Node in the constellation
         config: the NodeConfiguration created with create_configuration
         """
-        trace(f'Provisioning node for role { rolename } with NodeDriver { self.__class__.__name__} and configuration { config }')
+        info(f'Provisioning node for role "{ rolename }" with { config }.')
         ret = self._provision_node(rolename, config, account_manager)
         return ret
 
@@ -526,6 +530,8 @@ class NodeDriver(ABC):
         """
         if node.node_driver != self :
             raise Exception(f"Node does not belong to this NodeDriver: { node.node_driver } vs { self }") # pylint: disable=broad-exception-raised
+
+        info(f'Unprovisioning node for role "{ node.rolename }" with NodeDriver "{ self.__class__.__name__}".')
         self._unprovision_node(node)
 
 

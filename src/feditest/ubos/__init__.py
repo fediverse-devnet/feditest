@@ -543,10 +543,10 @@ class UbosNodeDriver(NodeDriver):
             fullcmd = cmd
 
         if stdin_content:
-            info( f"Executing '{fullcmd}' with some stdin content" )
+            trace( f"Executing '{fullcmd}' with some stdin content" )
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, input=stdin_content, capture_output=capture_output)
         else:
-            info( f"Executing '{fullcmd}'")
+            trace( f"Executing '{fullcmd}'")
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, capture_output=capture_output)
 
         return ret
