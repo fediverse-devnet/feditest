@@ -120,7 +120,7 @@ class MastodonUbosNodeConfiguration(UbosNodeDeployConfiguration, NodeWithMastodo
             else:
                 start_delay = float(start_delay_1)
         else:
-            start_delay = 0.0
+            start_delay = 10.0 # 10 sec should be good enough
 
         if test_plan_node.parameter(BACKUPFILE_PAR):
             raise TestPlanNodeParameterMalformedError(BACKUP_APPCONFIGID_PAR, ' must not be given for MastodonUbosNodeDriver')
@@ -277,6 +277,9 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
                         "mastodon" : {
                             "singleusermode" : {
                                 "value" : False
+                            },
+                            "allowed_private_addresses" : {
+                                "value" : "192.168.1.1/16" # Allow testing in a Linux container
                             }
                         }
                     }

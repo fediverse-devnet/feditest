@@ -23,7 +23,7 @@ from feditest.protocols import (
     NodeDriver
 )
 from feditest.registry import registry_singleton
-from feditest.reporting import error, info, trace, warning
+from feditest.reporting import error, trace, warning
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeParameterMalformedError, TestPlanNodeParameterRequiredError
 from feditest.utils import email_validate
 
@@ -543,10 +543,10 @@ class UbosNodeDriver(NodeDriver):
             fullcmd = cmd
 
         if stdin_content:
-            info( f"Executing '{fullcmd}' with some stdin content" )
+            trace( f"Executing '{fullcmd}' with some stdin content" )
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, input=stdin_content, capture_output=capture_output)
         else:
-            info( f"Executing '{fullcmd}'")
+            trace( f"Executing '{fullcmd}'")
             ret = subprocess.run(fullcmd, shell=True, check=False, text=True, capture_output=capture_output)
 
         return ret

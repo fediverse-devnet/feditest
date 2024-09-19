@@ -40,12 +40,11 @@ class FollowTest:
     @step
     def follow(self):
         self.follower_node.make_a_follow_b(self.follower_actor_uri, self.leader_actor_uri, self.leader_node)
-        assert self.note_uri
 
 
     @step
     def leader_creates_note(self):
-        self.leader_note_uri = self.leader.make_create_note(self.leader_actor_uri, f"testing leader_creates_note {datetime.now()}")
+        self.leader_note_uri = self.leader_node.make_create_note(self.leader_actor_uri, f"testing leader_creates_note {datetime.now()}")
         assert self.leader_note_uri
 
 
