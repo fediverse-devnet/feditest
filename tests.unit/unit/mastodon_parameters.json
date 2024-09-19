@@ -1,0 +1,18 @@
+{
+    "hostname": "...",
+    "actors": {
+        "default_role": "primary_actor",
+        "roles": {
+            "primary_actor": {
+                "access_token": "TOKEN",
+                "uri": "https://MASTODON_HOSTNAME/users/tester"
+            },
+            "secondary_actor": {
+                "uri": "https://MASTODON_HOSTNAME/users/tester2"
+            },
+            "disabled_external_actor": {
+                "uri": "https://MASTODON_HOSTNAME/users/steve"
+            }
+        }
+    }
+}
