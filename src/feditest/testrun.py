@@ -269,7 +269,7 @@ class TestRunClass(TestRunTest):
         info(f'Started test { self.str_in_session() }')
 
         args = {}
-        for local_role_name in self.plan_testspec.needed_role_names():
+        for local_role_name in self.plan_testspec.get_test().needed_local_role_names():
             constellation_role_name = local_role_name
             if self.plan_testspec.rolemapping and local_role_name in self.plan_testspec.rolemapping:
                 constellation_role_name = self.plan_testspec.rolemapping[local_role_name]
