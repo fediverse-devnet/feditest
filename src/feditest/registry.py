@@ -166,7 +166,7 @@ class Registry(msgspec.Struct):
 
 
     def obtain_hostinfo(self, host: str) -> RegistryHostInfo:
-        trace(f'Registry.obtain_hostinfo( { host }) with domain { self.ca.domain }')
+        trace(f'Registry.obtain_hostinfo({ host }) with domain { self.ca.domain }')
         ret = self.hosts.get(host)
         if ret is None:
             raise Exception(f'Unknown host: {host}')
