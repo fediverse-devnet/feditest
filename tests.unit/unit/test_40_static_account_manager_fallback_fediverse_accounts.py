@@ -29,17 +29,17 @@ def init():
 def account_manager() -> StaticAccountManager:
 
     initial_accounts : list[FallbackFediverseAccount] = [
-        FallbackFediverseAccount(f'acct:user-0-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-0-unallocated', None),
-        FallbackFediverseAccount(f'acct:user-1-role1@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-1-role1', 'role1'),
-        FallbackFediverseAccount(f'acct:user-2-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-2-unallocated', None),
-        FallbackFediverseAccount(f'acct:user-3-role3@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-3-role3', 'role3'),
+        FallbackFediverseAccount(None, f'acct:user-0-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-0-unallocated'),
+        FallbackFediverseAccount('role1', f'acct:user-1-role1@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-1-role1'),
+        FallbackFediverseAccount(None, f'acct:user-2-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-2-unallocated'),
+        FallbackFediverseAccount('role3', f'acct:user-3-role3@{ HOSTNAME }', f'https://{ HOSTNAME }/actor-3-role3'),
     ]
 
     initial_non_existing_accounts : list[FallbackFediverseNonExistingAccount] = [
-        FallbackFediverseNonExistingAccount(f'acct:nonuser-0-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-0-unallocated', None),
-        FallbackFediverseNonExistingAccount(f'acct:nonuser-1-role1@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-1-role1', 'role1'),
-        FallbackFediverseNonExistingAccount(f'acct:nonuser-2-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-2-unallocated', None),
-        FallbackFediverseNonExistingAccount(f'acct:nonuser-3-role3@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-3-role3', 'role3'),
+        FallbackFediverseNonExistingAccount(None, f'acct:nonuser-0-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-0-unallocated'),
+        FallbackFediverseNonExistingAccount('role1', f'acct:nonuser-1-role1@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-1-role1'),
+        FallbackFediverseNonExistingAccount(None, f'acct:nonuser-2-unallocated@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-2-unallocated'),
+        FallbackFediverseNonExistingAccount('role3', f'acct:nonuser-3-role3@{ HOSTNAME }', f'https://{ HOSTNAME }/nonactor-3-role3'),
     ]
 
     ret = StaticAccountManager(initial_accounts, initial_non_existing_accounts)
