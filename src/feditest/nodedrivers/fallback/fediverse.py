@@ -2,7 +2,6 @@
 Fallback implementation for FediverseNode
 """
 
-import sys
 from typing import cast
 
 from feditest.protocols import (
@@ -13,14 +12,14 @@ from feditest.protocols import (
     NodeDriver,
     NonExistingAccount,
     OutOfAccountsException,
+    TimeoutException,
     APP_PAR,
     APP_VERSION_PAR,
     HOSTNAME_PAR
 )
-from feditest.protocols.activitypub import ActivityPubNode
 from feditest.protocols.fediverse import FediverseNode
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
-from feditest.utils import appname_validate, hostname_validate, http_https_acct_uri_validate, https_uri_validate
+from feditest.utils import appname_validate, boolean_parse_validate, hostname_validate, http_https_acct_uri_validate, https_uri_validate
 
 
 ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
@@ -197,20 +196,6 @@ class FallbackFediverseNode(FediverseNode):
 
 
     # Python 3.12 @override
-    def make_create_note(self, actor_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
-        if deliver_to :
-            return cast(str, self.prompt_user(
-                    f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
-                    + ' to be delivered to ' + ", ".join(deliver_to)
-                    + ' and enter its URI when created.'
-                    + f' Note content:"""\n{ content }\n"""' ))
-        return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
-                + ' and enter its URI when created.'
-                + f' Note content:"""\n{ content }\n"""' ))
-
-
-    # Python 3.12 @override
     def obtain_account_identifier(self, rolename: str | None = None) -> str:
         if not self.account_manager:
             raise OutOfAccountsException('No AccountManager set')
@@ -227,31 +212,63 @@ class FallbackFediverseNode(FediverseNode):
 
 
     # Python 3.12 @override
-    def make_announce_object(self, actor_uri, note_uri: str) -> str:
+    def make_create_note(self, actor_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
+        if deliver_to :
+            return cast(str, self.prompt_user(
+                    f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
+                    + ' to be delivered to ' + ", ".join(deliver_to)
+                    + ' and enter its URI when created.'
+                    + f' Note content:"""\n{ content }\n"""' ))
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ note_uri }"'
-                + ' and enter the boost activity\' local URI:'))
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" create a Note'
+                + ' and enter its URI when created.'
+                + f' Note content:"""\n{ content }\n"""' ))
+
 
 
     # Python 3.12 @override
-    def make_reply(self, actor_uri, note_uri: str, reply_content: str) -> str:
+    def make_announce_object(self, actor_uri, announced_object_uri: str) -> str:
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" reply to object with "{ note_uri }"'
-                + ' and enter its URI when created.'
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ announced_object_uri }"'
+                + ' and enter the Announce object\'s local URI:'))
+
+
+    # Python 3.12 @override
+    def make_reply_note(self, actor_uri, replied_object_uri: str, reply_content: str) -> str:
+        return cast(str, self.prompt_user(
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" reply to object with "{ replied_object_uri }"'
+                + ' and enter the Announce object\'s URI when created.'
                 + f' Reply content:"""\n{ reply_content }\n"""' ))
 
 
     # Python 3.12 @override
-    def make_a_follow_b(self, a_uri_here: str, b_uri_there: str, node_there: ActivityPubNode) -> None:
+    def make_follow(self, actor_uri: str, to_follow_actor_uri: str) -> None:
         self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ a_uri_here }" follow actor "{ b_uri_there }" and hit return once the relationship is fully established.' )
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" follow actor "{ to_follow_actor_uri }"'
+                + ' and hit return when done.')
+
+
+    # We leave the NotImplementedByNodeError raised by the superclass for all other follow-related actions
+    # until we have a better idea :-)
+
+    # Python 3.12 @override
+    def wait_until_actor_is_following_actor(self, actor_uri: str, to_be_followed_uri: str, max_wait: float = 5.) -> None:
+        answer = self.prompt_user(
+                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }" is following actor "{ to_be_followed_uri }"'
+                + ' and enter "true"; "false" if it didn\'t happen.',
+                parse_validate=boolean_parse_validate)
+        if not answer:
+            raise TimeoutException(f'Actor { actor_uri } not following actor { to_be_followed_uri}.', max_wait)
 
 
     # Python 3.12 @override
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = sys.float_info.max) -> None:
-        self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }"\'s inbox,'
-                + f' the object with URI "{ object_uri }" has appeared and enter its local URI:')
+    def wait_until_actor_is_followed_by_actor(self, actor_uri: str, to_be_following_uri: str, max_wait: float = 5.) -> None:
+        answer = self.prompt_user(
+                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }" is followed by actor "{ to_be_following_uri }"'
+                + ' and enter "true"; "false" if it didn\'t happen.',
+                parse_validate=boolean_parse_validate)
+        if not answer:
+            raise TimeoutException(f'Actor { actor_uri } not followed by actor { to_be_following_uri}.', max_wait)
 
 
 class AbstractFallbackFediverseNodeDriver(NodeDriver):

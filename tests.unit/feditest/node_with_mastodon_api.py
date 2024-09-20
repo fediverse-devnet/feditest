@@ -51,7 +51,7 @@ class CreateNoteTest:
 
     @step
     def wait_for_note_in_inbox(self):
-        self.server.wait_for_object_in_inbox(self.actor_uri, self.note_uri)
+        self.server.wait_until_actor_has_received_note(self.actor_uri, self.note_uri)
 
 
     @step
@@ -61,7 +61,7 @@ class CreateNoteTest:
 
     def _reset_all(self):
         """
-        Clean up data. This is intended to be usable with a non-brand-new instance.
+        Clean up data. This is here so the test is usable with non-brand-new instances.
         """
         self.server.delete_all_followers_of(self.actor_uri)
         self.server.delete_all_statuses_by(self.actor_uri)
