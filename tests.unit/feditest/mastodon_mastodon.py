@@ -3,7 +3,6 @@ Tests that two instances of Mastodon can follow each other.
 """
 
 from datetime import datetime
-# import re
 
 from feditest import step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
@@ -44,12 +43,6 @@ class FollowTest:
 
 
     @step
-    def leader_creates_note(self):
-        self.leader_note_uri = self.leader_node.make_create_note(self.leader_actor_uri, f"testing leader_creates_note {datetime.now()}")
-        assert self.leader_note_uri
-
-
-    @step
     def wait_until_actor_is_followed_by_actor(self):
         self.leader_node.wait_until_actor_is_followed_by_actor(self.leader_actor_uri, self.follower_actor_uri)
 
@@ -57,6 +50,17 @@ class FollowTest:
     @step
     def wait_until_actor_is_following_actor(self):
         self.follower_node.wait_until_actor_is_following_actor(self.follower_actor_uri, self.leader_actor_uri)
+
+
+    @step
+    def leader_creates_note(self):
+        self.leader_note_uri = self.leader_node.make_create_note(self.leader_actor_uri, f"testing leader_creates_note {datetime.now()}")
+        assert self.leader_note_uri
+
+
+    @step
+    def wait_until_note_received(self):
+        self.follower_node.wait_until_actor_has_received_note(self.follower_actor_uri, self.leader_note_uri)
 
 
     @step
