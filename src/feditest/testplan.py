@@ -299,7 +299,7 @@ class TestPlanTestSpec(msgspec.Struct):
         return ret
 
 
-    def needed_role_names(self, context_msg : str = "" ) -> set[str]:
+    def needed_constellation_role_names(self, context_msg : str = "" ) -> set[str]:
         """
         Return the names of the constellation roles needed after translation from whatever the test itself
         might call them locally.
@@ -318,8 +318,8 @@ class TestPlanTestSpec(msgspec.Struct):
 
     def check_can_be_executed(self, constellation: TestPlanConstellation, context_msg: str = "") -> None:
         test_context_msg = context_msg + f'Test "{ self.name }": '
-        needed_role_names = self.needed_role_names(context_msg) # may raise
-        constellation.check_defines_all_role_names(needed_role_names, test_context_msg )
+        needed_constellation_role_names = self.needed_constellation_role_names(context_msg) # may raise
+        constellation.check_defines_all_role_names(needed_constellation_role_names, test_context_msg )
 
 
     def simplify(self) -> None:
@@ -387,10 +387,10 @@ class TestPlanSession(msgspec.Struct):
             test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}): ')
 
 
-    def needed_role_names(self) -> set[str]:
+    def needed_constellation_role_names(self) -> set[str]:
         ret = set()
         for test in self.tests:
-            ret |= test.needed_role_names()
+            ret |= test.needed_constellation_role_names()
         return ret
 
 
@@ -399,7 +399,7 @@ class TestPlanSession(msgspec.Struct):
         Treat this session as a template. Create a new (non-template) session that's like this one
         and that uses the provided constellation.
         """
-        constellation.check_defines_all_role_names(self.needed_role_names())
+        constellation.check_defines_all_role_names(self.needed_constellation_role_names())
         return TestPlanSession(constellation=constellation,tests=self.tests, name=name)
 
 
