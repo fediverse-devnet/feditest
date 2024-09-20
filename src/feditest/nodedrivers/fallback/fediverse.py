@@ -168,11 +168,11 @@ class FallbackFediverseNode(FediverseNode):
         context_msg = f'Node { self }:'
         uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_NON_EXISTING_ACCOUNT_FIELD }"): ',
+                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
                 parse_validate=http_https_acct_uri_validate))
         actor_uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD }"): ',
+                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
                 parse_validate=https_uri_validate))
 
         return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
