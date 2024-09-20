@@ -33,8 +33,13 @@ class Account(ABC):
     what they know about an Account, this is an entirey abstract base class here.
     """
     def __init__(self, role: str | None):
-        self.role = role
-        self.node : 'Node' | None = None
+        self._role = role
+        self._node : 'Node' | None = None
+
+
+    @property
+    def role(self):
+        return self._role
 
 
     def set_node(self, node: 'Node'):
@@ -42,9 +47,14 @@ class Account(ABC):
         Set the Node at which this is an Account. This is invoked exactly once after the Node
         has been instantiated (the Account is instantiated earlier).
         """
-        if self.node:
+        if self._node:
             raise ValueError(f'Node already set {self}')
-        self.node = node
+        self._node = node
+
+
+    @property
+    def node(self):
+        return self._node
 
 
 class NonExistingAccount(ABC):
@@ -53,8 +63,13 @@ class NonExistingAccount(ABC):
     what they know about an Account, this is an entirey abstract base class here.
     """
     def __init__(self, role: str | None):
-        self.role = role
-        self.node : 'Node' | None = None
+        self._role = role
+        self._node : 'Node' | None = None
+
+
+    @property
+    def role(self):
+        return self._role
 
 
     def set_node(self, node: 'Node'):
@@ -62,9 +77,13 @@ class NonExistingAccount(ABC):
         Set the Node at which this is a NonExistingAccount. This is invoked exactly once after the Node
         has been instantiated (the NonExistingAccount is instantiated earlier).
         """
-        if self.node:
+        if self._node:
             raise ValueError(f'Node already set {self}')
-        self.node = node
+        self._node = node
+
+    @property
+    def node(self):
+        return self._node
 
 
 class OutOfAccountsException(Exception):

@@ -65,10 +65,10 @@ Known non-existing accounts are specified as follows:
 """
 
 class FallbackFediverseAccount(Account):
-    def __init__(self, uri: str, actor_uri: str | None, role: str | None):
+    def __init__(self, role: str | None, uri: str, actor_uri: str | None):
+        super().__init__(role)
         self._uri = uri
         self._actor_uri = actor_uri
-        self._role = role
 
 
     @staticmethod
@@ -82,7 +82,7 @@ class FallbackFediverseAccount(Account):
 
         # If actor_uri was not given, we cannot perform a WebFinger query here: the Node may not exist yet
 
-        return FallbackFediverseAccount(uri, actor_uri, role)
+        return FallbackFediverseAccount(role, uri, actor_uri)
 
 
     @property
@@ -114,16 +114,11 @@ class FallbackFediverseAccount(Account):
         #         raise InvalidAccountSpecificationException(account_info_in_testplan, node_driver, f'URI determined from WebFinger query of { uri } is not a valid Actor HTTP URI: "{ actor_uri }".')
 
 
-    @property
-    def role(self):
-        return self._role
-
-
 class FallbackFediverseNonExistingAccount(NonExistingAccount):
-    def __init__(self, uri: str, actor_uri: str | None, role: str | None):
+    def __init__(self, role: str | None, uri: str, actor_uri: str | None):
+        super().__init__(role)
         self._uri = uri
         self._actor_uri = actor_uri
-        self._role = role
 
 
     @staticmethod
@@ -137,7 +132,7 @@ class FallbackFediverseNonExistingAccount(NonExistingAccount):
 
         # We cannot perform a WebFinger query: account does not exist
 
-        return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
+        return FallbackFediverseNonExistingAccount(role, uri, actor_uri)
 
 
     @property
@@ -150,11 +145,6 @@ class FallbackFediverseNonExistingAccount(NonExistingAccount):
         if self._actor_uri:
             return self._actor_uri
         raise Exception(f'No value for { ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD.name } in non-existing account with role { self.role }.')
-
-
-    @property
-    def role(self):
-        return self._role
 
 
 class FallbackFediverseNode(FediverseNode):
@@ -177,11 +167,11 @@ class FallbackFediverseNode(FediverseNode):
         context_msg = f'Node { self }:'
         uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_NON_EXISTING_ACCOUNT_FIELD }"): ',
+                + f' provide the URI of a non-existing account for account role "{ role }" (with https: or acct: scheme) (node non_existing_account field "{ URI_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
                 parse_validate=http_https_acct_uri_validate))
         actor_uri = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD }"): ',
+                + f' provide the Actor URI of a non-existing account with account role "{ role }" (with https: scheme) (node non_existing_account field "{ ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
                 parse_validate=https_uri_validate))
 
         return FallbackFediverseNonExistingAccount(uri, actor_uri, role)
