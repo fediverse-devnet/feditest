@@ -237,7 +237,7 @@ class TestRunStepInClass(HasStartEndResults):
         info(f'Started step { self.str_in_session() }')
 
         try:
-            self.test_step.test_step_function(test_instance) # what an object-oriented language this is
+            self.test_step.test_step_function(test_instance)
 
         except Exception as e:
             self.exception = e
