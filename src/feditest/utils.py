@@ -10,7 +10,7 @@ import re
 import sys
 import importlib.metadata
 from types import ModuleType
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional, TypeVar
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
@@ -396,6 +396,17 @@ def boolean_response_parse_validate(candidate:str) -> bool | None:
         return False
     if candidate.startswith('f'):
         return False
+    return None
+
+
+T = TypeVar('T')
+def find_first_in_array(array: List[T], condition: Callable[[T], bool]) -> T | None:
+    """
+    IMHO this should be a python built-in function. The next() workaround confuses me more than I like.
+    """
+    for t in array:
+        if condition(t):
+            return t
     return None
 
 

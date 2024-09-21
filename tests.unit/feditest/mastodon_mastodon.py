@@ -3,7 +3,6 @@ Tests that two instances of Mastodon can follow each other.
 """
 
 from datetime import datetime
-# import re
 
 from feditest import step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
@@ -16,6 +15,7 @@ class FollowTest:
     ) -> None:
         self.leader_node = leader_node
         self.leader_actor_uri = None
+        self.leader_node.set_auto_accept_follow(True)
 
         self.follower_node = follower_node
         self.follower_actor_uri = None
@@ -39,7 +39,17 @@ class FollowTest:
 
     @step
     def follow(self):
-        self.follower_node.make_a_follow_b(self.follower_actor_uri, self.leader_actor_uri, self.leader_node)
+        self.follower_node.make_follow(self.follower_actor_uri, self.leader_actor_uri)
+
+
+    @step
+    def wait_until_actor_is_followed_by_actor(self):
+        self.leader_node.wait_until_actor_is_followed_by_actor(self.leader_actor_uri, self.follower_actor_uri)
+
+
+    @step
+    def wait_until_actor_is_following_actor(self):
+        self.follower_node.wait_until_actor_is_following_actor(self.follower_actor_uri, self.leader_actor_uri)
 
 
     @step
@@ -49,13 +59,8 @@ class FollowTest:
 
 
     @step
-    def wait_for_note_in_leader_inbox(self):
-        self.leader_node.wait_for_object_in_inbox(self.leader_actor_uri, self.leader_note_uri)
-
-
-    @step
-    def wait_for_note_in_follower_inbox(self):
-        self.follower_node.wait_for_object_in_inbox(self.follower_actor_uri, self.leader_note_uri)
+    def wait_until_note_received(self):
+        self.follower_node.wait_until_actor_has_received_note(self.follower_actor_uri, self.leader_note_uri)
 
 
     @step
@@ -65,7 +70,7 @@ class FollowTest:
 
     def _reset_all(self):
         """
-        Clean up data. This is intended to be usable with non-brand-new instances.
+        Clean up data. This is here so the test is usable with non-brand-new instances.
         """
         self.leader_node.delete_all_followers_of(self.leader_actor_uri)
         self.leader_node.delete_all_following_of(self.leader_actor_uri)

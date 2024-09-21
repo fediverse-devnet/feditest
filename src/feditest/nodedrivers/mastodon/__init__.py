@@ -20,16 +20,17 @@ from feditest.protocols import (
     NodeConfiguration,
     NodeDriver,
     NonExistingAccount,
+    NotImplementedByNodeError,
     TimeoutException,
     APP_PAR,
     APP_VERSION_PAR,
     HOSTNAME_PAR
 )
-from feditest.protocols.activitypub import ActivityPubNode, AnyObject
+from feditest.protocols.activitypub import AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
-from feditest.utils import boolean_parse_validate, email_validate, hostname_validate
+from feditest.utils import boolean_parse_validate, email_validate, find_first_in_array, hostname_validate
 
 
 # We use the Mastodon.py module primarily because of its built-in support for rate limiting.
@@ -44,11 +45,11 @@ if "mastodon" in sys.modules:
     m = sys.modules.pop("mastodon")
     try:
         mastodon_api = importlib.import_module("mastodon")
-        from mastodon_api import Mastodon
+        from mastodon_api import AttribAccessDict, Mastodon
     finally:
         sys.modules["mastodon"] = m
 else:
-    from mastodon import Mastodon
+    from mastodon import AttribAccessDict, Mastodon
 
 
 VERIFY_API_TLS_CERTIFICATE_PAR = TestPlanNodeParameter(
@@ -280,7 +281,7 @@ class NodeWithMastodonAPI(FediverseNode):
     (which lets us act as a single user) and there are no tests that require
     us to have multiple accounts that we can act as, on the same node.
     """
-    def __init__(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager):
+    def __init__(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager, auto_accept_follow: bool = True):
         super().__init__(rolename, config, account_manager)
 
         self._mastodon_oauth_app : MastodonOAuthApp | None = None
@@ -295,6 +296,8 @@ class NodeWithMastodonAPI(FediverseNode):
         # We keep this around so we can look up id attributes by URI and we can map the FediverseNode API URI parameters
         # to Mastodon's internal status ids
 
+        self._auto_accept_follow = auto_accept_follow # True is default for Mastodon
+
 
 # From FediverseNode
 
@@ -305,13 +308,12 @@ class NodeWithMastodonAPI(FediverseNode):
 
         if deliver_to:
             for to in deliver_to:
-                results = mastodon_client.search(q=to, result_type="accounts")
-                if to_account := next(
-                    (a for a in results.get("accounts", []) if a.uri == to), None
-                ):
+                if to_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to):
                     to_url = urlparse(to_account.uri)
                     to_handle = f"@{to_account.acct}@{to_url.netloc}"
                     content += f" {to_handle}"
+                else:
+                    raise ValueError(f'Cannot find account for Actor { to }')
         response = mastodon_client.status_post(content)
         self._status_dict_by_uri[response.uri] = response
         trace(f'make_create_note returns with { response }')
@@ -319,67 +321,69 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
-    def make_announce_object(self, actor_uri, note_uri: str) -> str:
+    def make_announce_object(self, actor_uri, announced_object_uri: str) -> str:
         trace('make_announce_object:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
         # FIXME: the URI could be remote, right?
-        if note := self._status_dict_by_uri.get(note_uri):
+        if note := self._status_dict_by_uri.get(announced_object_uri):
             reblog = mastodon_client.status_reblog(note['id'])
             self._status_dict_by_uri[reblog.uri] = reblog
             trace(f'make_announce_object returns with { reblog }')
             return reblog.uri
-        raise ValueError(f'Note URI not found: { note_uri }')
+        raise ValueError(f'Note URI not found: { announced_object_uri }')
 
 
     # Python 3.12 @override
-    def make_reply(self, actor_uri, note_uri: str, reply_content: str) -> str:
-        trace('make_reply:')
+    def make_reply_note(self, actor_uri, replied_object_uri: str, reply_content: str) -> str:
+        trace('make_reply_note:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
         # FIXME: the URI could be remote, right?
-        if note := self._status_dict_by_uri.get(note_uri):
+        if note := self._status_dict_by_uri.get(replied_object_uri):
             reply = mastodon_client.status_reply(
                 to_status=note, status=reply_content
             )
             self._status_dict_by_uri[reply.uri] = reply
             trace(f'make_reply returns with { reply }')
             return reply.uri
-        raise ValueError(f'Note URI not found: { note_uri }')
+        raise ValueError(f'Note URI not found: { replied_object_uri }')
 
 
     # Python 3.12 @override
-    def make_a_follow_b(self, a_uri_here: str, b_uri_there: str, node_there: ActivityPubNode) -> None:
-        trace('make_a_follow_b:')
-        mastodon_client = self._get_mastodon_client_by_actor_uri(a_uri_here)
+    def make_follow(self, actor_uri: str, to_follow_actor_uri: str) -> None:
+        trace('make_follow:')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        results = mastodon_client.search(q=b_uri_there, result_type="accounts")
-        if b_account := next(
-            (b for b in results.get("accounts", []) if b.uri == b_uri_there), None
-        ):
-            relationship = mastodon_client.account_follow(b_account) # # noqa: F841
-            # FIXME: rethink whether the semantics of this make_a_follow_b() should include some version of
-            # the following code, or not. There is the second leg ("config") to be taken into
-            # consideration.
-            #
-            # if not relationship["following"]:
-            #     def f(): # I thought I could make this a lambda but python and I don't get along
-            #         relationship = mastodon_client.account_relationships(b_account)
-            #         if relationship["following"]:
-            #             return relationship["following"]
-            #         return None
-            #
-            #     self._poll_until_result( # may throw
-            #         f,
-            #         int(self.parameter('follow_wait_retry_count') or '5'),
-            #         int(self.parameter('follow_wait_retry_interval') or '1'),
-            #         f'Expected follow relationship was not established between { a_uri_here } and { b_uri_there }')
-            #     trace('make_a_follow_b returns')
+        if to_follow_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_follow_actor_uri):
+            relationship = mastodon_client.account_follow(to_follow_account) # noqa: F841
             return
-        raise ValueError(f'Actor URI not found: { b_uri_there }')
+        raise ValueError(f'Account not found with Actor URI: { to_follow_actor_uri }')
 
 
     # Python 3.12 @override
-    def wait_for_object_in_inbox(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
-        trace('wait_for_object_in_inbox:')
+    def set_auto_accept_follow(self, actor_uri: str, auto_accept_follow: bool = True) -> None:
+        if self._auto_accept_follow == auto_accept_follow:
+            return
+        raise NotImplementedByNodeError(self, NodeWithMastodonAPI.set_auto_accept_follow) # Can't find an API call for this
+
+
+    # Python 3.12 @override
+    def make_follow_accept(self, actor_uri: str, follower_actor_uri: str) -> None:
+        super().make_follow_accept(actor_uri, follower_actor_uri) # FIXME
+
+
+    # Python 3.12 @override
+    def make_follow_reject(self, actor_uri: str, follower_actor_uri: str) -> None:
+        super().make_follow_reject(actor_uri, follower_actor_uri) # FIXME
+
+
+    # Python 3.12 @override
+    def make_follow_undo(self, actor_uri: str, follower_actor_uri: str) -> None:
+        super().make_follow_undo(actor_uri, follower_actor_uri) # FIXME
+
+
+    # Python 3.12 @override
+    def wait_until_actor_has_received_note(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
+        trace('wait_until_actor_has_received_note:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
         response = self._poll_until_result( # may throw
@@ -389,6 +393,37 @@ class NodeWithMastodonAPI(FediverseNode):
             f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }'
         )
         trace(f'wait_for_object_in_inbox returns with { response }')
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_following_actor(self, actor_uri: str, to_be_followed_uri: str, max_wait: float = 5.) -> None:
+        trace(f'wait_until_actor_is_following_actor: actor_uri = { actor_uri }, to_be_followed_uri = { to_be_followed_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if to_be_followed_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_followed_uri):
+            self._poll_until_result( # may throw
+                lambda: self._is_following(mastodon_client, to_be_followed_account),
+                int(max_wait),
+                1.0,
+                f'Actor { actor_uri } is not following { to_be_followed_uri }')
+            return
+        raise ValueError(f'Account not found with Actor URI: { to_be_followed_uri }')
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_followed_by_actor(self, actor_uri: str, to_be_following_uri: str, max_wait: float = 5.) -> None:
+        trace(f'wait_until_actor_is_followed_by_actor: actor_uri = { actor_uri }, to_be_followed_uri = { to_be_following_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if to_be_following_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_following_uri):
+            self._poll_until_result( # may throw
+                lambda: self._is_followed_by(mastodon_client, to_be_following_account),
+                int(max_wait),
+                1.0,
+                f'Actor { actor_uri } is not followed by { to_be_following_uri }')
+            return
+        raise ValueError(f'Account not found with Actor URI: { to_be_following_uri }')
+
 
 # From ActivityPubNode
 
@@ -537,6 +572,38 @@ class NodeWithMastodonAPI(FediverseNode):
 
         ret = cast(MastodonAccount, account).mastodon_user_client(self._mastodon_oauth_app)
         return ret
+
+
+    def _get_account_dict_by_other_actor_uri(self, mastodon_client: Mastodon, other_actor_uri) -> AttribAccessDict | None:
+        """
+        Using the specified Mastodon client, find an account dict for another Actor on this Node with
+        other_actor_uri, or None.
+        """
+        results = mastodon_client.search(q=other_actor_uri, result_type="accounts")
+        ret = find_first_in_array(results.get("accounts"), lambda b: b.uri == other_actor_uri)
+        return ret
+
+
+    def _is_following(self, mastodon_client: Mastodon, candidate_leader: AttribAccessDict) -> bool:
+        """
+        Determine whether the Actor of the specified Mastodon client is following the candidate_leader.
+        """
+        relationships = mastodon_client.account_relationships(candidate_leader) # this returns a list
+        if relationships:
+            relationship = find_first_in_array(relationships, lambda r: r.id == candidate_leader.id)
+            return True if relationship and relationship.following else False
+        return False
+
+
+    def _is_followed_by(self, mastodon_client: Mastodon, candidate_follower: AttribAccessDict) -> bool:
+        """
+        Determine whether the Actor of the specified Mastodon client has the candidate_follower as follower.
+        """
+        relationships = mastodon_client.account_relationships(candidate_follower) # this returns a list
+        if relationships:
+            relationship = find_first_in_array(relationships, lambda r: r.id == candidate_follower.id)
+            return True if relationship and relationship.followed_by else False
+        return False
 
 
     def _poll_until_result(self,
