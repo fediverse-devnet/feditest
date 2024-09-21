@@ -89,12 +89,13 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.make_follow_undo)
 
 
-    def wait_until_actor_has_received_note(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
+    def wait_until_actor_has_received_note(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> str:
         """
         Wait until the object at object_uri has arrived with the Actor at actor_uri.
         This method does not state that the object needs to have arrived in the Actor's, inbox,
         as Nodes might implement different routing strategies (including antispam).
         If the condition has not arrived by the time max_wait seconds have passed, throw
+        Return value: the content of the Note
         a TimeoutException.
         """
         raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_has_received_note)
