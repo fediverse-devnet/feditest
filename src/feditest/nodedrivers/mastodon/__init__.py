@@ -10,7 +10,6 @@ import requests
 import sys
 import time
 from typing import Any, Callable, cast
-from urllib.parse import urlparse
 
 from feditest import AssertionFailure, InteropLevel, SpecLevel
 from feditest.protocols import (
@@ -309,7 +308,6 @@ class NodeWithMastodonAPI(FediverseNode):
         if deliver_to: # The only way we can address specific accounts in Mastodon
             for to in deliver_to:
                 if to_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to):
-                    to_url = urlparse(to_account.uri)
                     to_handle = f"@{to_account.acct}"
                     content += f" {to_handle}"
                 else:
@@ -436,38 +434,6 @@ class NodeWithMastodonAPI(FediverseNode):
                 f'Actor { actor_uri } is not followed by { to_be_following_uri }')
             return
         raise ValueError(f'Account not found with Actor URI: { to_be_following_uri }')
-
-
-
-    # Python 3.12 @override
-    def wait_until_actor_is_following_actor(self, actor_uri: str, to_be_followed_uri: str, max_wait: float = 5.) -> None:
-        trace(f'wait_until_actor_is_following_actor: actor_uri = { actor_uri }, to_be_followed_uri = { to_be_followed_uri }')
-        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
-
-        if to_be_followed_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_followed_uri):
-            self._poll_until_result( # may throw
-                lambda: self._is_following(mastodon_client, to_be_followed_account),
-                int(max_wait),
-                1.0,
-                f'Actor { actor_uri } is not following { to_be_followed_uri }')
-            return
-        raise ValueError(f'Account not found with Actor URI: { to_be_followed_uri }')
-
-
-    # Python 3.12 @override
-    def wait_until_actor_is_followed_by_actor(self, actor_uri: str, to_be_following_uri: str, max_wait: float = 5.) -> None:
-        trace(f'wait_until_actor_is_followed_by_actor: actor_uri = { actor_uri }, to_be_followed_uri = { to_be_following_uri }')
-        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
-
-        if to_be_following_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_following_uri):
-            self._poll_until_result( # may throw
-                lambda: self._is_followed_by(mastodon_client, to_be_following_account),
-                int(max_wait),
-                1.0,
-                f'Actor { actor_uri } is not followed by { to_be_following_uri }')
-            return
-        raise ValueError(f'Account not found with Actor URI: { to_be_following_uri }')
-
 
 # From ActivityPubNode
 
