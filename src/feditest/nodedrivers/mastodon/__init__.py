@@ -393,7 +393,8 @@ class NodeWithMastodonAPI(FediverseNode):
             ret = find_first_in_array( elements, lambda s: s.uri == object_uri)
             if not ret:
                 elements = mastodon_client.notifications()
-                ret = find_first_in_array( elements, lambda s: s.status.uri == object_uri)
+                parent_ret = find_first_in_array( elements, lambda s: s.status.uri == object_uri)
+                ret = parent_ret.status if parent_ret else None
             return ret
 
         response = self._poll_until_result( # may throw
@@ -403,7 +404,7 @@ class NodeWithMastodonAPI(FediverseNode):
             f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }'
         )
         trace(f'wait_for_object_in_inbox returns with { response }')
-        return response.status.content
+        return response.content
 
 
     # Python 3.12 @override
