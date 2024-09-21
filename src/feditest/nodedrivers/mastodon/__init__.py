@@ -518,7 +518,7 @@ class NodeWithMastodonAPI(FediverseNode):
         context_msg = f'Mastodon Node { self }: '
         userid = cast(str, self.prompt_user(
                 context_msg
-                + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD }"): ',
+                + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_userid_validate))
 
         return MastodonNonExistingAccount(role, userid)
