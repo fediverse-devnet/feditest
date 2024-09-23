@@ -106,11 +106,10 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
 
     @property
     def actor_uri(self):
-        return f'https://{ self.node.hostname }/author/{ self.userid }'
+        return f'https://{ self.node.hostname }/author/{ self.userid }/'
 
 
     def mastodon_user_client(self, node: NodeWithMastodonAPI) -> Mastodon:
-
         if self._mastodon_user_client is None:
             oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             self._ensure_oauth_token(node, oauth_app.client_id)
