@@ -88,8 +88,8 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
         The oauth_token may be None. In which case we dynamically obtain one.
         """
         super().__init__(role, userid)
-        self.userid = userid
         self.oauth_token = oauth_token
+        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     @staticmethod
@@ -110,6 +110,7 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
 
 
     def mastodon_user_client(self, node: NodeWithMastodonAPI) -> Mastodon:
+
         if self._mastodon_user_client is None:
             oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             self._ensure_oauth_token(node, oauth_app.client_id)

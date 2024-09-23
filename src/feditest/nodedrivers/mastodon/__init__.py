@@ -143,7 +143,6 @@ class AccountOnNodeWithMastodonAPI(Account): # this is intended to be abstract
     def __init__(self, role: str | None, userid: str):
         super().__init__(role)
         self.userid = userid
-        self._mastodon_user_client: Mastodon | None = None
 
 
     @property
@@ -186,6 +185,7 @@ class MastodonUserPasswordAccount(MastodonAccount):
         super().__init__(role, userid)
         self.password = password
         self.email = email
+        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     # Python 3.12 @override
@@ -213,6 +213,7 @@ class MastodonOAuthTokenAccount(MastodonAccount):
     def __init__(self, role: str | None, userid: str, oauth_token: str):
         super().__init__(role, userid)
         self.oauth_token = oauth_token
+        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     # Python 3.12 @override
