@@ -10,7 +10,6 @@ import requests
 import sys
 import time
 from typing import Any, Callable, cast
-from urllib.parse import urlparse
 
 from feditest import AssertionFailure, InteropLevel, SpecLevel
 from feditest.protocols import (
@@ -306,11 +305,10 @@ class NodeWithMastodonAPI(FediverseNode):
         trace('make_create_note:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if deliver_to:
+        if deliver_to: # The only way we can address specific accounts in Mastodon
             for to in deliver_to:
                 if to_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to):
-                    to_url = urlparse(to_account.uri)
-                    to_handle = f"@{to_account.acct}@{to_url.netloc}"
+                    to_handle = f"@{to_account.acct}"
                     content += f" {to_handle}"
                 else:
                     raise ValueError(f'Cannot find account for Actor { to }')
@@ -382,17 +380,31 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
-    def wait_until_actor_has_received_note(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> None:
+    def wait_until_actor_has_received_note(self, actor_uri: str, object_uri: str, max_wait: float = 5.) -> str:
         trace('wait_until_actor_has_received_note:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
+        def find_note():
+            """
+            Depending on how the Note is addressed and follow status, Mastodon puts it into the Home timeline or only
+            into notifications.
+            """
+            elements = mastodon_client.timeline_home(local=True, remote=True)
+            ret = find_first_in_array( elements, lambda s: s.uri == object_uri)
+            if not ret:
+                elements = mastodon_client.notifications()
+                parent_ret = find_first_in_array( elements, lambda s: s.status.uri == object_uri)
+                ret = parent_ret.status if parent_ret else None
+            return ret
+
         response = self._poll_until_result( # may throw
-            lambda: any( s.uri == object_uri for s in mastodon_client.timeline_home(local=True, remote=True)),
+            find_note,
             int(max_wait),
             1.0,
             f'Expected object { object_uri } has not arrived in inbox of actor { actor_uri }'
         )
         trace(f'wait_for_object_in_inbox returns with { response }')
+        return response.content
 
 
     # Python 3.12 @override
@@ -423,7 +435,6 @@ class NodeWithMastodonAPI(FediverseNode):
                 f'Actor { actor_uri } is not followed by { to_be_following_uri }')
             return
         raise ValueError(f'Account not found with Actor URI: { to_be_following_uri }')
-
 
 # From ActivityPubNode
 
