@@ -139,13 +139,24 @@ class MastodonOAuthApp:
         return MastodonOAuthApp(client_id, client_secret, api_base_url, session)
 
 
-class MastodonAccount(Account): # this is intended to be abstract
+class AccountOnNodeWithMastodonAPI(Account): # this is intended to be abstract
     def __init__(self, role: str | None, userid: str):
         super().__init__(role)
         self.userid = userid
         self._mastodon_user_client: Mastodon | None = None
 
 
+    @property
+    def webfinger_uri(self):
+        return f'acct:{ self.userid }@{ self.node.hostname }'
+
+
+    @abstractmethod
+    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
+        ...
+
+
+class MastodonAccount(AccountOnNodeWithMastodonAPI): # this is intended to be abstract
     @staticmethod
     def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
         """
@@ -166,18 +177,8 @@ class MastodonAccount(Account): # this is intended to be abstract
 
 
     @property
-    def webfinger_uri(self):
-        return f'acct:{ self.userid }@{ self.node.hostname }'
-
-
-    @property
     def actor_uri(self):
         return f'https://{ self.node.hostname }/users/{ self.userid }'
-
-
-    @abstractmethod
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
-        ...
 
 
 class MastodonUserPasswordAccount(MastodonAccount):
@@ -188,8 +189,9 @@ class MastodonUserPasswordAccount(MastodonAccount):
 
 
     # Python 3.12 @override
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
         if self._mastodon_user_client is None:
+            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             trace(f'Logging into Mastodon at { oauth_app.api_base_url } as { self.email }')
             client = Mastodon(
                 client_id = oauth_app.client_id,
@@ -205,14 +207,18 @@ class MastodonUserPasswordAccount(MastodonAccount):
 
 
 class MastodonOAuthTokenAccount(MastodonAccount):
+    """
+    Compare with WordPressAccount.
+    """
     def __init__(self, role: str | None, userid: str, oauth_token: str):
         super().__init__(role, userid)
         self.oauth_token = oauth_token
 
 
     # Python 3.12 @override
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
         if self._mastodon_user_client is None:
+            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
@@ -577,11 +583,11 @@ class NodeWithMastodonAPI(FediverseNode):
         if not self._mastodon_oauth_app:
             self._mastodon_oauth_app = MastodonOAuthApp.create(f'https://{ self.hostname}', self._requests_session)
 
-        account = self._account_manager.get_account_by_match( lambda candidate: isinstance(candidate, MastodonAccount) and candidate.userid == userid )
+        account = self._account_manager.get_account_by_match(lambda candidate: isinstance(candidate, AccountOnNodeWithMastodonAPI) and candidate.userid == userid )
         if account is None:
-            return None
+            raise Exception(f'On Node { self }, failed to find account with userid "{ userid }".')
 
-        ret = cast(MastodonAccount, account).mastodon_user_client(self._mastodon_oauth_app)
+        ret = cast(MastodonAccount, account).mastodon_user_client(self)
         return ret
 
 

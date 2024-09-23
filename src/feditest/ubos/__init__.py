@@ -494,7 +494,7 @@ class UbosNodeDriver(NodeDriver):
         cmd += ' --newcontext ""'
         cmd += f' --in "{ config.backupfile }"'
 
-        if self._exec_shell(cmd).returncode:
+        if self._exec_shell(cmd, config.rshcmd).returncode:
             raise UbosAdminException(self, cmd)
 
 
