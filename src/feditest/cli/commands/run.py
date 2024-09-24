@@ -2,7 +2,7 @@
 Run one or more tests
 """
 
-from argparse import ArgumentParser, Namespace, _SubParsersAction
+from argparse import ArgumentError, ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
 from feditest.registry import Registry, set_registry_singleton
@@ -30,6 +30,26 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         parser.print_help()
         return 0
 
+    # check test plan options ourselves
+    if args.testplan:
+        if args.constellation:
+            raise ArgumentError('constellation', '--testplan already defines the --constellation. Do not provide both.')
+        if args.session:
+            raise ArgumentError('session-template', '--testplan already defines the --session-template. Do not provide both.')
+        if args.node:
+            raise ArgumentError('node', '--testplan already defines the --node via the contained constellation. Do not provide both.')
+    else:
+        if args.session:
+            if args.filter_regex:
+                raise ArgumentError('filter-regex', '--session already defines the tests, do not provide --filter-regex')
+        if args.constellation:
+            if args.node:
+                raise ArgumentError('node', '--constellation already defines the --node. Do not provide both.')
+        else:
+            pass
+            # Don't check for empty nodes: we need that for testing feditest
+            # And: it's okay if we have neither --testplan, --constellation nor --node: defaults to default-testplan.json
+
     feditest.load_default_tests()
     feditest.load_tests_from(args.testsdir)
 
@@ -40,7 +60,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if args.domain:
         set_registry_singleton(Registry.create(args.domain)) # overwrite
 
-    plan = TestPlan.load(args.testplan)
+    plan = TestPlan.load(args.testplan or "feditest-default.json")
     if not plan.is_compatible_type():
         warning(f'Test plan has unexpected type { plan.type }: incompatibilities may occur.')
     if not plan.has_compatible_version():
@@ -86,15 +106,25 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
+    # general flags and options
     parser = parent_parser.add_parser(cmd_name, help='Run one or more tests' )
     parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
-    parser.add_argument('--testplan', default='feditest-default.json', help='Name of the file that contains the test plan to run')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find extra drivers for nodes that can be tested')
     parser.add_argument('--domain', type=hostname_validate, help='Local-only DNS domain for the DNS hostnames that are auto-generated for nodes')
     parser.add_argument('--interactive', action="store_true",
                         help="Run the tests interactively")
     parser.add_argument('--who', action='store_true',
                         help="Record who ran the test plan on what host.")
+
+    # test plan options. We do not use argparse groups, as the situation is more complicated than argparse seems to support
+    parser.add_argument('--testplan', help='Name of the file that contains the test plan to run')
+    parser.add_argument('--constellation', nargs='+', help='File(s) each containing a JSON fragment defining a constellation')
+    parser.add_argument('--session', '--session-template', nargs='+', help='File(s) each containing a JSON fragment defining a test session')
+    parser.add_argument('--node', action='append',
+                        help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
+    parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
+
+    # output options
     parser.add_argument('--tap', nargs="?", const=True, default=False,
                         help="Write results in TAP format to stdout, or to the provided file (if given).")
     html_group = parser.add_argument_group('html', 'HTML options')

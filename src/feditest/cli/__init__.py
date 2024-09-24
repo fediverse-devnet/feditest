@@ -2,7 +2,7 @@
 Main entry point for CLI invocation
 """
 
-from argparse import ArgumentParser, Action
+from argparse import ArgumentError, ArgumentParser, Action
 import importlib
 import sys
 import traceback
@@ -39,6 +39,8 @@ def main() -> None:
             ret = cmds[cmd_name].run(cmd_sub_parsers[cmd_name], args, remaining)
             sys.exit( ret )
 
+        except ArgumentError as e:
+            fatal(e.message)
         except Exception as e: # pylint: disable=broad-exception-caught
             if args.verbose > 1:
                 traceback.print_exception( e )
