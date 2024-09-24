@@ -30,7 +30,17 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         parser.print_help()
         return 0
 
-    # check test plan options ourselves
+    feditest.load_default_tests()
+    feditest.load_tests_from(args.testsdir)
+
+    feditest.load_default_node_drivers()
+    if args.nodedriversdir:
+        feditest.load_node_drivers_from(args.nodedriversdir)
+
+    if args.domain:
+        set_registry_singleton(Registry.create(args.domain)) # overwrite
+
+    # Determine testplan. While we are at it, check consistency of arguments.
     if args.testplan:
         if args.constellation:
             raise ArgumentError('constellation', '--testplan already defines the --constellation. Do not provide both.')
@@ -38,6 +48,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
             raise ArgumentError('session-template', '--testplan already defines the --session-template. Do not provide both.')
         if args.node:
             raise ArgumentError('node', '--testplan already defines the --node via the contained constellation. Do not provide both.')
+        plan = TestPlan.load(args.testplan or "feditest-default.json")
     else:
         if args.session:
             if args.filter_regex:
@@ -50,17 +61,6 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
             # Don't check for empty nodes: we need that for testing feditest
             # And: it's okay if we have neither --testplan, --constellation nor --node: defaults to default-testplan.json
 
-    feditest.load_default_tests()
-    feditest.load_tests_from(args.testsdir)
-
-    feditest.load_default_node_drivers()
-    if args.nodedriversdir:
-        feditest.load_node_drivers_from(args.nodedriversdir)
-
-    if args.domain:
-        set_registry_singleton(Registry.create(args.domain)) # overwrite
-
-    plan = TestPlan.load(args.testplan or "feditest-default.json")
     if not plan.is_compatible_type():
         warning(f'Test plan has unexpected type { plan.type }: incompatibilities may occur.')
     if not plan.has_compatible_version():
