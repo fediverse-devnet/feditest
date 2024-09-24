@@ -33,7 +33,9 @@ $(VENV) :
 lint : build
 	$(VENV)/bin/ruff check src
 	MYPYPATH=src $(VENV)/bin/mypy --namespace-packages --explicit-package-bases --install-types --non-interactive src
-	@# These options should be the same flags as in .pre-commit-config.yml
+	@# These options should be the same flags as in .pre-commit-config.yml, except that I can't get it to
+	@# work there without the "--ignore-missing-imports" flag, while it does work without it here
+
 	@# MYPYPATH is needed because apparently some type checking ignores the directory option given as command-line argument
 	@# $(VENV)/bin/pylint src
 
