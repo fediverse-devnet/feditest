@@ -58,7 +58,6 @@ repos:
   - id: mypy
     files: src
     args: 
-      - "--ignore-missing-imports"
       - "--namespace-packages"
       - "--explicit-package-bases"
       - "--install-types"

@@ -44,11 +44,11 @@ if "mastodon" in sys.modules:
     m = sys.modules.pop("mastodon")
     try:
         mastodon_api = importlib.import_module("mastodon")
-        from mastodon_api import AttribAccessDict, Mastodon
+        from mastodon_api import AttribAccessDict, Mastodon # type: ignore
     finally:
         sys.modules["mastodon"] = m
 else:
-    from mastodon import AttribAccessDict, Mastodon
+    from mastodon import AttribAccessDict, Mastodon # type: ignore
 
 
 VERIFY_API_TLS_CERTIFICATE_PAR = TestPlanNodeParameter(

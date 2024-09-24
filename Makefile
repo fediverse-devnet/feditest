@@ -30,14 +30,15 @@ $(VENV) :
 	$(PYTHON) -mvenv $(VENV)
 	$(VENV)/bin/pip install ruff mypy pylint
 
-lint : venv
+lint : build
 	$(VENV)/bin/ruff check src
-	$(VENV)/bin/mypy src
-	# $(VENV)/bin/pylint src
+	MYPYPATH=src $(VENV)/bin/mypy --namespace-packages --explicit-package-bases --install-types --non-interactive src
+	@# These options should be the same flags as in .pre-commit-config.yml
+	@# MYPYPATH is needed because apparently some type checking ignores the directory option given as command-line argument
+	@# $(VENV)/bin/pylint src
 
 test : venv
 	$(VENV)/bin/pytest -v
-
 
 release :
 	@which $(PYTHON) || ( echo 'No executable called "python". Append your python to the make command, like "make PYTHON=your-python"' && false )
