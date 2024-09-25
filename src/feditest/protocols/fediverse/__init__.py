@@ -29,8 +29,8 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
 
     def make_announce_object(self, actor_uri, announced_object_uri: str) -> str:
         """
-        Perform whatever actions are necessary so the actor with actor_uri will have created
-        an Announce object on this Node announcing the object with announced_object_uri.
+        Perform whatever actions are necessary so the actor with actor_uri will have Announced
+        on this Node, the object with announced_object_uri.
         return: URI to the Announce object
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_announce_object)
@@ -47,8 +47,9 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
 
     def make_follow(self, actor_uri: str, to_follow_actor_uri: str) -> None:
         """
-        Perform whatever actions are necessary so the actor with actor_uri will have created
-        a Follow activity for the Actor with to_follow_actor_uri.
+        Perform whatever actions are necessary so the actor with actor_uri will have initiated
+        a Follow request for the Actor with to_follow_actor_uri.
+        The actor with actor_uri must be on this Node.
         No return value: we already have the to_follow_actor_uri
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_follow)
@@ -58,6 +59,7 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         """
         Configure the behavior of this Node for the Actor with actor_uri so that when
         Follow requests come in, they are automatically accepted.
+        The actor with actor_uri must be on this Node.
         This method exists so that implementations can throw a NotImplementedByNodeError
         if they do not have the requested behavior (or it cannot be scripted) and
         the corresponding tests does not run.
@@ -65,26 +67,33 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.set_auto_accept_follow)
 
 
-    def make_follow_accept(self, actor_uri: str, follower_actor_uri: str) -> None:
+    def make_follow_accept(self, actor_uri: str, would_be_follower_actor_uri: str) -> None:
         """
-        Perform whatever actions are necessary so the actor with actor_uri will have created
-        an Accept activity for a Follow request by the Actor with follower_actor_uri.
+        Perform whatever actions are necessary so the actor with actor_uri will have accepted
+        a Follow request previously made by the Actor with would_be_follower_actor_uri.
+        Calling this makes no sense if `auto_accept_follow` is true for the actor with actor_uri,
+        as it only applies to a pending Follow request.
+        The actor with actor_uri must be on this Node.
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_follow_accept)
 
 
-    def make_follow_reject(self, actor_uri: str, follower_actor_uri: str) -> None:
+    def make_follow_reject(self, actor_uri: str, would_be_follower_actor_uri: str) -> None:
         """
-        Perform whatever actions are necessary so the actor with actor_uri will have created
-        a Reject activity for a Follow request by the Actor with follower_actor_uri.
+        Perform whatever actions are necessary so the actor with actor_uri will have rejected
+        a Follow request previously made by the Actor with would_be_follower_actor_uri.
+        Calling this makes no sense if `auto_accept_follow` is true for the actor with actor_uri,
+        as it only applies to a pending Follow request.
+        The actor with actor_uri must be on this Node.
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_follow_reject)
 
 
-    def make_follow_undo(self, actor_uri: str, follower_actor_uri: str) -> None:
+    def make_follow_undo(self, actor_uri: str, following_actor_uri: str) -> None:
         """
         Perform whatever actions are necessary so the actor with actor_uri will have created
-        an Undo activity for a Follow Accept withy the Actor with follower_actor_uri.
+        unfollowed the Actor with following_actor_uri.
+        The actor with actor_uri must be on this Node.
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_follow_undo)
 
@@ -117,3 +126,21 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         a TimeoutException.
         """
         raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_followed_by_actor)
+
+
+    def wait_until_actor_is_unfollowing_actor(self, actor_uri: str, to_be_unfollowed_uri: str, max_wait: float = 5.) -> None:
+        """
+        Wait until the Actor at actor_uri has ceased following the Actor at to_be_unfollowed_uri on this Node.
+        If the condition has not arrived by the time max_wait seconds have passed, throw
+        a TimeoutException.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_unfollowing_actor)
+
+
+    def wait_until_actor_is_unfollowed_by_actor(self, actor_uri: str, to_be_unfollowing_uri: str, max_wait: float = 5.) -> None:
+        """
+        Wait until the Actor at actor_uri has ceased following the Actor with to_be_unfollowing_uri on this Node.
+        If the condition has not arrived by the time max_wait seconds have passed, throw
+        a TimeoutException.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_unfollowed_by_actor)

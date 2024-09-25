@@ -375,8 +375,14 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
-    def make_follow_undo(self, actor_uri: str, follower_actor_uri: str) -> None:
-        super().make_follow_undo(actor_uri, follower_actor_uri) # FIXME
+    def make_follow_undo(self, actor_uri: str, following_actor_uri: str) -> None:
+        trace('make_follow_undo:')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if following_account := self._get_account_dict_by_other_actor_uri(mastodon_client, following_actor_uri):
+            relationship = mastodon_client.account_unfollow(following_account) # noqa: F841
+            return
+        raise ValueError(f'Account not found with Actor URI: { following_actor_uri }')
 
 
     # Python 3.12 @override
@@ -435,6 +441,37 @@ class NodeWithMastodonAPI(FediverseNode):
                 f'Actor { actor_uri } is not followed by { to_be_following_uri }')
             return
         raise ValueError(f'Account not found with Actor URI: { to_be_following_uri }')
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_unfollowing_actor(self, actor_uri: str, to_be_unfollowed_uri: str, max_wait: float = 5.) -> None:
+        trace(f'wait_until_actor_is_unfollowing_actor: actor_uri = { actor_uri }, to_be_unfollowed_uri = { to_be_unfollowed_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if to_be_unfollowed_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowed_uri):
+            self._poll_until_result( # may throw
+                lambda: not self._is_following(mastodon_client, to_be_unfollowed_account),
+                int(max_wait),
+                1.0,
+                f'Actor { actor_uri } is still following { to_be_unfollowed_uri }')
+            return
+        raise ValueError(f'Account not found with Actor URI: { to_be_unfollowed_uri }')
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_unfollowed_by_actor(self, actor_uri: str, to_be_unfollowing_uri: str, max_wait: float = 5.) -> None:
+        trace(f'wait_until_actor_is_unfollowed_by_actor: actor_uri = { actor_uri }, to_be_unfollowing_uri = { to_be_unfollowing_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if to_be_unfollowing_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowing_uri):
+            self._poll_until_result( # may throw
+                lambda: not self._is_followed_by(mastodon_client, to_be_unfollowing_account),
+                int(max_wait),
+                1.0,
+                f'Actor { actor_uri } is still followed by { to_be_unfollowing_uri }')
+            return
+        raise ValueError(f'Account not found with Actor URI: { to_be_unfollowing_uri }')
+
 
 # From ActivityPubNode
 
