@@ -290,11 +290,6 @@ class NodeWithMastodonAPI(FediverseNode):
         # The request.Session with the custom certificate authority set as verifier.
         # Allocated when needed, so our custom certificate authority has been created before this is used.
 
-        self._status_dict_by_uri: dict[str, dict[str,Any]] = {}
-        # Maps URIs of created status objects to the corresponding Mastodon.py "status dicts"
-        # We keep this around so we can look up id attributes by URI and we can map the FediverseNode API URI parameters
-        # to Mastodon's internal status ids
-
         self._auto_accept_follow = auto_accept_follow # True is default for Mastodon
 
 
@@ -307,43 +302,38 @@ class NodeWithMastodonAPI(FediverseNode):
 
         if deliver_to: # The only way we can address specific accounts in Mastodon
             for to in deliver_to:
-                if to_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to):
+                if to_account := self._find_account_dict_by_other_actor_uri(mastodon_client, to):
                     to_handle = f"@{to_account.acct}"
                     content += f" {to_handle}"
                 else:
-                    raise ValueError(f'Cannot find account for Actor { to }')
+                    raise ValueError(f'Cannot find account for Actor on { self }: "{ to }"')
         response = mastodon_client.status_post(content)
-        self._status_dict_by_uri[response.uri] = response
         trace(f'make_create_note returns with { response }')
         return response.uri
 
 
     # Python 3.12 @override
-    def make_announce_object(self, actor_uri, announced_object_uri: str) -> str:
+    def make_announce_object(self, actor_uri, to_be_announced_object_uri: str) -> str:
         trace('make_announce_object:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
-        # FIXME: the URI could be remote, right?
-        if note := self._status_dict_by_uri.get(announced_object_uri):
-            reblog = mastodon_client.status_reblog(note['id'])
-            self._status_dict_by_uri[reblog.uri] = reblog
+
+        if local_note := self._find_note_dict_by_uri(mastodon_client, to_be_announced_object_uri):
+            reblog = mastodon_client.status_reblog(local_note)
             trace(f'make_announce_object returns with { reblog }')
             return reblog.uri
-        raise ValueError(f'Note URI not found: { announced_object_uri }')
+        raise ValueError(f'Cannot find Note on { self } : "{ to_be_announced_object_uri }"')
 
 
     # Python 3.12 @override
-    def make_reply_note(self, actor_uri, replied_object_uri: str, reply_content: str) -> str:
+    def make_reply_note(self, actor_uri, to_be_replied_to_object_uri: str, reply_content: str) -> str:
         trace('make_reply_note:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
-        # FIXME: the URI could be remote, right?
-        if note := self._status_dict_by_uri.get(replied_object_uri):
-            reply = mastodon_client.status_reply(
-                to_status=note, status=reply_content
-            )
-            self._status_dict_by_uri[reply.uri] = reply
+        if local_note := self._find_note_dict_by_uri(mastodon_client, to_be_replied_to_object_uri):
+            reply = mastodon_client.status_reply(to_status=local_note, status=reply_content)
             trace(f'make_reply returns with { reply }')
             return reply.uri
-        raise ValueError(f'Note URI not found: { replied_object_uri }')
+
+        raise ValueError(f'Cannot find Note on { self }: "{ to_be_replied_to_object_uri }"')
 
 
     # Python 3.12 @override
@@ -351,10 +341,10 @@ class NodeWithMastodonAPI(FediverseNode):
         trace('make_follow:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if to_follow_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_follow_actor_uri):
+        if to_follow_account := self._find_account_dict_by_other_actor_uri(mastodon_client, to_follow_actor_uri):
             relationship = mastodon_client.account_follow(to_follow_account) # noqa: F841
             return
-        raise ValueError(f'Account not found with Actor URI: { to_follow_actor_uri }')
+        raise ValueError(f'Cannot find account for Actor on { self }: "{ to_follow_actor_uri }"')
 
 
     # Python 3.12 @override
@@ -412,14 +402,14 @@ class NodeWithMastodonAPI(FediverseNode):
         trace(f'wait_until_actor_is_following_actor: actor_uri = { actor_uri }, to_be_followed_uri = { to_be_followed_uri }')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if to_be_followed_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_followed_uri):
+        if to_be_followed_account := self._find_account_dict_by_other_actor_uri(mastodon_client, to_be_followed_uri):
             self._poll_until_result( # may throw
                 lambda: self._is_following(mastodon_client, to_be_followed_account),
                 int(max_wait),
                 1.0,
                 f'Actor { actor_uri } is not following { to_be_followed_uri }')
             return
-        raise ValueError(f'Account not found with Actor URI: { to_be_followed_uri }')
+        raise ValueError(f'Cannot find account on { self }: "{ to_be_followed_uri }"')
 
 
     # Python 3.12 @override
@@ -427,14 +417,14 @@ class NodeWithMastodonAPI(FediverseNode):
         trace(f'wait_until_actor_is_followed_by_actor: actor_uri = { actor_uri }, to_be_followed_uri = { to_be_following_uri }')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if to_be_following_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_following_uri):
+        if to_be_following_account := self._find_account_dict_by_other_actor_uri(mastodon_client, to_be_following_uri):
             self._poll_until_result( # may throw
                 lambda: self._is_followed_by(mastodon_client, to_be_following_account),
                 int(max_wait),
                 1.0,
                 f'Actor { actor_uri } is not followed by { to_be_following_uri }')
             return
-        raise ValueError(f'Account not found with Actor URI: { to_be_following_uri }')
+        raise ValueError(f'Cannot find account on { self }: "{ to_be_following_uri }"')
 
 # From ActivityPubNode
 
@@ -461,7 +451,7 @@ class NodeWithMastodonAPI(FediverseNode):
             raise AssertionFailure(
                 spec_level or SpecLevel.UNSPECIFIED,
                 interop_level or InteropLevel.UNKNOWN,
-                f"{candidate_member_uri} not in {collection_uri}")
+                f"Node { self }: {candidate_member_uri} not in {collection_uri}")
 
 
     # Python 3.12 @override
@@ -477,7 +467,7 @@ class NodeWithMastodonAPI(FediverseNode):
             raise AssertionFailure(
                 spec_level or SpecLevel.UNSPECIFIED,
                 interop_level or InteropLevel.UNKNOWN,
-                f"{candidate_member_uri} must not be in {collection_uri}")
+                f"Node { self }: {candidate_member_uri} must not be in {collection_uri}")
 
 # From WebFingerServer
 
@@ -565,7 +555,7 @@ class NodeWithMastodonAPI(FediverseNode):
         config = cast(NodeWithMastodonApiConfiguration, self.config)
         userid = self._actor_uri_to_userid(actor_uri)
         if not userid:
-            raise ValueError(f'Cannot find actor { actor_uri }')
+            raise ValueError(f'Cannot find Actor on { self }: "{ actor_uri }"')
 
         if self._requests_session is None:
             self._requests_session = requests.Session()
@@ -585,13 +575,23 @@ class NodeWithMastodonAPI(FediverseNode):
         return ret
 
 
-    def _get_account_dict_by_other_actor_uri(self, mastodon_client: Mastodon, other_actor_uri) -> AttribAccessDict | None:
+    def _find_account_dict_by_other_actor_uri(self, mastodon_client: Mastodon, other_actor_uri: str) -> AttribAccessDict | None:
         """
-        Using the specified Mastodon client, find an account dict for another Actor on this Node with
+        Using the specified Mastodon client, find an account dict for another Actor with
         other_actor_uri, or None.
         """
         results = mastodon_client.search(q=other_actor_uri, result_type="accounts")
         ret = find_first_in_array(results.get("accounts"), lambda b: b.uri == other_actor_uri)
+        return ret
+
+
+    def _find_note_dict_by_uri(self, mastodon_client: Mastodon, uri: str) -> AttribAccessDict | None:
+        """
+        Using the specified Mastodon client, find an account dict for another Actor with
+        other_actor_uri, or None.
+        """
+        results = mastodon_client.search(q=uri, result_type="statuses")
+        ret = find_first_in_array(results.get("statuses"), lambda b: b.uri == uri)
         return ret
 
 
@@ -652,7 +652,7 @@ class MastodonNode(NodeWithMastodonAPI):
         if m:= re.match('^https://([^/]+)/users/(.+)$', actor_uri):
             if m.group(1) == self._config.hostname:
                 return m.group(2)
-        raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
+        raise ValueError( f'Cannot find Actor on { self }: "{ actor_uri }"' )
 
 
 class MastodonSaasNodeDriver(NodeDriver):

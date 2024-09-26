@@ -27,19 +27,19 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.make_create_note)
 
 
-    def make_announce_object(self, actor_uri, announced_object_uri: str) -> str:
+    def make_announce_object(self, actor_uri, to_be_announced_object_uri: str) -> str:
         """
         Perform whatever actions are necessary so the actor with actor_uri will have created
-        an Announce object on this Node announcing the object with announced_object_uri.
+        an Announce object on this Node announcing the object with to_be_announced_object_uri.
         return: URI to the Announce object
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_announce_object)
 
 
-    def make_reply_note(self, actor_uri, replied_object_uri: str, reply_content: str) -> str:
+    def make_reply_note(self, actor_uri, to_be_replied_to_object_uri: str, reply_content: str) -> str:
         """
         Perform whatever actions are necessary so the actor with actor_uri will have created
-        a Note object that replies to the object at replied_object_uri with the specified content.
+        a Note object that replies to the object at to_be_replied_to_object_uri with the specified content.
         return: URI to the Reply object
         """
         raise NotImplementedByNodeError(self, FediverseNode.make_reply_note)
