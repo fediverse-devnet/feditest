@@ -458,6 +458,8 @@ class Node(ABC):
 
 
     def __str__(self) -> str:
+        if self._config.hostname:
+            return f'"{ type(self).__name__}", hostname "{ self._config.hostname }" in constellation role "{self.rolename}"'
         return f'"{ type(self).__name__}" in constellation role "{self.rolename}"'
 
 
