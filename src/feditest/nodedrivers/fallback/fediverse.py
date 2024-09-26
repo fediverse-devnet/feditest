@@ -220,8 +220,8 @@ class FallbackFediverseNode(FediverseNode):
     def make_announce_object(self, actor_uri, to_be_announced_object_uri: str) -> str:
         return cast(str, self.prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ to_be_announced_object_uri }"'
-                + ' and enter the Announce object\'s local URI:'),
-                parse_validate=https_uri_validate)
+                + ' and enter the Announce object\'s local URI:',
+                parse_validate=https_uri_validate))
 
 
     # Python 3.12 @override
