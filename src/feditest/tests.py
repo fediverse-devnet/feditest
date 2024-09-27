@@ -12,9 +12,10 @@ class Test(ABC):
     """
     Captures the notion of a Test, such as "see whether a follower is told about a new post".
     """
-    def __init__(self, name: str, description: str | None ) -> None:
+    def __init__(self, name: str, description: str | None, builtin: bool) -> None:
         self.name: str = name
         self.description: str | None = description
+        self._builtin: bool = builtin
 
 
     def __str__(self):
@@ -35,12 +36,20 @@ class Test(ABC):
         ...
 
 
+    @property
+    def builtin(self):
+        """
+        If true, do not add this test to a test session when the session is created by collecting tests.
+        """
+        return self._builtin
+
+
 class TestFromTestFunction(Test):
     """
     A test that is defined as a single function.
     """
-    def __init__(self, name: str, description: str | None, test_function: Callable[..., None]) -> None:
-        super().__init__(name, description)
+    def __init__(self, name: str, description: str | None, test_function: Callable[..., None], builtin: bool = False) -> None:
+        super().__init__(name, description, builtin)
 
         self.test_function = test_function
 
@@ -80,8 +89,8 @@ class TestStepInTestClass:
 
 
 class TestFromTestClass(Test):
-    def __init__(self, name: str, description: str | None, clazz: type) -> None:
-        super().__init__(name, description)
+    def __init__(self, name: str, description: str | None, clazz: type, builtin: bool = False) -> None:
+        super().__init__(name, description, builtin)
 
         self.clazz = clazz
         self.steps : list[TestStepInTestClass] = []

@@ -117,9 +117,11 @@ def load_default_tests() -> None:
     """
     global all_tests
 
-    all_tests['noop2'] = TestFromTestFunction('noop2', 'This denegerate 2-node test does nothing', lambda node1, node2: None )
-    all_tests['noop3'] = TestFromTestFunction('noop3', 'This denegerate 3-node test does nothing', lambda node1, node2, node3: None )
-    all_tests['noop4'] = TestFromTestFunction('noop4', 'This denegerate 4-node test does nothing', lambda node1, node2, node3, node4: None )
+    all_tests['noop0'] = TestFromTestFunction('noop0', 'This denegerate 0-node test does nothing', lambda: None, builtin=True )
+    all_tests['noop1'] = TestFromTestFunction('noop1', 'This denegerate 1-node test does nothing', lambda node1: None, builtin=True )
+    all_tests['noop2'] = TestFromTestFunction('noop2', 'This denegerate 2-node test does nothing', lambda node1, node2: None, builtin=True )
+    all_tests['noop3'] = TestFromTestFunction('noop3', 'This denegerate 3-node test does nothing', lambda node1, node2, node3: None, builtin=True )
+    all_tests['noop4'] = TestFromTestFunction('noop4', 'This denegerate 4-node test does nothing', lambda node1, node2, node3, node4: None, builtin=True )
     # Do not replace those lambda parameters with _: we need to look up their names for role mapping
 
 
