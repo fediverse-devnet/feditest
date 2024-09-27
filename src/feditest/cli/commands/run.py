@@ -3,11 +3,15 @@ Run one or more tests
 """
 
 from argparse import ArgumentError, ArgumentParser, Namespace, _SubParsersAction
+import re
+from typing import Any
+
+from msgspec import ValidationError
 
 import feditest
 from feditest.registry import Registry, set_registry_singleton
 from feditest.reporting import warning
-from feditest.testplan import TestPlan
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController, InteractiveTestRunController, TestRunController
 from feditest.testruntranscript import (
@@ -42,24 +46,21 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     # Determine testplan. While we are at it, check consistency of arguments.
     if args.testplan:
-        if args.constellation:
-            raise ArgumentError('constellation', '--testplan already defines the --constellation. Do not provide both.')
-        if args.session:
-            raise ArgumentError('session-template', '--testplan already defines the --session-template. Do not provide both.')
-        if args.node:
-            raise ArgumentError('node', '--testplan already defines the --node via the contained constellation. Do not provide both.')
-        plan = TestPlan.load(args.testplan or "feditest-default.json")
+        plan = _create_plan_from_testplan(args)
     else:
-        if args.session:
-            if args.filter_regex:
-                raise ArgumentError('filter-regex', '--session already defines the tests, do not provide --filter-regex')
-        if args.constellation:
-            if args.node:
-                raise ArgumentError('node', '--constellation already defines the --node. Do not provide both.')
-        else:
-            pass
-            # Don't check for empty nodes: we need that for testing feditest
-            # And: it's okay if we have neither --testplan, --constellation nor --node: defaults to default-testplan.json
+        session_templates = _create_session_templates(args)
+        constellations = _create_constellations(args)
+
+        sessions = []
+        for session_template in session_templates:
+            for constellation in constellations:
+                session = session_template.instantiate_with_constellation(constellation, constellation.name)
+                sessions.append(session)
+        if sessions:
+            plan = TestPlan(sessions, None)
+            plan.simplify()
+        else: # neither sessions nor testplan specified
+            plan = TestPlan.load("feditest-default.json")
 
     if not plan.is_compatible_type():
         warning(f'Test plan has unexpected type { plan.type }: incompatibilities may occur.')
@@ -138,3 +139,80 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
 
     return parser
+
+
+def _create_plan_from_testplan(args: Namespace) -> TestPlan:
+    if args.constellation:
+        raise ArgumentError(None, '--testplan already defines --constellation. Do not provide both.')
+    if args.session:
+        raise ArgumentError(None, '--testplan already defines --session-template. Do not provide both.')
+    if args.node:
+        raise ArgumentError(None, '--testplan already defines --node via the contained constellation. Do not provide both.')
+    plan = TestPlan.load(args.testplan)
+    return plan
+
+
+def _create_session_templates(args: Namespace) -> list[TestPlanSession]:
+    if args.session:
+        if args.filter_regex:
+            raise ArgumentError(None, '--session already defines the tests, do not provide --filter-regex')
+        session_templates = []
+        for session_file in args.session:
+            session_templates.append(TestPlanSession.load(session_file))
+        return session_templates
+
+    pattern = re.compile(args.filter_regex) if args.filter_regex else None
+
+    test_plan_specs : list[TestPlanTestSpec]= []
+    constellation_role_names : dict[str,Any] = {}
+    for name in sorted(feditest.all_tests.keys()):
+        if pattern is None or pattern.match(name):
+            test = feditest.all_tests.get(name)
+            if test is None: # make linter happy
+                continue
+
+            test_plan_spec = TestPlanTestSpec(name)
+            test_plan_specs.append(test_plan_spec)
+
+            for role_name in test.needed_local_role_names():
+                constellation_role_names[role_name] = 1
+                if not test_plan_spec.rolemapping:
+                    test_plan_spec.rolemapping = {}
+                test_plan_spec.rolemapping[role_name] = role_name
+
+    constellation_roles: dict[str,TestPlanConstellationNode | None] = {}
+    for constellation_role_name in constellation_role_names:
+        constellation_roles[constellation_role_name] = None
+
+    session = TestPlanSession(TestPlanConstellation(constellation_roles), test_plan_specs, args.name)
+    return [ session ]
+
+
+def _create_constellations(args: Namespace) -> list[TestPlanConstellation]:
+    if args.constellation:
+        if args.node:
+            raise ArgumentError(None, '--constellation already defines --node. Do not provide both.')
+
+        constellations = []
+        for constellation_file in args.constellation:
+            try:
+                constellations.append(TestPlanConstellation.load(constellation_file))
+            except ValidationError as e:
+                raise ArgumentError(None, f'Constellation file { constellation_file }: { e }')
+        return constellations
+
+    # Don't check for empty nodes: we need that for testing feditest
+    roles : dict[str, TestPlanConstellationNode | None] = {}
+    for nodepair in args.node:
+        rolename, nodefile = nodepair.split('=', 1)
+        if not rolename:
+            raise ArgumentError(None, f'Rolename component of --node must not be empty: "{ nodepair }".')
+        if rolename in roles:
+            raise ArgumentError(None, f'Role is already taken: "{ rolename }".')
+        if not nodefile:
+            raise ArgumentError(None, f'Filename component must not be empty: "{ nodepair }".')
+        node = TestPlanConstellationNode.load(nodefile)
+        roles[rolename] = node
+
+    constellation = TestPlanConstellation(roles)
+    return [ constellation ]

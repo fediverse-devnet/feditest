@@ -1,0 +1,8 @@
+{
+    "roles": {
+        "server": {
+            "nodedriver": "WordPressPlusActivityPubPluginUbosNodeDriver"
+        }
+    },
+    "name": null
+}

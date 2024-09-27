@@ -1,0 +1,11 @@
+{
+    "roles": {
+        "leader_node": {
+            "nodedriver": "MastodonUbosNodeDriver"
+        },
+        "follower_node": {
+            "nodedriver": "MastodonUbosNodeDriver"
+        }
+    },
+    "name": null
+}
