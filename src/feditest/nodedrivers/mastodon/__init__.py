@@ -136,6 +136,7 @@ class MastodonOAuthApp:
     @staticmethod
     def create(api_base_url: str, session: requests.Session) -> 'MastodonOAuthApp':
         client_id, client_secret = Mastodon.create_app('feditest', api_base_url=api_base_url, session=session)
+        trace(f'Created Mastodon app with client_id="{ client_id }", client_secret="{ client_secret }".')
         return MastodonOAuthApp(client_id, client_secret, api_base_url, session)
 
 
@@ -190,12 +191,13 @@ class MastodonUserPasswordAccount(MastodonAccount):
     # Python 3.12 @override
     def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
         if self._mastodon_user_client is None:
-            trace(f'Logging into Mastodon at { oauth_app.api_base_url } as { self.email }')
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" as "{ self.email }" with password.')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret = oauth_app.client_secret,
                 api_base_url = oauth_app.api_base_url,
-                session = oauth_app.session # , debug_requests = True
+                session = oauth_app.session
+                # , debug_requests = True
             )
             client.log_in(username = self.email, password = self.password) # returns the token
 
@@ -213,12 +215,14 @@ class MastodonOAuthTokenAccount(MastodonAccount):
     # Python 3.12 @override
     def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
         if self._mastodon_user_client is None:
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token.')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
                 access_token=self.oauth_token,
                 api_base_url=oauth_app.api_base_url,
                 session=oauth_app.session
+                # , debug_requests = True
             )
             self._mastodon_user_client = client
         return self._mastodon_user_client
