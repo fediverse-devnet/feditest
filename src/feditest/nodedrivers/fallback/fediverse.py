@@ -217,16 +217,17 @@ class FallbackFediverseNode(FediverseNode):
 
 
     # Python 3.12 @override
-    def make_announce_object(self, actor_uri, announced_object_uri: str) -> str:
+    def make_announce_object(self, actor_uri, to_be_announced_object_uri: str) -> str:
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ announced_object_uri }"'
-                + ' and enter the Announce object\'s local URI:'))
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" boost "{ to_be_announced_object_uri }"'
+                + ' and enter the Announce object\'s local URI:',
+                parse_validate=https_uri_validate))
 
 
     # Python 3.12 @override
-    def make_reply_note(self, actor_uri, replied_object_uri: str, reply_content: str) -> str:
+    def make_reply_note(self, actor_uri, to_be_replied_to_object_uri: str, reply_content: str) -> str:
         return cast(str, self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" reply to object with "{ replied_object_uri }"'
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_uri }" reply to object with "{ to_be_replied_to_object_uri }"'
                 + ' and enter the Announce object\'s URI when created.'
                 + f' Reply content:"""\n{ reply_content }\n"""' ))
 
