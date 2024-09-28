@@ -245,7 +245,7 @@ class FallbackFediverseNode(FediverseNode):
     # Python 3.12 @override
     def wait_until_actor_is_following_actor(self, actor_uri: str, to_be_followed_uri: str, max_wait: float = 5.) -> None:
         answer = self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }" is following actor "{ to_be_followed_uri }"'
+                f'On FediverseNode "{ self.hostname }", wait until actor "{ actor_uri }" is following actor "{ to_be_followed_uri }"'
                 + ' and enter "true"; "false" if it didn\'t happen.',
                 parse_validate=boolean_parse_validate)
         if not answer:
@@ -255,11 +255,31 @@ class FallbackFediverseNode(FediverseNode):
     # Python 3.12 @override
     def wait_until_actor_is_followed_by_actor(self, actor_uri: str, to_be_following_uri: str, max_wait: float = 5.) -> None:
         answer = self.prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }" is followed by actor "{ to_be_following_uri }"'
+                f'On FediverseNode "{ self.hostname }", wait until actor "{ actor_uri }" is followed by actor "{ to_be_following_uri }"'
                 + ' and enter "true"; "false" if it didn\'t happen.',
                 parse_validate=boolean_parse_validate)
         if not answer:
             raise TimeoutException(f'Actor { actor_uri } not followed by actor { to_be_following_uri}.', max_wait)
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_unfollowing_actor(self, actor_uri: str, to_be_unfollowed_uri: str, max_wait: float = 5.) -> None:
+        answer = self.prompt_user(
+                f'On FediverseNode "{ self.hostname }", wait until actor "{ actor_uri }" is not following any more actor "{ to_be_unfollowed_uri }"'
+                + ' and enter "true"; "false" if it didn\'t happen.',
+                parse_validate=boolean_parse_validate)
+        if not answer:
+            raise TimeoutException(f'Actor { actor_uri } still following actor { to_be_unfollowed_uri}.', max_wait)
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_unfollowed_by_actor(self, actor_uri: str, to_be_unfollowing_uri: str, max_wait: float = 5.) -> None:
+        answer = self.prompt_user(
+                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_uri }" is not followed any more by actor "{ to_be_unfollowing_uri }"'
+                + ' and enter "true"; "false" if it didn\'t happen.',
+                parse_validate=boolean_parse_validate)
+        if not answer:
+            raise TimeoutException(f'Actor { actor_uri } is still followed by actor { to_be_unfollowing_uri}.', max_wait)
 
 
 class AbstractFallbackFediverseNodeDriver(NodeDriver):

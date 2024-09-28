@@ -1,0 +1,11 @@
+{
+    "roles": {
+        "leader_node": {
+            "nodedriver": "WordPressPlusActivityPubPluginSaasNodeDriver"
+        },
+        "follower_node": {
+            "nodedriver": "MastodonUbosNodeDriver"
+        }
+    },
+    "name": null
+}

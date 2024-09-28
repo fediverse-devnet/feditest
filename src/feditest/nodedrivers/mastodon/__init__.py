@@ -139,13 +139,23 @@ class MastodonOAuthApp:
         return MastodonOAuthApp(client_id, client_secret, api_base_url, session)
 
 
-class MastodonAccount(Account): # this is intended to be abstract
+class AccountOnNodeWithMastodonAPI(Account): # this is intended to be abstract
     def __init__(self, role: str | None, userid: str):
         super().__init__(role)
         self.userid = userid
-        self._mastodon_user_client: Mastodon | None = None
 
 
+    @property
+    def webfinger_uri(self):
+        return f'acct:{ self.userid }@{ self.node.hostname }'
+
+
+    @abstractmethod
+    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
+        ...
+
+
+class MastodonAccount(AccountOnNodeWithMastodonAPI): # this is intended to be abstract
     @staticmethod
     def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
         """
@@ -166,18 +176,8 @@ class MastodonAccount(Account): # this is intended to be abstract
 
 
     @property
-    def webfinger_uri(self):
-        return f'acct:{ self.userid }@{ self.node.hostname }'
-
-
-    @property
     def actor_uri(self):
         return f'https://{ self.node.hostname }/users/{ self.userid }'
-
-
-    @abstractmethod
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
-        ...
 
 
 class MastodonUserPasswordAccount(MastodonAccount):
@@ -185,11 +185,13 @@ class MastodonUserPasswordAccount(MastodonAccount):
         super().__init__(role, userid)
         self.password = password
         self.email = email
+        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     # Python 3.12 @override
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
         if self._mastodon_user_client is None:
+            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             trace(f'Logging into Mastodon at { oauth_app.api_base_url } as { self.email }')
             client = Mastodon(
                 client_id = oauth_app.client_id,
@@ -205,14 +207,19 @@ class MastodonUserPasswordAccount(MastodonAccount):
 
 
 class MastodonOAuthTokenAccount(MastodonAccount):
+    """
+    Compare with WordPressAccount.
+    """
     def __init__(self, role: str | None, userid: str, oauth_token: str):
         super().__init__(role, userid)
         self.oauth_token = oauth_token
+        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     # Python 3.12 @override
-    def mastodon_user_client(self, oauth_app: MastodonOAuthApp) -> Mastodon:
+    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
         if self._mastodon_user_client is None:
+            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
@@ -365,8 +372,14 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
-    def make_follow_undo(self, actor_uri: str, follower_actor_uri: str) -> None:
-        super().make_follow_undo(actor_uri, follower_actor_uri) # FIXME
+    def make_follow_undo(self, actor_uri: str, following_actor_uri: str) -> None:
+        trace('make_follow_undo:')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if following_account := self._get_account_dict_by_other_actor_uri(mastodon_client, following_actor_uri):
+            relationship = mastodon_client.account_unfollow(following_account) # noqa: F841
+            return
+        raise ValueError(f'Account not found with Actor URI: { following_actor_uri }')
 
 
     # Python 3.12 @override
@@ -425,6 +438,37 @@ class NodeWithMastodonAPI(FediverseNode):
                 f'Actor { actor_uri } is not followed by { to_be_following_uri }')
             return
         raise ValueError(f'Cannot find account on { self }: "{ to_be_following_uri }"')
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_unfollowing_actor(self, actor_uri: str, to_be_unfollowed_uri: str, max_wait: float = 5.) -> None:
+        trace(f'wait_until_actor_is_unfollowing_actor: actor_uri = { actor_uri }, to_be_unfollowed_uri = { to_be_unfollowed_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if to_be_unfollowed_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowed_uri):
+            self._poll_until_result( # may throw
+                lambda: not self._is_following(mastodon_client, to_be_unfollowed_account),
+                int(max_wait),
+                1.0,
+                f'Actor { actor_uri } is still following { to_be_unfollowed_uri }')
+            return
+        raise ValueError(f'Account not found with Actor URI: { to_be_unfollowed_uri }')
+
+
+    # Python 3.12 @override
+    def wait_until_actor_is_unfollowed_by_actor(self, actor_uri: str, to_be_unfollowing_uri: str, max_wait: float = 5.) -> None:
+        trace(f'wait_until_actor_is_unfollowed_by_actor: actor_uri = { actor_uri }, to_be_unfollowing_uri = { to_be_unfollowing_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
+
+        if to_be_unfollowing_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowing_uri):
+            self._poll_until_result( # may throw
+                lambda: not self._is_followed_by(mastodon_client, to_be_unfollowing_account),
+                int(max_wait),
+                1.0,
+                f'Actor { actor_uri } is still followed by { to_be_unfollowing_uri }')
+            return
+        raise ValueError(f'Account not found with Actor URI: { to_be_unfollowing_uri }')
+
 
 # From ActivityPubNode
 
@@ -567,11 +611,11 @@ class NodeWithMastodonAPI(FediverseNode):
         if not self._mastodon_oauth_app:
             self._mastodon_oauth_app = MastodonOAuthApp.create(f'https://{ self.hostname}', self._requests_session)
 
-        account = self._account_manager.get_account_by_match( lambda candidate: isinstance(candidate, MastodonAccount) and candidate.userid == userid )
+        account = self._account_manager.get_account_by_match(lambda candidate: isinstance(candidate, AccountOnNodeWithMastodonAPI) and candidate.userid == userid )
         if account is None:
-            return None
+            raise Exception(f'On Node { self }, failed to find account with userid "{ userid }".')
 
-        ret = cast(MastodonAccount, account).mastodon_user_client(self._mastodon_oauth_app)
+        ret = cast(MastodonAccount, account).mastodon_user_client(self)
         return ret
 
 

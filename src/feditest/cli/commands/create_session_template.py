@@ -32,6 +32,8 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
             test = feditest.all_tests.get(name)
             if test is None: # make linter happy
                 continue
+            if test.builtin:
+                continue
 
             test_plan_spec = TestPlanTestSpec(name)
             test_plan_specs.append(test_plan_spec)
