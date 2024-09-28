@@ -136,6 +136,7 @@ class MastodonOAuthApp:
     @staticmethod
     def create(api_base_url: str, session: requests.Session) -> 'MastodonOAuthApp':
         client_id, client_secret = Mastodon.create_app('feditest', api_base_url=api_base_url, session=session)
+        trace(f'Created Mastodon app with client_id="{ client_id }", client_secret="{ client_secret }".')
         return MastodonOAuthApp(client_id, client_secret, api_base_url, session)
 
 
@@ -192,12 +193,13 @@ class MastodonUserPasswordAccount(MastodonAccount):
     def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
         if self._mastodon_user_client is None:
             oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
-            trace(f'Logging into Mastodon at { oauth_app.api_base_url } as { self.email }')
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" as "{ self.email }" with password.')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret = oauth_app.client_secret,
                 api_base_url = oauth_app.api_base_url,
-                session = oauth_app.session # , debug_requests = True
+                session = oauth_app.session
+                # , debug_requests = True
             )
             client.log_in(username = self.email, password = self.password) # returns the token
 
@@ -220,12 +222,14 @@ class MastodonOAuthTokenAccount(MastodonAccount):
     def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
         if self._mastodon_user_client is None:
             oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token.')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
                 access_token=self.oauth_token,
                 api_base_url=oauth_app.api_base_url,
                 session=oauth_app.session
+                # , debug_requests = True
             )
             self._mastodon_user_client = client
         return self._mastodon_user_client
@@ -376,7 +380,7 @@ class NodeWithMastodonAPI(FediverseNode):
         trace('make_follow_undo:')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if following_account := self._get_account_dict_by_other_actor_uri(mastodon_client, following_actor_uri):
+        if following_account := self._find_account_dict_by_other_actor_uri(mastodon_client, following_actor_uri):
             relationship = mastodon_client.account_unfollow(following_account) # noqa: F841
             return
         raise ValueError(f'Account not found with Actor URI: { following_actor_uri }')
@@ -445,7 +449,7 @@ class NodeWithMastodonAPI(FediverseNode):
         trace(f'wait_until_actor_is_unfollowing_actor: actor_uri = { actor_uri }, to_be_unfollowed_uri = { to_be_unfollowed_uri }')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if to_be_unfollowed_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowed_uri):
+        if to_be_unfollowed_account := self._find_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowed_uri):
             self._poll_until_result( # may throw
                 lambda: not self._is_following(mastodon_client, to_be_unfollowed_account),
                 int(max_wait),
@@ -460,7 +464,7 @@ class NodeWithMastodonAPI(FediverseNode):
         trace(f'wait_until_actor_is_unfollowed_by_actor: actor_uri = { actor_uri }, to_be_unfollowing_uri = { to_be_unfollowing_uri }')
         mastodon_client = self._get_mastodon_client_by_actor_uri(actor_uri)
 
-        if to_be_unfollowing_account := self._get_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowing_uri):
+        if to_be_unfollowing_account := self._find_account_dict_by_other_actor_uri(mastodon_client, to_be_unfollowing_uri):
             self._poll_until_result( # may throw
                 lambda: not self._is_followed_by(mastodon_client, to_be_unfollowing_account),
                 int(max_wait),

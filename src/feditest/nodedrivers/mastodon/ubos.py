@@ -179,7 +179,7 @@ class MastodonUbosNode(MastodonNode):
         userid = self._generate_candidate_userid()
         useremail = f'{ userid }@localhost' # Mastodon checks that the host exists, so we pick localhost
 
-        result = self._invoke_tootctl(f'accounts create { userid } --email { useremail }')
+        result = self._invoke_tootctl(f'accounts create { userid } --email { useremail } --approve --confirmed --role=Owner')
 
         if result.returncode:
             error(f'Provisioniong new user { userid } on Mastodon Node { self._rolename } failed.')
@@ -191,6 +191,7 @@ class MastodonUbosNode(MastodonNode):
             return None
 
         passwd = m.group(1)
+        trace(f'New Mastodon user in role { role } on { self }: userid: "{ userid }", passwd: "{ passwd }", email: "{ useremail }".')
         return MastodonUserPasswordAccount(role, userid, passwd, useremail)
 
 
@@ -219,7 +220,8 @@ class MastodonUbosNode(MastodonNode):
         """
         Given what we know about Mastodon's userids, generate a random one that might work.
         """
-        chars = string.ascii_letters + string.digits
+        # Do not use uppercase characters. The Mastodon API will not let you log on.
+        chars = string.ascii_lowercase + string.digits
         userid = ''.join(secrets.choice(chars) for i in range(8))
         return userid
 
