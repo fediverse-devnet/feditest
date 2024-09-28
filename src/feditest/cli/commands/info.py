@@ -42,7 +42,12 @@ def run_info_test(name: str) -> int:
     """
     test = feditest.all_tests.get(name)
     if test:
-        print(format_name_value_string(test.metadata()), end='')
+        test_metadata = test.metadata()
+        needed_role_names = test.needed_local_role_names()
+        if needed_role_names:
+            test_metadata['Needed roles:'] = sorted(needed_role_names)
+
+        print(format_name_value_string(test_metadata), end='')
         return 0
 
     warning( 'Test not found:', name)
