@@ -169,7 +169,9 @@ class Registry(msgspec.Struct):
         trace(f'Registry.obtain_hostinfo({ host }) with domain { self.ca.domain }')
         ret = self.hosts.get(host)
         if ret is None:
-            raise Exception(f'Unknown host: {host}')
+            # An externally specified hostname: add to set of known hosts
+            ret = RegistryHostInfo(host=host)
+            self.hosts[host] = ret
 
         host_key: rsa.RSAPrivateKey
         if ret.key is None:
