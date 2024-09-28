@@ -1,5 +1,5 @@
 """
-Tests that two instances of Mastodon can follow each other.
+Tests that two nodes that implement the Mastodon API can follow each other.
 """
 
 from datetime import datetime

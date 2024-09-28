@@ -1,0 +1,16 @@
+{
+    "constellation": {
+        "roles": {
+            "server": null
+        },
+        "name": null
+    },
+    "tests": [
+        {
+            "name": "node_with_mastodon_api::CreateNoteTest",
+            "rolemapping": null,
+            "skip": null
+        }
+    ],
+    "name": null
+}
