@@ -1,6 +1,7 @@
 """
 """
 
+import os
 from typing import cast
 
 from feditest.nodedrivers.mastodon.ubos import MastodonUbosNodeConfiguration
@@ -75,16 +76,18 @@ class WordPressPlusActivityPubPluginUbosNode(WordPressPlusActivityPubPluginNode)
 
 
     # Python 3.12 @override
-    def _provision_oauth_token_for(self, userid: str, oauth_client_id: str):
+    def _provision_oauth_token_for(self, userid: str, oauth_client_id: str) -> str :
         # Code from here: https://wordpress.org/support/topic/programmatically-obtaining-oauth-token-for-testing/
         # $desired_token = '123';
         # $user_id = 1;
         # $oauth = new Enable_Mastodon_Apps\Mastodon_OAuth();
         # $oauth->get_token_storage()->setAccessToken( $desired_token, $app->get_client_id(), $user_id, time() + HOUR_IN_SECONDS, $app->get_scopes() );
 
+        trace(f'Provisioning OAuth token on {self} for user "{ userid }".')
         config = cast(UbosNodeConfiguration, self.config)
         node_driver = cast(WordPressPlusActivityPubPluginUbosNodeDriver, self.node_driver)
 
+        token = os.urandom(16).hex()
         php_script = f"""
 <?php
 $_SERVER['HTTP_HOST'] = '{ self.hostname }';
@@ -92,13 +95,15 @@ $_SERVER['HTTP_HOST'] = '{ self.hostname }';
 include 'wp-load.php';
 
 $oauth = new Enable_Mastodon_Apps\Mastodon_OAuth();
-$oauth->get_token_storage()->setAccessToken( "11223344", "{ oauth_client_id }", "{ userid }", time() + HOUR_IN_SECONDS, 'read write follow push' );
+$oauth->get_token_storage()->setAccessToken( "{ token }", "{ oauth_client_id }", "{ userid }", time() + HOUR_IN_SECONDS, 'read write follow push' );
 """
         dir = f'/ubos/http/sites/{ config.siteid }'
         cmd = f'cd { dir } && sudo sudo -u http php' # from user ubosdev -> root -> http
 
+        print( f'XXX PHP script is "{ php_script }"')
         if node_driver._exec_shell(cmd, config.rshcmd, stdin_content=php_script).returncode:
             raise Exception(self, f"Failed to create OAuth token for user { userid }, cmd: { cmd }")
+        return token
 
 
 class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):

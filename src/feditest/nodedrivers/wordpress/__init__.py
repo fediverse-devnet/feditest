@@ -23,6 +23,7 @@ from feditest.protocols import (
     HOSTNAME_PAR
 )
 from feditest.protocols.fediverse import FediverseNode
+from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
 from feditest.utils import boolean_parse_validate, hostname_validate
 
@@ -113,12 +114,15 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
         if self._mastodon_user_client is None:
             oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
             self._ensure_oauth_token(node, oauth_app.client_id)
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self.oauth_token }".')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
                 access_token=self.oauth_token,
                 api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session
+                session=oauth_app.session,
+                version_check_mode='none' # mastodon.py cannot parse this version string, e.g. "WordPress/6.5.3, EMA/0.9.4" instead of Mastodon's "4.1.12"
+                # , debug_requests = True
             )
             self._mastodon_user_client = client
         return self._mastodon_user_client
@@ -173,7 +177,7 @@ class WordPressPlusActivityPubPluginNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-    def _provision_oauth_token_for(self, userid: str, oauth_client_id: str):
+    def _provision_oauth_token_for(self, userid: str, oauth_client_id: str) -> str:
         ret = self.prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ userid }"'
                               + f' on constellation role "{ self.rolename }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
                               parse_validate=_oauth_token_validate)
