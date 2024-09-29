@@ -27,7 +27,7 @@ from feditest.protocols import (
 )
 from feditest.protocols.activitypub import AnyObject
 from feditest.protocols.fediverse import FediverseNode
-from feditest.reporting import trace
+from feditest.reporting import is_trace_active, trace
 from feditest.testplan import InvalidAccountSpecificationException, TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
 from feditest.utils import boolean_parse_validate, email_validate, find_first_in_array, hostname_validate
 
@@ -225,8 +225,8 @@ class MastodonUserPasswordAccount(MastodonAccount):
                 client_id = oauth_app.client_id,
                 client_secret = oauth_app.client_secret,
                 api_base_url = oauth_app.api_base_url,
-                session = oauth_app.session
-                # , debug_requests = True
+                session = oauth_app.session,
+                debug_requests = is_trace_active()
             )
             client.log_in(username = self._email, password = self._password) # returns the token
 
@@ -256,8 +256,8 @@ class MastodonOAuthTokenAccount(MastodonAccount):
                 client_secret=oauth_app.client_secret,
                 access_token=self._oauth_token,
                 api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session
-                # , debug_requests = True
+                session=oauth_app.session,
+                debug_requests = is_trace_active()
             )
             self._mastodon_user_client = client
         return self._mastodon_user_client

@@ -23,7 +23,7 @@ from feditest.protocols import (
     HOSTNAME_PAR
 )
 from feditest.protocols.fediverse import FediverseNode
-from feditest.reporting import trace
+from feditest.reporting import is_trace_active, trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
 from feditest.utils import boolean_parse_validate, hostname_validate
 
@@ -122,8 +122,8 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
                 access_token=self._oauth_token,
                 api_base_url=oauth_app.api_base_url,
                 session=oauth_app.session,
-                version_check_mode='none' # mastodon.py cannot parse this version string, e.g. "WordPress/6.5.3, EMA/0.9.4" instead of Mastodon's "4.1.12"
-                # , debug_requests = True
+                version_check_mode='none', # mastodon.py cannot parse this version string, e.g. "WordPress/6.5.3, EMA/0.9.4" instead of Mastodon's "4.1.12"
+                debug_requests = is_trace_active()
             )
             self._mastodon_user_client = client
         return self._mastodon_user_client

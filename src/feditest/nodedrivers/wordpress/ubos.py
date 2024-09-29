@@ -145,6 +145,7 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
                     "accessoryids" : [
                         "wordpress-plugin-activitypub",
                         "wordpress-plugin-enable-mastodon-apps",
+                        "wordpress-plugin-friends",
                         "wordpress-plugin-webfinger"
                     ],
                     "context" : ""
