@@ -85,15 +85,15 @@ def test_parse(the_test_plan: TestPlan) -> None:
     assert acc1.role == 'role1'
     assert acc1.userid == 'foo'
     assert isinstance(acc1, MastodonUserPasswordAccount)
-    assert acc1.email == 'foo@bar.com'
-    assert acc1.password == 'verysecret'
+    assert acc1._email == 'foo@bar.com'
+    assert acc1._password == 'verysecret'
 
     acc2 = cast(MastodonAccount | None, account_manager.get_account_by_role('role2'))
     assert acc2
     assert acc2.role == 'role2'
     assert acc2.userid == 'bar'
     assert isinstance(acc2, MastodonOAuthTokenAccount)
-    assert acc2.oauth_token == 'tokentokentoken'
+    assert acc2._oauth_token == 'tokentokentoken'
 
     non_acc1 = cast(MastodonNonExistingAccount | None, account_manager.get_non_existing_account_by_role('nonrole1'))
     assert non_acc1
