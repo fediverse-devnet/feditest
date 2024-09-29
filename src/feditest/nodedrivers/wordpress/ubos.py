@@ -42,7 +42,7 @@ class WordPressUbosAccountManager(DefaultAccountManager):
 
         if not self._accounts_allocated_to_role and not self._accounts_not_allocated_to_role:
             config = cast(UbosNodeConfiguration, node.config)
-            admin_account = WordPressAccount(None, config.admin_userid, None)
+            admin_account = WordPressAccount(None, config.admin_userid, None, 1) # We know this is account with internal identifier 1
             admin_account.set_node(node)
             self._accounts_not_allocated_to_role.append(admin_account)
 
@@ -76,14 +76,14 @@ class WordPressPlusActivityPubPluginUbosNode(WordPressPlusActivityPubPluginNode)
 
 
     # Python 3.12 @override
-    def _provision_oauth_token_for(self, userid: str, oauth_client_id: str) -> str :
+    def _provision_oauth_token_for(self, account: WordPressAccount, oauth_client_id: str) -> str :
         # Code from here: https://wordpress.org/support/topic/programmatically-obtaining-oauth-token-for-testing/
         # $desired_token = '123';
         # $user_id = 1;
         # $oauth = new Enable_Mastodon_Apps\Mastodon_OAuth();
         # $oauth->get_token_storage()->setAccessToken( $desired_token, $app->get_client_id(), $user_id, time() + HOUR_IN_SECONDS, $app->get_scopes() );
 
-        trace(f'Provisioning OAuth token on {self} for user "{ userid }".')
+        trace(f'Provisioning OAuth token on {self} for user with name="{ account.userid }".')
         config = cast(UbosNodeConfiguration, self.config)
         node_driver = cast(WordPressPlusActivityPubPluginUbosNodeDriver, self.node_driver)
 
@@ -95,14 +95,14 @@ $_SERVER['HTTP_HOST'] = '{ self.hostname }';
 include 'wp-load.php';
 
 $oauth = new Enable_Mastodon_Apps\Mastodon_OAuth();
-$oauth->get_token_storage()->setAccessToken( "{ token }", "{ oauth_client_id }", "{ userid }", time() + HOUR_IN_SECONDS, 'read write follow push' );
+$oauth->get_token_storage()->setAccessToken( "{ token }", "{ oauth_client_id }", { account.internal_userid }, time() + HOUR_IN_SECONDS, 'read write follow push' );
 """
         dir = f'/ubos/http/sites/{ config.siteid }'
         cmd = f'cd { dir } && sudo sudo -u http php' # from user ubosdev -> root -> http
 
-        print( f'XXX PHP script is "{ php_script }"')
+        trace( f'PHP script is "{ php_script }"')
         if node_driver._exec_shell(cmd, config.rshcmd, stdin_content=php_script).returncode:
-            raise Exception(self, f"Failed to create OAuth token for user { userid }, cmd: { cmd }")
+            raise Exception(self, f'Failed to create OAuth token for user with id="{ account.userid }", cmd: { cmd }"')
         return token
 
 

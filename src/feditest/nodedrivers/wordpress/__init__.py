@@ -84,12 +84,12 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
     """
     Compare with MastodonOAuthTokenAccount.
     """
-    def __init__(self, role: str | None, userid: str, oauth_token: str | None):
+    def __init__(self, role: str | None, userid: str, oauth_token: str | None, internal_userid: int | None = None):
         """
         The oauth_token may be None. In which case we dynamically obtain one.
         """
-        super().__init__(role, userid)
-        self.oauth_token = oauth_token
+        super().__init__(role, userid, internal_userid)
+        self._oauth_token = oauth_token
         self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
@@ -110,15 +110,16 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
         return f'https://{ self.node.hostname }/author/{ self.userid }/'
 
 
-    def mastodon_user_client(self, node: NodeWithMastodonAPI) -> Mastodon:
+    def mastodon_user_client(self) -> Mastodon:
         if self._mastodon_user_client is None:
-            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
-            self._ensure_oauth_token(node, oauth_app.client_id)
-            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self.oauth_token }".')
+            node = cast(NodeWithMastodonAPI, self._node)
+            oauth_app = cast(MastodonOAuthApp, node._mastodon_oauth_app)
+            self._ensure_oauth_token(oauth_app.client_id)
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self._oauth_token }".')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
-                access_token=self.oauth_token,
+                access_token=self._oauth_token,
                 api_base_url=oauth_app.api_base_url,
                 session=oauth_app.session,
                 version_check_mode='none' # mastodon.py cannot parse this version string, e.g. "WordPress/6.5.3, EMA/0.9.4" instead of Mastodon's "4.1.12"
@@ -128,14 +129,14 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
         return self._mastodon_user_client
 
 
-    def _ensure_oauth_token(self, node: NodeWithMastodonAPI, oauth_client_id: str) -> None:
+    def _ensure_oauth_token(self, oauth_client_id: str) -> None:
         """
         Helper to dynamically provision an OAuth token if we don't have one yet.
         """
-        if self.oauth_token:
+        if self._oauth_token:
             return
-        real_node = cast(WordPressPlusActivityPubPluginNode, node)
-        self.oauth_token = real_node._provision_oauth_token_for(self.userid, oauth_client_id)
+        real_node = cast(WordPressPlusActivityPubPluginNode, self._node)
+        self._oauth_token = real_node._provision_oauth_token_for(self, oauth_client_id)
 
 
 class WordPressNonExistingAccount(NonExistingAccount):
@@ -177,10 +178,10 @@ class WordPressPlusActivityPubPluginNode(NodeWithMastodonAPI):
         raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
 
 
-    def _provision_oauth_token_for(self, userid: str, oauth_client_id: str) -> str:
-        ret = self.prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ userid }"'
-                              + f' on constellation role "{ self.rolename }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
-                              parse_validate=_oauth_token_validate)
+    def _provision_oauth_token_for(self, account: WordPressAccount, oauth_client_id: str) -> str:
+        ret = cast(str, self.prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ account.userid  }"'
+                              + f' on constellation role "{ self.rolename }", OAuth client id "{ oauth_client_id }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
+                              parse_validate=_oauth_token_validate))
         return ret
 
 
