@@ -67,6 +67,6 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--name', default=None, required=False, help='Name of the created test session template')
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the created test session template')
-    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
+    parser.add_argument('--testsdir', action='append', default=['tests'], help='Directory or directories where to find tests')
 
     return parser

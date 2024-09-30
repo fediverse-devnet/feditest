@@ -110,18 +110,16 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     """
     # general flags and options
     parser = parent_parser.add_parser(cmd_name, help='Run one or more tests' )
-    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
+    parser.add_argument('--testsdir', action='append', default=['tests'], help='Directory or directories where to find tests')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find extra drivers for nodes that can be tested')
     parser.add_argument('--domain', type=hostname_validate, help='Local-only DNS domain for the DNS hostnames that are auto-generated for nodes')
-    parser.add_argument('--interactive', action="store_true",
-                        help="Run the tests interactively")
-    parser.add_argument('--who', action='store_true',
-                        help="Record who ran the test plan on what host.")
+    parser.add_argument('--interactive', action="store_true", help="Run the tests interactively")
+    parser.add_argument('--who', action='store_true', help="Record who ran the test plan on what host.")
 
     # test plan options. We do not use argparse groups, as the situation is more complicated than argparse seems to support
     parser.add_argument('--testplan', help='Name of the file that contains the test plan to run')
-    parser.add_argument('--constellation', nargs='+', help='File(s) each containing a JSON fragment defining a constellation')
-    parser.add_argument('--session', '--session-template', nargs='+', help='File(s) each containing a JSON fragment defining a test session')
+    parser.add_argument('--constellation', action='append', help='File(s) each containing a JSON fragment defining a constellation')
+    parser.add_argument('--session', '--session-template', action='append', help='File(s) each containing a JSON fragment defining a test session')
     parser.add_argument('--node', action='append',
                         help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
