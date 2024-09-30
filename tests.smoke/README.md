@@ -1,4 +1,4 @@
-# FediTest unit tests using FediTest itself
+# FediTest smoke tests
 
 ## Files
 
@@ -52,4 +52,5 @@ Combine a session template with a constellation, such as:
 
 etc.
 
-If you invoke FediTest from any directory other than this one, make sure you specify a `--testsdir <dir>` to the subdirectory `tests` so FediTest can find the test files.
+If you invoke FediTest from any directory other than this one, make sure you specify a `--testsdir <dir>` to this directory's
+subdirectory `tests` so FediTest can find the test files.

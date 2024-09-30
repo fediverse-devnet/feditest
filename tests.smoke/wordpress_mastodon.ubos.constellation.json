@@ -1,7 +1,7 @@
 {
     "roles": {
         "leader_node": {
-            "nodedriver": "WordPressPlusActivityPubPluginSaasNodeDriver"
+            "nodedriver": "WordPressPlusActivityPubPluginUbosNodeDriver"
         },
         "follower_node": {
             "nodedriver": "MastodonUbosNodeDriver"

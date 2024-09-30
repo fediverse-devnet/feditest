@@ -38,9 +38,9 @@ class CreateNoteTest:
         assert self.actor_uri
 
 
-    @step
-    def start_reset_all(self):
-        self._reset_all()
+#    @step
+#    def start_reset_all(self):
+#        self._reset_all()
 
 
     @step
@@ -54,9 +54,9 @@ class CreateNoteTest:
         self.server.wait_until_actor_has_received_note(self.actor_uri, self.note_uri)
 
 
-    @step
-    def end_reset_all(self):
-        self._reset_all()
+#    @step
+#    def end_reset_all(self):
+#        self._reset_all()
 
 
     def _reset_all(self):
