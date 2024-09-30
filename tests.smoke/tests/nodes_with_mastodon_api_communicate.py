@@ -7,7 +7,6 @@ from datetime import datetime
 from feditest import step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
 
-import time
 
 @test
 class FollowTest:

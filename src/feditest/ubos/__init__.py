@@ -506,7 +506,7 @@ class UbosNodeDriver(NodeDriver):
     def _provision_node_with_generated_sitejson(self, config: UbosNodeDeployConfiguration, account_manager: AccountManager) -> None:
         siteJson = config.obtain_site_json()
 
-        cmd = 'sudo ubos-admin deploy --stdin';
+        cmd = 'sudo ubos-admin deploy --stdin'
         result = self._exec_shell(cmd, config.rshcmd, siteJson, capture_output=True)
         if result.returncode:
             raise UbosAdminException(self, cmd, siteJson, result.stdout, result.stderr)
