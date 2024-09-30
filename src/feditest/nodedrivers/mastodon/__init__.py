@@ -177,14 +177,14 @@ class AccountOnNodeWithMastodonAPI(Account): # this is intended to be abstract
 
 class MastodonAccount(AccountOnNodeWithMastodonAPI): # this is intended to be abstract
     @staticmethod
-    def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
+    def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
         """
         Parses the information provided in an "account" dict of TestPlanConstellationNode
         """
-        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, context_msg)
+        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, context_msg)
 
-        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
         if oauth_token:
             if EMAIL_ACCOUNT_FIELD.name in account_info_in_testplan:
                 raise InvalidAccountSpecificationException(
@@ -196,10 +196,9 @@ class MastodonAccount(AccountOnNodeWithMastodonAPI): # this is intended to be ab
                     f'Specify { OAUTH_TOKEN_ACCOUNT_FIELD.name } or { PASSWORD_ACCOUNT_FIELD.name }, not both.')
             return MastodonOAuthTokenAccount(role, userid, oauth_token)
 
-        else:
-            email = EMAIL_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-            password = PASSWORD_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-            return MastodonUserPasswordAccount(role, userid, password, email)
+        email = EMAIL_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        password = PASSWORD_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        return MastodonUserPasswordAccount(role, userid, password, email)
 
 
     @property
@@ -270,13 +269,12 @@ class MastodonNonExistingAccount(NonExistingAccount):
 
 
     @staticmethod
-    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
+    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
         """
         Parses the information provided in an "non_existing_account" dict of TestPlanConstellationNode
         """
-        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
-
+        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, context_msg)
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, context_msg)
         return MastodonNonExistingAccount(role, userid)
 
 
@@ -771,13 +769,17 @@ class MastodonSaasNodeDriver(NodeDriver):
 
         accounts : list[Account] = []
         if test_plan_node.accounts:
-            for account_info in test_plan_node.accounts:
-                accounts.append(MastodonAccount.create_from_account_info_in_testplan(account_info, self))
+            for index, account_info in enumerate(test_plan_node.accounts):
+                accounts.append(MastodonAccount.create_from_account_info_in_testplan(
+                        account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Account { index }: '))
 
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
-            for non_existing_account_info in test_plan_node.non_existing_accounts:
-                non_existing_accounts.append(MastodonNonExistingAccount.create_from_non_existing_account_info_in_testplan(non_existing_account_info, self))
+            for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
+                non_existing_accounts.append(MastodonNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                        non_existing_account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 
         return (
             NodeWithMastodonApiConfiguration(

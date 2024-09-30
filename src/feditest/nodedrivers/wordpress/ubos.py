@@ -126,13 +126,17 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
         accounts : list[Account] = []
         if test_plan_node.accounts:
-            for account_info in test_plan_node.accounts:
-                accounts.append(WordPressAccount.create_from_account_info_in_testplan(account_info, self))
+            for index, account_info in enumerate(test_plan_node.accounts):
+                accounts.append(WordPressAccount.create_from_account_info_in_testplan(
+                        account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Account { index }: '))
 
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
-            for non_existing_account_info in test_plan_node.non_existing_accounts:
-                non_existing_accounts.append(WordPressNonExistingAccount.create_from_non_existing_account_info_in_testplan(non_existing_account_info, self))
+            for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
+                non_existing_accounts.append(WordPressNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                        non_existing_account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 
         # Once has the Node has been instantiated (we can't do that here yet): if the user did not specify at least one Account, we add the admin account
 

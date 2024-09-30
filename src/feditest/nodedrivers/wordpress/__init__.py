@@ -94,14 +94,13 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
 
 
     @staticmethod
-    def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
+    def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
         """
         Parses the information provided in an "account" dict of TestPlanConstellationNode
         """
-        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-
-        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, context_msg)
+        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
         return WordPressAccount(role, userid, oauth_token)
 
 
@@ -146,13 +145,12 @@ class WordPressNonExistingAccount(NonExistingAccount):
 
 
     @staticmethod
-    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
+    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
         """
         Parses the information provided in an "non_existing_account" dict of TestPlanConstellationNode
         """
-        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
-
+        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, context_msg)
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, context_msg)
         return WordPressNonExistingAccount(role, userid)
 
 
@@ -221,13 +219,17 @@ class WordPressPlusActivityPubPluginSaasNodeDriver(NodeDriver):
 
         accounts : list[Account] = []
         if test_plan_node.accounts:
-            for account_info in test_plan_node.accounts:
-                accounts.append(WordPressAccount.create_from_account_info_in_testplan(account_info, self))
+            for index, account_info in enumerate(test_plan_node.accounts):
+                accounts.append(WordPressAccount.create_from_account_info_in_testplan(
+                        account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Account { index }: '))
 
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
-            for non_existing_account_info in test_plan_node.non_existing_accounts:
-                non_existing_accounts.append(WordPressNonExistingAccount.create_from_non_existing_account_info_in_testplan(non_existing_account_info, self))
+            for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
+                non_existing_accounts.append(WordPressNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                        non_existing_account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 
         return (
             NodeWithMastodonApiConfiguration(
