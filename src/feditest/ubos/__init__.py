@@ -112,12 +112,14 @@ class UbosAdminException(Exception):
     """
     Thrown if a `ubos-admin` operation failed.
     """
-    def __init__(self, node_driver: 'UbosNodeDriver', cmd: str, indata: str | None = None, out: str | None = None):
+    def __init__(self, node_driver: 'UbosNodeDriver', cmd: str, indata: str | None = None, stdout: str | None = None, stderr: str | None = None):
         msg = f'node_driver: { node_driver }, cmd: "{ cmd }"'
         if indata:
             msg += f'\ninput data: { indata }'
-        if out:
-            msg += f'\nout: { out }'
+        if stdout:
+            msg += f'\nstdout: { stdout }'
+        if stderr:
+            msg += f'\nstderr: { stderr }'
         super().__init__(msg)
 
 
@@ -472,8 +474,10 @@ class UbosNodeDriver(NodeDriver):
         """
         emptySiteJson = config.obtain_empty_site_json()
 
-        if self._exec_shell('sudo ubos-admin deploy --stdin', config.rshcmd, emptySiteJson).returncode:
-            raise UbosAdminException(self, 'sudo ubos-admin deploy --stdin', emptySiteJson)
+        cmd = 'sudo ubos-admin deploy --stdin'
+        result = self._exec_shell(cmd, config.rshcmd, emptySiteJson, capture_output=True)
+        if result.returncode:
+            raise UbosAdminException(self, cmd, emptySiteJson, result.stdout, result.stderr)
 
         # From `ubos-admin restore --help`:
         #    ubos-admin restore --appconfigid <appconfigid> --tositeid <tositeid> --createnew [--newappconfigid <newid>] [--newcontext <context>] --in <backupfile>
@@ -494,15 +498,18 @@ class UbosNodeDriver(NodeDriver):
         cmd += ' --newcontext ""'
         cmd += f' --in "{ config.backupfile }"'
 
-        if self._exec_shell(cmd, config.rshcmd).returncode:
-            raise UbosAdminException(self, cmd)
+        result = self._exec_shell(cmd, config.rshcmd, capture_output=True)
+        if result.returncode:
+            raise UbosAdminException(self, cmd, result.stdout, result.stderr)
 
 
     def _provision_node_with_generated_sitejson(self, config: UbosNodeDeployConfiguration, account_manager: AccountManager) -> None:
         siteJson = config.obtain_site_json()
 
-        if self._exec_shell('sudo ubos-admin deploy --stdin', config.rshcmd, siteJson).returncode:
-            raise UbosAdminException(self, 'sudo ubos-admin deploy --stdin', siteJson)
+        cmd = 'sudo ubos-admin deploy --stdin'
+        result = self._exec_shell(cmd, config.rshcmd, siteJson, capture_output=True)
+        if result.returncode:
+            raise UbosAdminException(self, cmd, siteJson, result.stdout, result.stderr)
 
 
     def _getAppConfigJson(self, config: UbosNodeDeployConfiguration) -> dict[str,Any]:
@@ -520,8 +527,10 @@ class UbosNodeDriver(NodeDriver):
     def _unprovision_node(self, node: Node) -> None:
         trace(f'UbosNodeDriver unprovision node { node.rolename }')
         config = cast(UbosNodeConfiguration, node.config)
-        if self._exec_shell( f"sudo ubos-admin undeploy --siteid { config.siteid }", config.rshcmd).returncode:
-            raise UbosAdminException(self, f"sudo ubos-admin undeploy --siteid { config.siteid }")
+        cmd = f"sudo ubos-admin undeploy --siteid { config.siteid }"
+        result = self._exec_shell(cmd, config.rshcmd, capture_output=True)
+        if result.returncode:
+            raise UbosAdminException(self, cmd, result.stdout, result.stderr)
 
 
     def _cleanup_node(self, config: UbosNodeConfiguration):
