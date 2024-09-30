@@ -27,8 +27,8 @@ from feditest.protocols import (
 )
 from feditest.protocols.activitypub import AnyObject
 from feditest.protocols.fediverse import FediverseNode
-from feditest.reporting import trace
-from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
+from feditest.reporting import is_trace_active, trace
+from feditest.testplan import InvalidAccountSpecificationException, TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
 from feditest.utils import boolean_parse_validate, email_validate, find_first_in_array, hostname_validate
 
 
@@ -73,7 +73,7 @@ def _userid_validate(candidate: str) -> str | None:
     FIXME this is a wild guess and can be better.
     """
     candidate = candidate.strip()
-    return candidate if re.match(r'[a-zA-Z0-9_]', candidate) else None
+    return candidate if re.match(r'[a-zA-Z0-9_]+', candidate) else None
 
 
 def _password_validate(candidate: str) -> str | None:
@@ -141,9 +141,28 @@ class MastodonOAuthApp:
 
 
 class AccountOnNodeWithMastodonAPI(Account): # this is intended to be abstract
-    def __init__(self, role: str | None, userid: str):
+    def __init__(self, role: str | None, userid: str, internal_userid: int | None = None):
+        """
+        userid: the string representing the user, e.g. "joe"
+        internal_userid: the id of the user object in the API, e.g. 1
+        """
         super().__init__(role)
-        self.userid = userid
+        self._userid = userid
+        self._internal_userid = internal_userid
+
+
+    @property
+    def userid(self):
+        return self._userid
+
+
+    @property
+    def internal_userid(self) -> int:
+        if not self._internal_userid:
+            mastodon_client = self.mastodon_user_client()
+            actor = mastodon_client.account_verify_credentials()
+            self._internal_userid = cast(int, actor.id)
+        return self._internal_userid
 
 
     @property
@@ -152,28 +171,34 @@ class AccountOnNodeWithMastodonAPI(Account): # this is intended to be abstract
 
 
     @abstractmethod
-    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
+    def mastodon_user_client(self) -> Mastodon:
         ...
 
 
 class MastodonAccount(AccountOnNodeWithMastodonAPI): # this is intended to be abstract
     @staticmethod
-    def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
+    def create_from_account_info_in_testplan(account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
         """
         Parses the information provided in an "account" dict of TestPlanConstellationNode
         """
-        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
+        userid = USERID_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, context_msg)
+        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, context_msg)
 
-        oauth_token = OAUTH_TOKEN_ACCOUNT_FIELD.get_validate_from(account_info_in_testplan, f'NodeDriver { node_driver }: ')
         if oauth_token:
-            # FIXME: Raise error if email or password are given
+            if EMAIL_ACCOUNT_FIELD.name in account_info_in_testplan:
+                raise InvalidAccountSpecificationException(
+                    account_info_in_testplan,
+                    f'Specify { OAUTH_TOKEN_ACCOUNT_FIELD.name } or { EMAIL_ACCOUNT_FIELD.name }, not both.')
+            if PASSWORD_ACCOUNT_FIELD.name in account_info_in_testplan:
+                raise InvalidAccountSpecificationException(
+                    account_info_in_testplan,
+                    f'Specify { OAUTH_TOKEN_ACCOUNT_FIELD.name } or { PASSWORD_ACCOUNT_FIELD.name }, not both.')
             return MastodonOAuthTokenAccount(role, userid, oauth_token)
 
-        else:
-            email = EMAIL_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-            password = PASSWORD_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, f'NodeDriver { node_driver }: ')
-            return MastodonUserPasswordAccount(role, userid, password, email)
+        email = EMAIL_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        password = PASSWORD_ACCOUNT_FIELD.get_validate_from_or_raise(account_info_in_testplan, context_msg)
+        return MastodonUserPasswordAccount(role, userid, password, email)
 
 
     @property
@@ -182,26 +207,27 @@ class MastodonAccount(AccountOnNodeWithMastodonAPI): # this is intended to be ab
 
 
 class MastodonUserPasswordAccount(MastodonAccount):
-    def __init__(self, role: str | None, userid: str, password: str, email: str):
-        super().__init__(role, userid)
-        self.password = password
-        self.email = email
+    def __init__(self, role: str | None, username: str, password: str, email: str):
+        super().__init__(role, username)
+        self._password = password
+        self._email = email
         self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     # Python 3.12 @override
-    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
+    def mastodon_user_client(self) -> Mastodon:
         if self._mastodon_user_client is None:
-            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
-            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" as "{ self.email }" with password.')
+            node = cast(NodeWithMastodonAPI, self._node)
+            oauth_app = cast(MastodonOAuthApp, node._mastodon_oauth_app)
+            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" as "{ self._email }" with password.')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret = oauth_app.client_secret,
                 api_base_url = oauth_app.api_base_url,
-                session = oauth_app.session
-                # , debug_requests = True
+                session = oauth_app.session,
+                debug_requests = is_trace_active()
             )
-            client.log_in(username = self.email, password = self.password) # returns the token
+            client.log_in(username = self._email, password = self._password) # returns the token
 
             self._mastodon_user_client = client
 
@@ -214,22 +240,23 @@ class MastodonOAuthTokenAccount(MastodonAccount):
     """
     def __init__(self, role: str | None, userid: str, oauth_token: str):
         super().__init__(role, userid)
-        self.oauth_token = oauth_token
+        self._oauth_token = oauth_token
         self._mastodon_user_client: Mastodon | None = None # Allocated as needed
 
 
     # Python 3.12 @override
-    def mastodon_user_client(self, node: 'NodeWithMastodonAPI') -> Mastodon:
+    def mastodon_user_client(self) -> Mastodon:
         if self._mastodon_user_client is None:
-            oauth_app = cast(MastodonOAuthApp,node._mastodon_oauth_app)
+            node = cast(NodeWithMastodonAPI, self._node)
+            oauth_app = cast(MastodonOAuthApp, node._mastodon_oauth_app)
             trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token.')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
-                access_token=self.oauth_token,
+                access_token=self._oauth_token,
                 api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session
-                # , debug_requests = True
+                session=oauth_app.session,
+                debug_requests = is_trace_active()
             )
             self._mastodon_user_client = client
         return self._mastodon_user_client
@@ -238,18 +265,22 @@ class MastodonOAuthTokenAccount(MastodonAccount):
 class MastodonNonExistingAccount(NonExistingAccount):
     def __init__(self, role: str | None, userid: str):
         super().__init__(role)
-        self.userid = userid
+        self._userid = userid
 
 
     @staticmethod
-    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], node_driver: NodeDriver):
+    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
         """
         Parses the information provided in an "non_existing_account" dict of TestPlanConstellationNode
         """
-        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, f'NodeDriver { node_driver }: ')
-
+        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, context_msg)
+        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, context_msg)
         return MastodonNonExistingAccount(role, userid)
+
+
+    @property
+    def userid(self):
+        return self._userid
 
 
     @property
@@ -259,7 +290,7 @@ class MastodonNonExistingAccount(NonExistingAccount):
 
     @property
     def actor_uri(self):
-        return f'https://{ self.node.hostname }/users/{ self.userid }'
+        return f'https://{ self.node.hostname }/users/{ self._userid }'
 
 
 class NodeWithMastodonApiConfiguration(NodeConfiguration):
@@ -619,7 +650,7 @@ class NodeWithMastodonAPI(FediverseNode):
         if account is None:
             raise Exception(f'On Node { self }, failed to find account with userid "{ userid }".')
 
-        ret = cast(MastodonAccount, account).mastodon_user_client(self)
+        ret = cast(MastodonAccount, account).mastodon_user_client()
         return ret
 
 
@@ -738,13 +769,17 @@ class MastodonSaasNodeDriver(NodeDriver):
 
         accounts : list[Account] = []
         if test_plan_node.accounts:
-            for account_info in test_plan_node.accounts:
-                accounts.append(MastodonAccount.create_from_account_info_in_testplan(account_info, self))
+            for index, account_info in enumerate(test_plan_node.accounts):
+                accounts.append(MastodonAccount.create_from_account_info_in_testplan(
+                        account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Account { index }: '))
 
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
-            for non_existing_account_info in test_plan_node.non_existing_accounts:
-                non_existing_accounts.append(MastodonNonExistingAccount.create_from_non_existing_account_info_in_testplan(non_existing_account_info, self))
+            for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
+                non_existing_accounts.append(MastodonNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                        non_existing_account_info,
+                        f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 
         return (
             NodeWithMastodonApiConfiguration(

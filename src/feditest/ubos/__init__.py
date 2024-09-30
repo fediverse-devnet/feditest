@@ -173,7 +173,7 @@ class UbosNodeConfiguration(NodeConfiguration):
 
     @staticmethod
     def _generate_credential():
-        chars = string.ascii_letters + string.digits + string.punctuation
+        chars = string.ascii_letters + string.digits + "_-%"
         ret = ''.join(random.choice(chars) for i in range(16))
         return ret
 
