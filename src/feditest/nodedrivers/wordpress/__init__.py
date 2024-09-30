@@ -114,7 +114,7 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
             node = cast(NodeWithMastodonAPI, self._node)
             oauth_app = cast(MastodonOAuthApp, node._mastodon_oauth_app)
             self._ensure_oauth_token(oauth_app.client_id)
-            trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self._oauth_token }".')
+            trace(f'Logging into WordPress at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self._oauth_token }".')
             client = Mastodon(
                 client_id = oauth_app.client_id,
                 client_secret=oauth_app.client_secret,
