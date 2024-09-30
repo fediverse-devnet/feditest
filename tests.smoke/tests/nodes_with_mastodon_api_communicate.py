@@ -46,14 +46,12 @@ class FollowTest:
 
     @step
     def wait_until_actor_is_followed_by_actor(self):
-        # self.leader_node.wait_until_actor_is_followed_by_actor(self.leader_actor_uri, self.follower_actor_uri)
-        time.sleep(5)
+        self.leader_node.wait_until_actor_is_followed_by_actor(self.leader_actor_uri, self.follower_actor_uri)
 
 
     @step
     def wait_until_actor_is_following_actor(self):
-        # self.follower_node.wait_until_actor_is_following_actor(self.follower_actor_uri, self.leader_actor_uri)
-        time.sleep(5)
+        self.follower_node.wait_until_actor_is_following_actor(self.follower_actor_uri, self.leader_actor_uri)
 
 
     @step
