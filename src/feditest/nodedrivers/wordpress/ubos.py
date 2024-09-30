@@ -101,8 +101,9 @@ $oauth->get_token_storage()->setAccessToken( "{ token }", "{ oauth_client_id }",
         cmd = f'cd { dir } && sudo sudo -u http php' # from user ubosdev -> root -> http
 
         trace( f'PHP script is "{ php_script }"')
-        if node_driver._exec_shell(cmd, config.rshcmd, stdin_content=php_script).returncode:
-            raise Exception(self, f'Failed to create OAuth token for user with id="{ account.userid }", cmd: { cmd }"')
+        result = node_driver._exec_shell(cmd, config.rshcmd, stdin_content=php_script, capture_output=True)
+        if result.returncode:
+            raise Exception(self, f'Failed to create OAuth token for user with id="{ account.userid }", cmd="{ cmd }", stdout="{ result.stdout}", stderr="{ result.stderr }"')
         return token
 
 
@@ -152,7 +153,14 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
                         "wordpress-plugin-friends",
                         "wordpress-plugin-webfinger"
                     ],
-                    "context" : ""
+                    "context" : "",
+                    "customizationpoints" : {
+                        "wordpress" : {
+                            "disablessrfprotection" : {
+                                "value" : True
+                            }
+                        }
+                    }
                 },
                 defaults = {
                     'app' : 'WordPress + ActivityPub plugin'
