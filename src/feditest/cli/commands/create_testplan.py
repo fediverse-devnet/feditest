@@ -4,8 +4,8 @@ Create a test plan.
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 import feditest
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession
-
+from feditest.cli.util import create_plan_from_session_templates_and_constellations
+from feditest.reporting import fatal
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -18,27 +18,14 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     feditest.load_default_tests()
     feditest.load_tests_from(args.testsdir)
 
-    constellations = []
-    for constellation_file in args.constellation:
-        constellations.append(TestPlanConstellation.load(constellation_file))
-
-    session_templates = []
-    for session_file in args.session:
-        session_templates.append(TestPlanSession.load(session_file))
-
-    sessions = []
-    for session_template in session_templates:
-        for constellation in constellations:
-            session = session_template.instantiate_with_constellation(constellation, constellation.name)
-            sessions.append(session)
-
-    test_plan = TestPlan(sessions, args.name)
-    test_plan.simplify()
-
-    if args.out:
-        test_plan.save(args.out)
+    test_plan = create_plan_from_session_templates_and_constellations(args)
+    if test_plan:
+        if args.out:
+            test_plan.save(args.out)
+        else:
+            test_plan.print()
     else:
-        test_plan.print()
+        fatal('Failed to create test plan from the provided arguments')
 
     return 0
 
@@ -49,11 +36,20 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parent_parser: the parent argparse parser
     cmd_name: name of this command
     """
+    # general flags and options
     parser = parent_parser.add_parser(cmd_name, help='Create a test plan by running all provided test sessions in all provided constellations')
-    parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
-    parser.add_argument('--constellation', required=True, action='append', help='File(s) each containing a JSON fragment defining a constellation')
-    parser.add_argument('--session', '--session-template', required=True, action='append', help='File(s) each containing a JSON fragment defining a test session')
-    parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test plan')
     parser.add_argument('--testsdir', action='append', default=['tests'], help='Directory or directories where to find tests')
+
+    # test plan options
+    parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
+    parser.add_argument('--constellation', action='append', help='File(s) each containing a JSON fragment defining a constellation')
+    parser.add_argument('--session', '--session-template', action='append', help='File(s) each containing a JSON fragment defining a test session')
+    parser.add_argument('--node', action='append',
+                        help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
+    parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
+    parser.add_argument('--test', nargs='+', help='Run this/these named tests(s)')
+
+    # output options
+    parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated test plan')
 
     return parser

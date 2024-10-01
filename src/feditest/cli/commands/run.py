@@ -109,6 +109,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--who', action='store_true', help="Record who ran the test plan on what host.")
 
     # test plan options. We do not use argparse groups, as the situation is more complicated than argparse seems to support
+    parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
     parser.add_argument('--testplan', help='Name of the file that contains the test plan to run')
     parser.add_argument('--constellation', action='append', help='File(s) each containing a JSON fragment defining a constellation')
     parser.add_argument('--session', '--session-template', action='append', help='File(s) each containing a JSON fragment defining a test session')

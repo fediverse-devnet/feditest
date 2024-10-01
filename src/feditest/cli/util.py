@@ -36,22 +36,32 @@ def create_plan_from_session_templates_and_constellations(args: Namespace) -> Te
             session = session_template.instantiate_with_constellation(constellation, constellation.name)
             sessions.append(session)
     if sessions:
-        plan = TestPlan(sessions, None)
+        plan = TestPlan(sessions, args.name)
         plan.simplify()
     return plan
 
 
 def create_session_templates(args: Namespace) -> list[TestPlanSession]:
     if args.session:
-        if args.filter_regex:
-            raise ArgumentError(None, '--session already defines the tests, do not provide --filter-regex')
-        if args.test:
-            raise ArgumentError(None, '--session already defines --test. Do not provide both.')
-        session_templates = []
-        for session_file in args.session:
-            session_templates.append(TestPlanSession.load(session_file))
-        return session_templates
+        session_templates = create_session_templates_from_files(args)
+    else:
+        session_template = create_session_template_from_tests(args)
+        session_templates = [ session_template ]
+    return session_templates
 
+
+def create_session_templates_from_files(args: Namespace) -> list[TestPlanSession]:
+    if args.filter_regex:
+        raise ArgumentError(None, '--session already defines the tests, do not provide --filter-regex')
+    if args.test:
+        raise ArgumentError(None, '--session already defines --test. Do not provide both.')
+    session_templates = []
+    for session_file in args.session:
+        session_templates.append(TestPlanSession.load(session_file))
+    return session_templates
+
+
+def create_session_template_from_tests(args: Namespace) -> TestPlanSession:
     test_plan_specs : list[TestPlanTestSpec]= []
     constellation_role_names : dict[str,Any] = {}
     constellation_roles: dict[str,TestPlanConstellationNode | None] = {}
@@ -100,34 +110,45 @@ def create_session_templates(args: Namespace) -> list[TestPlanSession]:
         constellation_roles[constellation_role_name] = None
 
     session = TestPlanSession(TestPlanConstellation(constellation_roles), test_plan_specs)
-    return [ session ]
+    return session
 
 
 def create_constellations(args: Namespace) -> list[TestPlanConstellation]:
     if args.constellation:
-        if args.node:
-            raise ArgumentError(None, '--constellation already defines --node. Do not provide both.')
+        constellations = create_constellations_from_files(args)
+    else:
+        constellation = create_constellation_from_nodes(args)
+        constellations = [ constellation ]
+    return constellations
 
-        constellations = []
-        for constellation_file in args.constellation:
-            try:
-                constellations.append(TestPlanConstellation.load(constellation_file))
-            except ValidationError as e:
-                raise ArgumentError(None, f'Constellation file { constellation_file }: { e }')
-        return constellations
 
+def create_constellations_from_files(args: Namespace) -> list[TestPlanConstellation]:
+    if args.node:
+        raise ArgumentError(None, '--constellation already defines --node. Do not provide both.')
+
+    constellations = []
+    for constellation_file in args.constellation:
+        try:
+            constellations.append(TestPlanConstellation.load(constellation_file))
+        except ValidationError as e:
+            raise ArgumentError(None, f'Constellation file { constellation_file }: { e }')
+    return constellations
+
+
+def create_constellation_from_nodes(args: Namespace) -> TestPlanConstellation:
     # Don't check for empty nodes: we need that for testing feditest
     roles : dict[str, TestPlanConstellationNode | None] = {}
-    for nodepair in args.node:
-        rolename, nodefile = nodepair.split('=', 1)
-        if not rolename:
-            raise ArgumentError(None, f'Rolename component of --node must not be empty: "{ nodepair }".')
-        if rolename in roles:
-            raise ArgumentError(None, f'Role is already taken: "{ rolename }".')
-        if not nodefile:
-            raise ArgumentError(None, f'Filename component must not be empty: "{ nodepair }".')
-        node = TestPlanConstellationNode.load(nodefile)
-        roles[rolename] = node
+    if args.node:
+        for nodepair in args.node:
+            rolename, nodefile = nodepair.split('=', 1)
+            if not rolename:
+                raise ArgumentError(None, f'Rolename component of --node must not be empty: "{ nodepair }".')
+            if rolename in roles:
+                raise ArgumentError(None, f'Role is already taken: "{ rolename }".')
+            if not nodefile:
+                raise ArgumentError(None, f'Filename component must not be empty: "{ nodepair }".')
+            node = TestPlanConstellationNode.load(nodefile)
+            roles[rolename] = node
 
     constellation = TestPlanConstellation(roles)
-    return [ constellation ]
+    return constellation
