@@ -2,8 +2,9 @@
 Combine node definitions into a constellation.
 """
 
-from argparse import ArgumentError, ArgumentParser, Namespace, _SubParsersAction
+from argparse import ArgumentParser, Namespace, _SubParsersAction
 
+from feditest.cli.util import create_constellation_from_nodes
 from feditest.testplan import TestPlanConstellation, TestPlanConstellationNode
 
 
@@ -15,22 +16,12 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     roles : dict[str,TestPlanConstellationNode | None] = {}
 
     if remaining:
-        parser.print_help() # Would be nice to print help for this sub-command but I can't figure out how to do it
+        parser.print_help()
         return 0
-
-    for nodepair in args.node:
-        rolename, nodefile = nodepair.split('=', 1)
-        if not rolename:
-            raise ArgumentError(None, f'Rolename component of --node must not be empty: "{ nodepair }".')
-        if rolename in roles:
-            raise ArgumentError(None, f'Role is already taken: "{ rolename }".')
-        if not nodefile:
-            raise ArgumentError(None, f'Filename component must not be empty: "{ nodepair }".')
-        node = TestPlanConstellationNode.load(nodefile)
-        roles[rolename] = node
 
     constellation = TestPlanConstellation(roles)
 
+    constellation = create_constellation_from_nodes(args)
     if args.name:
         constellation.name = args.name
 

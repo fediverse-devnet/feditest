@@ -99,7 +99,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser( cmd_name, help='Provide information on a variety of objects')
-    parser.add_argument('--testsdir', nargs='*', default=['tests'], help='Directory or directories where to find tests')
+    parser.add_argument('--testsdir', action='append', default=['tests'], help='Directory or directories where to find tests')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find extra drivers for nodes that can be tested')
     type_group = parser.add_mutually_exclusive_group(required=True)
     type_group.add_argument('--test',  help='Provide information about a test.')
