@@ -10,7 +10,7 @@ from feditest.cli.util import (
     create_plan_from_testplan
 )
 from feditest.registry import Registry, set_registry_singleton
-from feditest.reporting import warning
+from feditest.reporting import fatal, warning
 from feditest.testplan import TestPlan
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController, InteractiveTestRunController, TestRunController
@@ -52,8 +52,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         plan = create_plan_from_session_templates_and_constellations(args)
 
     if not plan:
-        # neither sessions nor testplan specified
-        plan = TestPlan.load("feditest-default.json")
+        fatal('Cannot find or create test plan ')
 
     if not plan.is_compatible_type():
         warning(f'Test plan has unexpected type { plan.type }: incompatibilities may occur.')
