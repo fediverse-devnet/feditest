@@ -323,3 +323,4 @@ def assert_that(
         if isinstance(actual_or_assertion, Matcher):
             warning("arg1 should be boolean, but was {}".format(type(actual_or_assertion)))
         _assert_bool(assertion=cast(bool, actual_or_assertion), reason=cast(str, matcher), spec_level=spec_level, interop_level=interop_level)
+

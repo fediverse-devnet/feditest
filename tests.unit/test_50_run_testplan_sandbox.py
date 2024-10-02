@@ -149,7 +149,7 @@ def the_test_plan() -> TestPlan:
     }
     constellation = TestPlanConstellation(roles, 'clientA vs server1')
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
-    session = TestPlanSession(constellation, tests, "clientA vs server`")
+    session = TestPlanSession(constellation, tests, "clientA vs server")
     ret = TestPlan( [ session ], "All sandbox tests running clientA against server1")
     return ret
 

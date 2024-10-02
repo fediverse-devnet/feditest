@@ -10,8 +10,7 @@ from feditest.testruntranscript import (
     MultifileRunTranscriptSerializer,
     SummaryTestRunTranscriptSerializer,
     TapTestRunTranscriptSerializer,
-    TestRunTranscript,
-    TestRunTranscriptSerializer,
+    TestRunTranscript
 )
 from feditest.utils import FEDITEST_VERSION
 
@@ -29,22 +28,21 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if not transcript.has_compatible_version():
         warning(f'Transcript was created by FediTest { transcript.feditest_version }, you are running FediTest { FEDITEST_VERSION }: incompatibilities may occur.')
 
-    serializer : TestRunTranscriptSerializer | None = None
     if isinstance(args.tap, str) or args.tap:
-        serializer = TapTestRunTranscriptSerializer(transcript)
-        serializer.write(args.tap)
+        tap_serializer = TapTestRunTranscriptSerializer(transcript)
+        tap_serializer.write(args.tap)
 
     if isinstance(args.html, str) or args.html:
         multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template_path)
         multifile_serializer.write(transcript)
 
     if isinstance(args.json, str) or args.json:
-        serializer = JsonTestRunTranscriptSerializer(transcript)
-        serializer.write(args.json)
+        json_serializer = JsonTestRunTranscriptSerializer(transcript)
+        json_serializer.write(args.json)
 
     if isinstance(args.summary, str) or args.summary:
-        serializer = SummaryTestRunTranscriptSerializer(transcript)
-        serializer.write(args.json)
+        summary_serializer = SummaryTestRunTranscriptSerializer(transcript)
+        summary_serializer.write(args.json)
 
     return 0
 
