@@ -6,12 +6,9 @@ import pytest
 
 import feditest
 from feditest import assert_that, step, test, InteropLevel, SpecLevel
-from feditest.protocols import SkipTestException
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
-from feditest.testruntranscript import TestRunTestTranscript
-from feditest import test
 
 
 @pytest.fixture(scope="module", autouse=True)

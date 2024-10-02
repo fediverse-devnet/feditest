@@ -12,7 +12,6 @@ from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, 
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
 from feditest.testruntranscript import TapTestRunTranscriptSerializer, JsonTestRunTranscriptSerializer, MultifileRunTranscriptSerializer, SummaryTestRunTranscriptSerializer, TestRunTestTranscript
-from feditest import test
 
 
 @pytest.fixture(scope="module", autouse=True)

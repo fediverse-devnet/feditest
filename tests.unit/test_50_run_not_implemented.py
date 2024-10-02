@@ -2,8 +2,6 @@
 Run a test that throws a NotImplemented error.
 """
 
-from typing import Any
-
 import pytest
 
 import feditest
