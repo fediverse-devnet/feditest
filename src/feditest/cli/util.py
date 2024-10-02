@@ -97,6 +97,7 @@ def create_session_template_from_tests(args: Namespace) -> TestPlanSession:
             tests.append(test)
 
     for test in tests:
+        name = test.name
         test_plan_spec = TestPlanTestSpec(name)
         test_plan_specs.append(test_plan_spec)
 
