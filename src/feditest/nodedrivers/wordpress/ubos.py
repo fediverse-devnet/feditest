@@ -5,6 +5,7 @@ import os
 from typing import cast
 
 from feditest.nodedrivers.mastodon.ubos import MastodonUbosNodeConfiguration
+from feditest.nodedrivers.ubos import UbosNodeConfiguration, UbosNodeDriver
 from feditest.nodedrivers.wordpress import (
     OAUTH_TOKEN_ACCOUNT_FIELD,
     ROLE_ACCOUNT_FIELD,
@@ -25,7 +26,6 @@ from feditest.protocols import (
 )
 from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
-from feditest.ubos import UbosNodeConfiguration, UbosNodeDriver
 
 
 
@@ -94,7 +94,7 @@ $_SERVER['HTTP_HOST'] = '{ self.hostname }';
 
 include 'wp-load.php';
 
-$oauth = new Enable_Mastodon_Apps\Mastodon_OAuth();
+$oauth = new Enable_Mastodon_Apps\\Mastodon_OAuth();
 $oauth->get_token_storage()->setAccessToken( "{ token }", "{ oauth_client_id }", { account.internal_userid }, time() + HOUR_IN_SECONDS, 'read write follow push' );
 """
         dir = f'/ubos/http/sites/{ config.siteid }'
