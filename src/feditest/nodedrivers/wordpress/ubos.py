@@ -13,7 +13,7 @@ from feditest.nodedrivers.wordpress import (
     USERID_NON_EXISTING_ACCOUNT_FIELD,
     WordPressAccount,
     WordPressNonExistingAccount,
-    WordPressPlusActivityPubPluginNode
+    WordPressPlusPluginsNode
 )
 from feditest.protocols import (
     Account,
@@ -47,7 +47,7 @@ class WordPressUbosAccountManager(DefaultAccountManager):
             self._accounts_not_allocated_to_role.append(admin_account)
 
 
-class WordPressPlusActivityPubPluginUbosNode(WordPressPlusActivityPubPluginNode):
+class WordPressPlusPluginsUbosNode(WordPressPlusPluginsNode):
     """
     A WordPress + ActivityPubPlugin Node running on UBOS. This means we know how to interact with it exactly.
     """
@@ -63,14 +63,14 @@ class WordPressPlusActivityPubPluginUbosNode(WordPressPlusActivityPubPluginNode)
 
     def add_cert_to_trust_store(self, root_cert: str) -> None:
         config = cast(UbosNodeConfiguration, self.config)
-        node_driver = cast(WordPressPlusActivityPubPluginUbosNodeDriver, self.node_driver)
+        node_driver = cast(WordPressPlusPluginsUbosNodeDriver, self.node_driver)
 
         node_driver.add_cert_to_trust_store_via(root_cert, config.rshcmd)
 
 
     def remove_cert_from_trust_store(self, root_cert: str) -> None:
         config = cast(UbosNodeConfiguration, self.config)
-        node_driver = cast(WordPressPlusActivityPubPluginUbosNodeDriver, self.node_driver)
+        node_driver = cast(WordPressPlusPluginsUbosNodeDriver, self.node_driver)
 
         node_driver.remove_cert_from_trust_store_via(root_cert, config.rshcmd)
 
@@ -85,7 +85,7 @@ class WordPressPlusActivityPubPluginUbosNode(WordPressPlusActivityPubPluginNode)
 
         trace(f'Provisioning OAuth token on {self} for user with name="{ account.userid }".')
         config = cast(UbosNodeConfiguration, self.config)
-        node_driver = cast(WordPressPlusActivityPubPluginUbosNodeDriver, self.node_driver)
+        node_driver = cast(WordPressPlusPluginsUbosNodeDriver, self.node_driver)
 
         token = os.urandom(16).hex()
         php_script = f"""
@@ -107,7 +107,7 @@ $oauth->get_token_storage()->setAccessToken( "{ token }", "{ oauth_client_id }",
         return token
 
 
-class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
+class WordPressPlusPluginsUbosNodeDriver(UbosNodeDriver):
     """
     Knows how to instantiate Mastodon via UBOS.
     """
@@ -170,4 +170,4 @@ class WordPressPlusActivityPubPluginUbosNodeDriver(UbosNodeDriver):
 
     # Python 3.12 @override
     def _instantiate_ubos_node(self, rolename: str, config: UbosNodeConfiguration, account_manager: AccountManager) -> Node:
-        return WordPressPlusActivityPubPluginUbosNode(rolename, config, account_manager)
+        return WordPressPlusPluginsUbosNode(rolename, config, account_manager)

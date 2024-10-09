@@ -134,7 +134,7 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
         """
         if self._oauth_token:
             return
-        real_node = cast(WordPressPlusActivityPubPluginNode, self._node)
+        real_node = cast(WordPressPlusPluginsNode, self._node)
         self._oauth_token = real_node._provision_oauth_token_for(self, oauth_client_id)
 
 
@@ -164,7 +164,7 @@ class WordPressNonExistingAccount(NonExistingAccount):
         return f'https://{ self.node.hostname }/users/{ self.userid }'
 
 
-class WordPressPlusActivityPubPluginNode(NodeWithMastodonAPI):
+class WordPressPlusPluginsNode(NodeWithMastodonAPI):
     """
     A Node running WordPress with the ActivityPub plugin.
     """
@@ -245,4 +245,4 @@ class WordPressPlusActivityPubPluginSaasNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FediverseNode:
-        return WordPressPlusActivityPubPluginNode(rolename, config, cast(AccountManager, account_manager))
+        return WordPressPlusPluginsNode(rolename, config, cast(AccountManager, account_manager))

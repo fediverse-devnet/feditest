@@ -226,8 +226,8 @@ def load_default_node_drivers() -> None:
                'feditest.nodedrivers.sandbox.SandboxMultClientDriver_ImplementationA',
                'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation1',
                'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation2Faulty',
-               'feditest.nodedrivers.wordpress.WordPressPlusActivityPubPluginSaasNodeDriver',
-               'feditest.nodedrivers.wordpress.ubos.WordPressPlusActivityPubPluginUbosNodeDriver']:
+               'feditest.nodedrivers.wordpress.WordPressPlusPluginsSaasNodeDriver',
+               'feditest.nodedrivers.wordpress.ubos.WordPressPlusPluginsUbosNodeDriver']:
 
         module_name, class_name = d.rsplit('.', 1)
         if class_name not in all_node_drivers:
