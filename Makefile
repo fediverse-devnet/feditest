@@ -19,6 +19,11 @@ UNAME?=$(shell uname -s | tr [A-Z] [a-z])
 BRANCH?=$(shell git branch --show-current)
 VENV?=venv.$(UNAME).$(BRANCH)
 PYTHON?=python3.11
+FEDITEST?=$(VENV)/bin/feditest -v
+
+default : all
+
+all : build lint tests
 
 build : venv
 	$(VENV)/bin/pip install .
@@ -39,8 +44,16 @@ lint : build
 	@# MYPYPATH is needed because apparently some type checking ignores the directory option given as command-line argument
 	@# $(VENV)/bin/pylint src
 
-test : venv
+tests : tests.unit tests.smoke
+
+tests.unit : venv
 	$(VENV)/bin/pytest -v
+
+tests.smoke : venv
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --constellation tests.smoke/mastodon.ubos.constellation.json
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --constellation tests.smoke/wordpress.ubos.constellation.json
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/mastodon_mastodon.ubos.constellation.json
+	# Currently broken: $(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/wordpress_mastodon.ubos.constellation.json
 
 release :
 	@which $(PYTHON) || ( echo 'No executable called "python". Append your python to the make command, like "make PYTHON=your-python"' && false )
@@ -54,4 +67,4 @@ release :
 	@echo The actual push to pypi.org you need to do manually. Enter:
 	@echo venv.release/bin/twine upload dist/*
 
-.PHONY: venv build lint test release
+.PHONY: all default venv build lint tests tests.unit tests.smoke release
