@@ -6,7 +6,7 @@ import pytest
 
 import feditest
 from feditest import nodedriver
-from feditest.protocols import NodeDriver
+from feditest.nodedrivers import NodeDriver
 
 
 @pytest.fixture(scope="module", autouse=True)

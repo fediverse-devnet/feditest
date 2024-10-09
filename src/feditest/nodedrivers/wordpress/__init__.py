@@ -4,14 +4,7 @@
 import re
 from typing import cast
 
-from feditest.nodedrivers.mastodon import (
-    AccountOnNodeWithMastodonAPI,
-    Mastodon, # Re-import from there to avoid duplicating the package import hackery
-    MastodonOAuthApp,
-    NodeWithMastodonAPI,
-    NodeWithMastodonApiConfiguration
-)
-from feditest.protocols import (
+from feditest.nodedrivers import (
     Account,
     AccountManager,
     DefaultAccountManager,
@@ -21,6 +14,13 @@ from feditest.protocols import (
     APP_PAR,
     APP_VERSION_PAR,
     HOSTNAME_PAR
+)
+from feditest.nodedrivers.mastodon import (
+    AccountOnNodeWithMastodonAPI,
+    Mastodon, # Re-import from there to avoid duplicating the package import hackery
+    MastodonOAuthApp,
+    NodeWithMastodonAPI,
+    NodeWithMastodonApiConfiguration
 )
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import is_trace_active, trace

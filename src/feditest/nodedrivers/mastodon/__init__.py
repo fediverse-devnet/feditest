@@ -12,7 +12,7 @@ import time
 from typing import Any, Callable, cast
 
 from feditest import AssertionFailure, InteropLevel, SpecLevel
-from feditest.protocols import (
+from feditest.nodedrivers import (
     Account,
     AccountManager,
     DefaultAccountManager,

@@ -1,8 +1,8 @@
 """
 """
 
+from feditest.nodedrivers import AccountManager, NodeConfiguration
 from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver, FallbackFediverseNode
-from feditest.protocols import AccountManager, NodeConfiguration
 
 
 class FediverseSaasNodeDriver(AbstractFallbackFediverseNodeDriver):

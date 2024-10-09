@@ -5,7 +5,7 @@ Run a test that wants to be skipped.
 import pytest
 
 import feditest
-from feditest.protocols import SkipTestException
+from feditest.nodedrivers import SkipTestException
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController

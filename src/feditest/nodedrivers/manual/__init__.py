@@ -2,8 +2,8 @@
 A NodeDriver that supports all protocols but doesn't automate anything.
 """
 
+from feditest.nodedrivers import AccountManager, Node, NodeConfiguration
 from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver, FallbackFediverseNode
-from feditest.protocols import AccountManager, Node, NodeConfiguration
 from feditest.protocols.fediverse import FediverseNode
 
 

@@ -4,6 +4,14 @@
 import os
 from typing import cast
 
+from feditest.nodedrivers import (
+    Account,
+    AccountManager,
+    DefaultAccountManager,
+    NonExistingAccount,
+    Node,
+    NodeConfiguration
+)
 from feditest.nodedrivers.mastodon.ubos import MastodonUbosNodeConfiguration
 from feditest.nodedrivers.ubos import UbosNodeConfiguration, UbosNodeDriver
 from feditest.nodedrivers.wordpress import (
@@ -15,14 +23,6 @@ from feditest.nodedrivers.wordpress import (
     WordPressAccount,
     WordPressNonExistingAccount,
     WordPressPlusPluginsNode
-)
-from feditest.protocols import (
-    Account,
-    AccountManager,
-    DefaultAccountManager,
-    NonExistingAccount,
-    Node,
-    NodeConfiguration
 )
 from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField

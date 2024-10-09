@@ -7,7 +7,7 @@ from typing import Any, cast
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from feditest.protocols import Node
+from feditest.nodedrivers import Node
 from feditest.utils import boolean_response_parse_validate
 
 

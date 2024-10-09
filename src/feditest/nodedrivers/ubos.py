@@ -13,7 +13,7 @@ import shutil
 import string
 from typing import Any, cast
 
-from feditest.protocols import (
+from feditest.nodedrivers import (
     APP_PAR,
     APP_VERSION_PAR,
     HOSTNAME_PAR,

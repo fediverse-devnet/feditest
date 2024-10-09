@@ -12,7 +12,7 @@ from typing import Any, Type, TypeVar, cast
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
 
-import feditest.protocols
+import feditest.nodedrivers
 from feditest.reporting import fatal, warning
 from feditest.tests import (
     Test,
@@ -204,7 +204,7 @@ def nodedriver(to_register: Type[TNodeDriver]) -> Type[TNodeDriver]:
     if not _loading_node_drivers:
         fatal('Do not define NodeDrivers outside of nodedriversdir')
 
-    if not issubclass(to_register,feditest.protocols.NodeDriver):
+    if not issubclass(to_register,feditest.nodedrivers.NodeDriver):
         fatal('Cannot register an object as NodeDriver that isn\'t a subclass of NodeDriver:', to_register.__name__)
 
     module = getmodule(to_register)

@@ -6,10 +6,10 @@ from typing import Any, Callable, Iterator, cast
 
 import httpx
 from hamcrest import is_not
-from feditest.protocols.activitypub.utils import is_member_of_collection_at
 
 from feditest import InteropLevel, SpecLevel, assert_that
-from feditest.protocols import NotImplementedByNodeError
+from feditest.nodedrivers import NotImplementedByNodeError
+from feditest.protocols.activitypub.utils import is_member_of_collection_at
 from feditest.protocols.web import WebServer
 
 # Note:

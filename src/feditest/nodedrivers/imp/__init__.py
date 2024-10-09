@@ -7,7 +7,7 @@ from typing import cast
 import httpx
 from multidict import MultiDict
 
-from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver, HOSTNAME_PAR
+from feditest.nodedrivers import AccountManager, Node, NodeConfiguration, NodeDriver, HOSTNAME_PAR
 from feditest.protocols.web import ParsedUri, WebClient
 from feditest.protocols.web.traffic import (
     HttpRequest,

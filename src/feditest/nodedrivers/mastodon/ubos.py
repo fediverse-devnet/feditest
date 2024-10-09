@@ -7,6 +7,17 @@ import string
 import subprocess
 from typing import Any, cast
 
+from feditest.nodedrivers import (
+    Account,
+    NonExistingAccount,
+    AccountManager,
+    DefaultAccountManager,
+    Node,
+    NodeConfiguration,
+    APP_PAR,
+    APP_VERSION_PAR,
+    HOSTNAME_PAR,
+)
 from feditest.nodedrivers.mastodon import (
     MastodonAccount,
     MastodonNode,
@@ -37,17 +48,6 @@ from feditest.nodedrivers.ubos import (
     START_DELAY_PAR,
     TLSCERT_PAR,
     TLSKEY_PAR
-)
-from feditest.protocols import (
-    Account,
-    NonExistingAccount,
-    AccountManager,
-    DefaultAccountManager,
-    Node,
-    NodeConfiguration,
-    APP_PAR,
-    APP_VERSION_PAR,
-    HOSTNAME_PAR,
 )
 from feditest.registry import registry_singleton
 from feditest.reporting import error, trace

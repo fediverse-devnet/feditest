@@ -4,7 +4,7 @@
 from datetime import UTC, date, datetime
 from typing import Any, Callable, List, final
 
-from feditest.protocols import Node, NotImplementedByNodeError
+from feditest.nodedrivers import Node, NotImplementedByNodeError
 from feditest.protocols.web.traffic import (
     HttpRequest,
     HttpRequestResponsePair,

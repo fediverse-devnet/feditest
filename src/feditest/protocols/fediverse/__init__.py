@@ -2,7 +2,7 @@
 Abstractions for nodes that speak today's Fediverse protocol stack.
 """
 
-from feditest.protocols import NotImplementedByNodeError
+from feditest.nodedrivers import NotImplementedByNodeError
 from feditest.protocols.activitypub import ActivityPubNode
 from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
 
