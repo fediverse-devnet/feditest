@@ -25,7 +25,7 @@ from feditest.nodedrivers import (
     APP_VERSION_PAR,
     HOSTNAME_PAR
 )
-from feditest.protocols.activitypub import AnyObject
+from feditest.protocols.activitypub.diag import AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import is_trace_active, trace
 from feditest.testplan import InvalidAccountSpecificationException, TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter

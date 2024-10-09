@@ -3,9 +3,12 @@
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
-from feditest.protocols.web.traffic import HttpRequestResponsePair
+from feditest.nodedrivers import NotImplementedByNodeError
+from feditest.protocols.web.diag import HttpRequestResponsePair
+from . import WebFingerClient, WebFingerServer
+
 from feditest.utils import (
     http_https_acct_uri_parse_validate,
     rfc5646_language_tag_parse_validate,
@@ -253,7 +256,9 @@ working-copy-of"""
         """
         return value.find('/') > 0
 
+
     VALID_JRD_KEYS = { "subject", "aliases", "properties", "links" }
+
 
     def validate(self) -> None: # pylint: disable=too-many-branches,too-many-statements
         """
@@ -470,3 +475,37 @@ class WebFingerQueryResponse:
     http_request_response_pair: HttpRequestResponsePair
     jrd : ClaimedJrd | None # This may be an invalid jrd
     exc : Exception | None #
+
+
+class WebFingerDiagServer(WebFingerServer):
+    def diag_override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+        """
+        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+        """
+        raise NotImplementedByNodeError(self, WebFingerDiagServer.diag_override_webfinger_response)
+
+
+class WebFingerDiagClient(WebFingerClient):
+    """
+    A Node that acts as a WebFinger client.
+    """
+    # Python 3.12 @override
+    def perform_webfinger_query(self, resource_uri: str) -> None:
+        self.diag_perform_webfinger_query(resource_uri)
+
+
+    def diag_perform_webfinger_query(
+        self,
+        resource_uri: str,
+        rels: list[str] | None = None,
+        server: WebFingerServer | None = None
+    ) -> WebFingerQueryResponse:
+        """
+        Make this Node perform a WebFinger query for the provided resource_uri.
+        The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
+        'https://example.com/aabc' (not escaped).
+        rels is an optional list of 'rel' query parameters.
+        server, if given, indicates the non-default server that is supposed to perform the query
+        Return the result of the query.
+        """
+        raise NotImplementedByNodeError(self, WebFingerDiagClient.diag_perform_webfinger_query)

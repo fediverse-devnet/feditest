@@ -8,31 +8,32 @@ import httpx
 from multidict import MultiDict
 
 from feditest.nodedrivers import AccountManager, Node, NodeConfiguration, NodeDriver, HOSTNAME_PAR
-from feditest.protocols.web import ParsedUri, WebClient
-from feditest.protocols.web.traffic import (
+from feditest.protocols.web.diag import (
     HttpRequest,
     HttpRequestResponsePair,
     HttpResponse,
+    WebDiagClient
 )
-from feditest.protocols.webfinger import WebFingerClient, WebFingerServer
-from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
+from feditest.protocols.webfinger import WebFingerServer
+from feditest.protocols.webfinger.diag import ClaimedJrd, WebFingerDiagClient, WebFingerQueryResponse
+from feditest.protocols.webfinger.utils import construct_webfinger_uri_for
 from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
-from feditest.utils import FEDITEST_VERSION
+from feditest.utils import FEDITEST_VERSION, ParsedUri
 
 _HEADERS = {
     "User-Agent": f"feditest/{ FEDITEST_VERSION }",
     "Origin": "test.example" # to trigger CORS headers in response
 }
 
-class Imp(WebFingerClient):
+class Imp(WebFingerDiagClient):
     """
     Our placeholder test client. Its future is to ~~tbd~~ be factored out of here.
     """
     # use superclass constructor
 
 
-    # @override # from WebClient
+    # Python 3.12 @override
     def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         trace( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
 
@@ -42,6 +43,8 @@ class Imp(WebFingerClient):
             httpx_request = httpx.Request(request.method, request.uri.get_uri(), headers=_HEADERS) # FIXME more arguments
             httpx_response = httpx_client.send(httpx_request)
 
+# FIXME: catch Tls exception and raise WebDiagClient.TlsError
+
         if httpx_response:
             response_headers : MultiDict = MultiDict()
             for key, value in httpx_response.headers.items():
@@ -49,17 +52,17 @@ class Imp(WebFingerClient):
             ret = HttpRequestResponsePair(request, request, HttpResponse(httpx_response.status_code, response_headers, httpx_response.read()))
             trace( f'HTTP query returns { ret }')
             return ret
-        raise WebClient.HttpUnsuccessfulError(request)
+        raise WebDiagClient.HttpUnsuccessfulError(request)
 
 
-    # @override # from WebFingerClient
-    def perform_webfinger_query(
+    # Python 3.12 @override
+    def diag_perform_webfinger_query(
         self,
         resource_uri: str,
         rels: list[str] | None = None,
         server: WebFingerServer | None = None
     ) -> WebFingerQueryResponse:
-        query_url = self.construct_webfinger_uri_for(resource_uri, rels, server.hostname() if server else None )
+        query_url = construct_webfinger_uri_for(resource_uri, rels, server.hostname() if server else None )
         parsed_uri = ParsedUri.parse(query_url)
         if not parsed_uri:
             raise ValueError('Not a valid URI:', query_url) # can't avoid this
@@ -70,7 +73,7 @@ class Imp(WebFingerClient):
             pair = self.http(current_request)
             if pair.response and pair.response.is_redirect():
                 if redirect_count <= 0:
-                    return WebFingerQueryResponse(pair, None, WebClient.TooManyRedirectsError(current_request))
+                    return WebFingerQueryResponse(pair, None, WebDiagClient.TooManyRedirectsError(current_request))
                 parsed_location_uri = ParsedUri.parse(pair.response.location())
                 if not parsed_location_uri:
                     return WebFingerQueryResponse(pair, None, ValueError('Location header is not a valid URI:', query_url, '(from', resource_uri, ')'))
@@ -85,13 +88,13 @@ class Imp(WebFingerClient):
 
         excs : list[Exception] = []
         if ret_pair.response.http_status != 200:
-            excs.append(WebClient.WrongHttpStatusError(ret_pair))
+            excs.append(WebDiagClient.WrongHttpStatusError(ret_pair))
 
         content_type = ret_pair.response.content_type()
         if (content_type is None or (content_type != "application/jrd+json"
             and not content_type.startswith( "application/jrd+json;" ))
         ):
-            excs.append(WebClient.WrongContentTypeError(ret_pair))
+            excs.append(WebDiagClient.WrongContentTypeError(ret_pair))
 
         jrd : ClaimedJrd | None = None
 
