@@ -8,8 +8,8 @@ from typing import cast
 import pytest
 
 import feditest
+from feditest.nodedrivers import StaticAccountManager
 from feditest.nodedrivers.fallback.fediverse import FallbackFediverseAccount, FallbackFediverseNonExistingAccount
-from feditest.protocols import StaticAccountManager
 
 HOSTNAME = 'localhost'
 

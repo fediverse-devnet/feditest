@@ -5,7 +5,7 @@ Run a test that throws a NotImplemented error.
 import pytest
 
 import feditest
-from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver, NotImplementedByNodeError
+from feditest.nodedrivers import AccountManager, Node, NodeConfiguration, NodeDriver, NotImplementedByNodeError
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController

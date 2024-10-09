@@ -5,7 +5,7 @@ Test that NodeDriver errors are reported in the test reports
 import feditest
 import pytest
 from feditest import nodedriver
-from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
+from feditest.nodedrivers import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,

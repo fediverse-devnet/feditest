@@ -13,7 +13,7 @@ from typing import cast
 import feditest.testruncontroller
 import feditest.testruntranscript
 import feditest.tests
-from feditest.protocols import AccountManager, Node, NodeConfiguration, NodeDriver
+from feditest.nodedrivers import AccountManager, Node, NodeConfiguration, NodeDriver
 from feditest.registry import registry_singleton
 from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (

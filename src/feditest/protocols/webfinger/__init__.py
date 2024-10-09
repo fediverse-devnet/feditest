@@ -5,7 +5,7 @@ Abstractions for the WebFinger protocol
 from typing import Any, Callable
 from urllib.parse import quote, urlparse
 
-from feditest.protocols import NotImplementedByNodeError
+from feditest.nodedrivers import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
 

@@ -7,6 +7,17 @@ import string
 import subprocess
 from typing import Any, cast
 
+from feditest.nodedrivers import (
+    Account,
+    NonExistingAccount,
+    AccountManager,
+    DefaultAccountManager,
+    Node,
+    NodeConfiguration,
+    APP_PAR,
+    APP_VERSION_PAR,
+    HOSTNAME_PAR,
+)
 from feditest.nodedrivers.mastodon import (
     MastodonAccount,
     MastodonNode,
@@ -21,21 +32,7 @@ from feditest.nodedrivers.mastodon import (
     USERID_ACCOUNT_FIELD,
     USERID_NON_EXISTING_ACCOUNT_FIELD
 )
-from feditest.protocols import (
-    Account,
-    NonExistingAccount,
-    AccountManager,
-    DefaultAccountManager,
-    Node,
-    NodeConfiguration,
-    APP_PAR,
-    APP_VERSION_PAR,
-    HOSTNAME_PAR,
-)
-from feditest.registry import registry_singleton
-from feditest.reporting import error, trace
-from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameterMalformedError
-from feditest.ubos import (
+from feditest.nodedrivers.ubos import (
     UbosNodeConfiguration,
     UbosNodeDeployConfiguration,
     UbosNodeDriver,
@@ -52,6 +49,9 @@ from feditest.ubos import (
     TLSCERT_PAR,
     TLSKEY_PAR
 )
+from feditest.registry import registry_singleton
+from feditest.reporting import error, trace
+from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameterMalformedError
 
 
 class MastodonUbosNodeConfiguration(UbosNodeDeployConfiguration, NodeWithMastodonApiConfiguration):

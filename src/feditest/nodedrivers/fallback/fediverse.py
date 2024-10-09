@@ -4,7 +4,7 @@ Fallback implementation for FediverseNode
 
 from typing import cast
 
-from feditest.protocols import (
+from feditest.nodedrivers import (
     Account,
     AccountManager,
     DefaultAccountManager,

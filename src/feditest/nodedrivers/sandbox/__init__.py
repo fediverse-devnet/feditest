@@ -3,7 +3,7 @@
 
 from typing import List
 
-from feditest.protocols import AccountManager, NodeConfiguration, NodeDriver, HOSTNAME_PAR
+from feditest.nodedrivers import AccountManager, NodeConfiguration, NodeDriver, HOSTNAME_PAR
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter
 from feditest.utils import FEDITEST_VERSION

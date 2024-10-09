@@ -6,7 +6,7 @@ import pytest
 
 import feditest
 from feditest import test
-from feditest.protocols import Node
+from feditest.nodedrivers import Node
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
 
 
