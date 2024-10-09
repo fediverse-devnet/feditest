@@ -183,7 +183,7 @@ class WordPressPlusPluginsNode(NodeWithMastodonAPI):
         return ret
 
 
-class WordPressPlusActivityPubPluginSaasNodeDriver(NodeDriver):
+class WordPressPlusPluginsSaasNodeDriver(NodeDriver):
     """
     Create a WordPress + ActivityPubPlugin Node that already runs as Saas
     """
