@@ -1,7 +1,7 @@
 {
     "roles": {
         "server": {
-            "nodedriver": "WordPressPlusActivityPubPluginSaasNodeDriver",
+            "nodedriver": "WordPressPlusPluginsSaasNodeDriver",
             "parameters": {
                 "hostname" : "testing.feditest.org",
                 "verify_api_tls_certificate" : false

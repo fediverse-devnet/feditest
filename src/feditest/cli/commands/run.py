@@ -53,6 +53,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     if not plan:
         fatal('Cannot find or create test plan ')
+        return 1 # make linter happy
 
     if not plan.is_compatible_type():
         warning(f'Test plan has unexpected type { plan.type }: incompatibilities may occur.')
