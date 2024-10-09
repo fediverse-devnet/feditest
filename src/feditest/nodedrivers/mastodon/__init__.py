@@ -29,7 +29,7 @@ from feditest.protocols.activitypub import AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import is_trace_active, trace
 from feditest.testplan import InvalidAccountSpecificationException, TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
-from feditest.utils import boolean_parse_validate, email_validate, find_first_in_array, hostname_validate
+from feditest.utils import boolean_parse_validate, email_validate, find_first_in_array, hostname_validate, prompt_user
 
 
 # We use the Mastodon.py module primarily because of its built-in support for rate limiting.
@@ -578,15 +578,15 @@ class NodeWithMastodonAPI(FediverseNode):
     # Python 3.12 @override
     def provision_account_for_role(self, role: str | None = None) -> Account | None:
         context_msg = f'Mastodon Node { self }: '
-        userid = cast(str, self.prompt_user(
+        userid = cast(str, prompt_user(
                 context_msg
                 + f' provide the userid of an existing account for account role "{ role }" (node account field "{ USERID_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_userid_validate))
-        password = cast(str, self.prompt_user(
+        password = cast(str, prompt_user(
                 context_msg
                 + f' provide the password for account "{ userid }", account role "{ role }" (node account field "{ PASSWORD_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_password_validate))
-        email = cast(str, self.prompt_user(
+        email = cast(str, prompt_user(
                 context_msg
                 + f' provide the email for account "{ userid }", account role "{ role }" (node account field "{ EMAIL_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_password_validate))
@@ -596,7 +596,7 @@ class NodeWithMastodonAPI(FediverseNode):
 
     def provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
         context_msg = f'Mastodon Node { self }: '
-        userid = cast(str, self.prompt_user(
+        userid = cast(str, prompt_user(
                 context_msg
                 + f' provide the userid of a non-existing account for account role "{ role }" (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
                 parse_validate=_userid_validate))
@@ -764,7 +764,7 @@ class MastodonSaasNodeDriver(NodeDriver):
         verify_tls_certificate = test_plan_node.parameter_or_raise(VERIFY_API_TLS_CERTIFICATE_PAR, { VERIFY_API_TLS_CERTIFICATE_PAR.name: 'true' })
 
         if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for the Mastodon Node of constellation role "{ rolename }" (node parameter "hostname"): ',
+            hostname = prompt_user(f'Enter the hostname for the Mastodon Node of constellation role "{ rolename }" (node parameter "hostname"): ',
                                         parse_validate=hostname_validate)
 
         accounts : list[Account] = []

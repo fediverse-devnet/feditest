@@ -8,7 +8,7 @@ from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
 from feditest.nodedrivers import Node
-from feditest.utils import boolean_response_parse_validate
+from feditest.utils import boolean_response_parse_validate, prompt_user
 
 
 class MemberOfCollectionMatcher(BaseMatcher[Any]):
@@ -24,7 +24,7 @@ class MemberOfCollectionMatcher(BaseMatcher[Any]):
 
 
     def _matches(self, member_candidate_uri: str) -> bool:
-        ret = self._node.prompt_user(
+        ret = prompt_user(
                 f'Is "{ member_candidate_uri }" a member of the collection at URI "{ self._collection_uri }"? ',
                 parse_validate=boolean_response_parse_validate)
         return cast(bool, ret)
