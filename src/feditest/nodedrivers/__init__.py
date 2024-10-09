@@ -7,8 +7,8 @@ from collections.abc import Callable
 from typing import Any, cast, final
 
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeParameter, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
-from feditest.reporting import info, warning
-from feditest.utils import hostname_validate, appname_validate, appversion_validate
+from feditest.reporting import info
+from feditest.utils import appname_validate, appversion_validate, hostname_validate, prompt_user
 
 
 APP_PAR = TestPlanNodeParameter(
@@ -386,9 +386,13 @@ class Node(ABC):
     Node, one for the client, and one for the server.
 
     Any application that wishes to benefit from automated test execution with FediTest
-    needs to define for itself a subclass of each protocol-specific subclass of Node
-    so FediTest can control and observe what it needs to when attempting to
+    needs to define for itself a class that inherits from each protocol-specific subclass
+    of Node it supports so FediTest can control and observe what it needs to when attempting to
     participate with the respective protocol.
+
+    Subclasses of Node that have the string "Diag" in them are "diagnostic Nodes" that
+    allow FediTest to control and observe in a more fine-grained manner than could be
+    reasonably expected from an implementation of the respective protocol.
     """
     def __init__(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None = None):
         """
@@ -450,32 +454,17 @@ class Node(ABC):
 
 
     def add_cert_to_trust_store(self, root_cert: str) -> None:
-        self.prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n' + root_cert)
+        prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n' + root_cert)
 
 
     def remove_cert_from_trust_store(self, root_cert: str) -> None:
-        self.prompt_user(f'Please remove this previously-added temporary certificate from the trust store of node { self } and hit return when done:\n' + root_cert)
+        prompt_user(f'Please remove this previously-added temporary certificate from the trust store of node { self } and hit return when done:\n' + root_cert)
 
 
     def __str__(self) -> str:
         if self._config.hostname:
             return f'"{ type(self).__name__}", hostname "{ self._config.hostname }" in constellation role "{self.rolename}"'
         return f'"{ type(self).__name__}" in constellation role "{self.rolename}"'
-
-
-    def prompt_user(self, question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
-        """
-        If an Node does not natively implement support for a particular method,
-        this method is invoked as a fallback. It prompts the user to enter information
-        at the console.
-
-        question: the text to be emitted to the user as a prompt
-        value_if_known: if given, that value can be used instead of asking the user
-        parse_validate: optional function that attempts to parse and validate the provided user input.
-        If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
-        return: the value entered by the user, parsed, or None
-        """
-        return self.node_driver.prompt_user(question, value_if_known, parse_validate)
 
 
 class NodeDriver(ABC):
@@ -571,39 +560,6 @@ class NodeDriver(ABC):
         """
         # by default, do nothing
         pass # pylint: disable=unnecessary-pass
-
-
-    def prompt_user(self, question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
-        """
-        If an NodeDriver does not natively implement support for a particular method,
-        this method is invoked as a fallback. It prompts the user to enter information
-        at the console.
-
-        This is implemented on NodeDriver rather than Node, so we can also ask
-        provisioning-related questions.
-
-        question: the text to be emitted to the user as a prompt
-        value_if_known: if given, that value can be used instead of asking the user
-        parse_validate: optional function that attempts to parse and validate the provided user input.
-        If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
-        return: the value entered by the user, parsed, or None
-        """
-        if value_if_known:
-            if parse_validate is None:
-                return value_if_known
-            ret_parsed = parse_validate(value_if_known)
-            if ret_parsed is not None:
-                return ret_parsed
-            warning(f'Preconfigured value "{ value_if_known }" is invalid, ignoring.')
-
-        while True:
-            ret = input(f'TESTER ACTION REQUIRED: { question }')
-            if parse_validate is None:
-                return ret
-            ret_parsed = parse_validate(ret)
-            if ret_parsed is not None:
-                return ret_parsed
-            print(f'INPUT ERROR: invalid input, try again. Was: "{ ret }"')
 
 
     def __str__(self) -> str:

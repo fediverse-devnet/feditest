@@ -14,7 +14,7 @@ from typing import Any, Callable, List, Optional, TypeVar
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
-from feditest.reporting import trace
+from feditest.reporting import trace, warning
 
 def _version(default_version="0.0.0"):
     try:
@@ -443,3 +443,38 @@ def format_name_value_string(data: dict[str,str | None]) -> str:
             ret += '\n'
 
     return ret
+
+
+def prompt_user(question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
+    """
+    If an NodeDriver does not natively implement support for a particular method,
+    this method is invoked as a fallback. It prompts the user to enter information
+    at the console.
+
+    This is implemented on NodeDriver rather than Node, so we can also ask
+    provisioning-related questions.
+
+    question: the text to be emitted to the user as a prompt
+    value_if_known: if given, that value can be used instead of asking the user
+    parse_validate: optional function that attempts to parse and validate the provided user input.
+    If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
+    return: the value entered by the user, parsed, or None
+    """
+    if value_if_known:
+        if parse_validate is None:
+            return value_if_known
+        ret_parsed = parse_validate(value_if_known)
+        if ret_parsed is not None:
+            return ret_parsed
+        warning(f'Preconfigured value "{ value_if_known }" is invalid, ignoring.')
+
+    while True:
+        ret = input(f'TESTER ACTION REQUIRED: { question }')
+        if parse_validate is None:
+            return ret
+        ret_parsed = parse_validate(ret)
+        if ret_parsed is not None:
+            return ret_parsed
+        print(f'INPUT ERROR: invalid input, try again. Was: "{ ret }"')
+
+

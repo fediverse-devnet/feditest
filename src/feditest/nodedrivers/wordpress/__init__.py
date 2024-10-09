@@ -25,7 +25,7 @@ from feditest.nodedrivers.mastodon import (
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import is_trace_active, trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
-from feditest.utils import boolean_parse_validate, hostname_validate
+from feditest.utils import boolean_parse_validate, hostname_validate, prompt_user
 
 
 VERIFY_API_TLS_CERTIFICATE_PAR = TestPlanNodeParameter(
@@ -177,7 +177,7 @@ class WordPressPlusPluginsNode(NodeWithMastodonAPI):
 
 
     def _provision_oauth_token_for(self, account: WordPressAccount, oauth_client_id: str) -> str:
-        ret = cast(str, self.prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ account.userid  }"'
+        ret = cast(str, prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ account.userid  }"'
                               + f' on constellation role "{ self.rolename }", OAuth client id "{ oauth_client_id }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
                               parse_validate=_oauth_token_validate))
         return ret
@@ -213,7 +213,7 @@ class WordPressPlusPluginsSaasNodeDriver(NodeDriver):
         verify_tls_certificate = test_plan_node.parameter_or_raise(VERIFY_API_TLS_CERTIFICATE_PAR, { VERIFY_API_TLS_CERTIFICATE_PAR.name: 'true' })
 
         if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for the WordPress + ActivityPub plugin Node of constellation role "{ rolename }"'
+            hostname = prompt_user(f'Enter the hostname for the WordPress + ActivityPub plugin Node of constellation role "{ rolename }"'
                                         + f' (node parameter "{ HOSTNAME_PAR }"): ',
                                         parse_validate=hostname_validate)
 
