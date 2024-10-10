@@ -97,77 +97,6 @@ class WebServerLog:
         return WebServerLog(cutoff, ret)
 
 
-class WebDiagServer(WebServer):
-    """
-    Abstract class used for Nodes that speak HTTP as server.
-    """
-    @final
-    def diag_http_transaction(self, code: Callable[[],None]) -> WebServerLog:
-        """
-        While this method runs, the server records incoming HTTP requests, and
-        returns them as the return value of this method. In the method call,
-        execute the provided code (usually to make the client do something
-        that results in the hits to the WebServer
-        code: the code to run
-        return: the collected HTTP requests
-        """
-        collection_id : str = self._start_logging_http_requests()
-        try:
-            code()
-            return self._stop_logging_http_requests(collection_id)
-
-        finally:
-            self._stop_logging_http_requests(collection_id)
-
-
-    def _start_logging_http_requests(self) -> str:
-        """
-        Override this to instruct the WebServer to start logging HTTP requests.
-        return: an identifier for the log
-        see: _stop_logging_http_requests
-        """
-        raise NotImplementedByNodeError(self, WebDiagServer._start_logging_http_requests)
-        # This could be done manually, but returning the log cannot
-
-
-    def _stop_logging_http_requests(self, collection_id: str) -> WebServerLog:
-        """
-        Corresponding "stop logging" method.
-        collection_id: same identifier as returned by _start_logging_http_requests
-        return: the collected HTTP requests
-        see: _start_logging_http_requests
-        """
-        raise NotImplementedByNodeError(self, WebDiagServer._stop_logging_http_requests)
-        # This cannot be done manually
-
-
-    def diag_override_http_response(self, code: Callable[[],Any], request: HttpRequest, overridden_response: HttpResponse) -> None:
-        """
-        Instruct the server to temporarily return the overridden_response when the
-        specified request is made during execution of `code`.
-        """
-        self._start_override_http_response(request, overridden_response)
-        try:
-            code()
-        finally:
-            self._stop_override_http_response(request)
-
-
-    def _start_override_http_response(self, request: HttpRequest, overridden_response: HttpResponse) -> None:
-        """
-        Override this to instruct the WebServer to return an alternate response when
-        the provided request is made.
-        """
-        raise NotImplementedByNodeError(self, WebDiagServer._start_override_http_response)
-
-
-    def _stop_override_http_response(self, request: HttpRequest) -> None:
-        """
-        Corresponding "stop override" method.
-        """
-        raise NotImplementedByNodeError(self, WebDiagServer._stop_override_http_response)
-
-
 class WebDiagClient(WebClient):
     """
     Abstract class used for diagnostic Nodes that speak HTTP as client.
@@ -263,3 +192,74 @@ class WebDiagClient(WebClient):
         def __str__(self):
             return 'Invalid TLS certificate.' \
                    + f'\n -> "{ self._http_request_response_pair.response.payload_as_string() }"'
+
+
+class WebDiagServer(WebServer):
+    """
+    Abstract class used for Nodes that speak HTTP as server.
+    """
+    @final
+    def diag_http_transaction(self, code: Callable[[],None]) -> WebServerLog:
+        """
+        While this method runs, the server records incoming HTTP requests, and
+        returns them as the return value of this method. In the method call,
+        execute the provided code (usually to make the client do something
+        that results in the hits to the WebServer
+        code: the code to run
+        return: the collected HTTP requests
+        """
+        collection_id : str = self._start_logging_http_requests()
+        try:
+            code()
+            return self._stop_logging_http_requests(collection_id)
+
+        finally:
+            self._stop_logging_http_requests(collection_id)
+
+
+    def _start_logging_http_requests(self) -> str:
+        """
+        Override this to instruct the WebServer to start logging HTTP requests.
+        return: an identifier for the log
+        see: _stop_logging_http_requests
+        """
+        raise NotImplementedByNodeError(self, WebDiagServer._start_logging_http_requests)
+        # This could be done manually, but returning the log cannot
+
+
+    def _stop_logging_http_requests(self, collection_id: str) -> WebServerLog:
+        """
+        Corresponding "stop logging" method.
+        collection_id: same identifier as returned by _start_logging_http_requests
+        return: the collected HTTP requests
+        see: _start_logging_http_requests
+        """
+        raise NotImplementedByNodeError(self, WebDiagServer._stop_logging_http_requests)
+        # This cannot be done manually
+
+
+    def diag_override_http_response(self, code: Callable[[],Any], request: HttpRequest, overridden_response: HttpResponse) -> None:
+        """
+        Instruct the server to temporarily return the overridden_response when the
+        specified request is made during execution of `code`.
+        """
+        self._start_override_http_response(request, overridden_response)
+        try:
+            code()
+        finally:
+            self._stop_override_http_response(request)
+
+
+    def _start_override_http_response(self, request: HttpRequest, overridden_response: HttpResponse) -> None:
+        """
+        Override this to instruct the WebServer to return an alternate response when
+        the provided request is made.
+        """
+        raise NotImplementedByNodeError(self, WebDiagServer._start_override_http_response)
+
+
+    def _stop_override_http_response(self, request: HttpRequest) -> None:
+        """
+        Corresponding "stop override" method.
+        """
+        raise NotImplementedByNodeError(self, WebDiagServer._stop_override_http_response)

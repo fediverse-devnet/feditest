@@ -6,6 +6,23 @@ from feditest.nodedrivers import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
 
 
+class WebFingerClient(WebClient):
+    """
+    A Node that acts as a WebFinger client.
+    """
+    def perform_webfinger_query(self, resource_uri: str) -> None:
+        """
+        Make this Node perform a WebFinger query for the provided resource_uri.
+        The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
+        'https://example.com/aabc' (not escaped).
+        This returns None as it is unreasonable to assume that a non-diag Node can implement
+        this call otherwise. However, it may throw exceptions.
+        It is used with a WebFingerDiagServer to determine whether this WebFingerClient performs
+        valid WebFinger queries.
+        """
+        raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
+
+
 class WebFingerServer(WebServer):
     """
     A Node that acts as a WebFinger server.
@@ -48,20 +65,3 @@ class WebFingerServer(WebServer):
         If the Node does not ever issue such identifiers, raise NotImplementedByNodeException
         """
         raise NotImplementedByNodeError(self, WebFingerServer.obtain_account_identifier_requiring_percent_encoding)
-
-
-class WebFingerClient(WebClient):
-    """
-    A Node that acts as a WebFinger client.
-    """
-    def perform_webfinger_query(self, resource_uri: str) -> None:
-        """
-        Make this Node perform a WebFinger query for the provided resource_uri.
-        The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
-        'https://example.com/aabc' (not escaped).
-        This returns None as it is unreasonable to assume that a non-diag Node can implement
-        this call otherwise. However, it may throw exceptions.
-        It is used with a WebFingerDiagServer to determine whether this WebFingerClient performs
-        valid WebFinger queries.
-        """
-        raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)

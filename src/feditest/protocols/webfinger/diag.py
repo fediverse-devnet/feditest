@@ -477,14 +477,6 @@ class WebFingerQueryResponse:
     exc : Exception | None #
 
 
-class WebFingerDiagServer(WebFingerServer):
-    def diag_override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
-        """
-        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
-        """
-        raise NotImplementedByNodeError(self, WebFingerDiagServer.diag_override_webfinger_response)
-
-
 class WebFingerDiagClient(WebFingerClient):
     """
     A Node that acts as a WebFinger client.
@@ -509,3 +501,11 @@ class WebFingerDiagClient(WebFingerClient):
         Return the result of the query.
         """
         raise NotImplementedByNodeError(self, WebFingerDiagClient.diag_perform_webfinger_query)
+
+
+class WebFingerDiagServer(WebFingerServer):
+    def diag_override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+        """
+        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+        """
+        raise NotImplementedByNodeError(self, WebFingerDiagServer.diag_override_webfinger_response)
