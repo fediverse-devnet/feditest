@@ -1,6 +1,4 @@
-from typing import Any, Callable, Iterator, cast
-
-import httpx
+from typing import Any, cast
 
 from . import ActivityPubNode
 from feditest.protocols.web.diag import WebDiagClient, WebDiagServer
@@ -16,34 +14,15 @@ class AnyObject:
     We use a generic container because we also want to be able to hold objects
     that are invalid according to the spec.
     """
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, json: Any):
         self._uri = uri
-        self._json : Any | None = None
-
-
-    def _ensure_fetched(self) -> None:
-        """
-        Make sure the uri has been dereferenced.
-
-        Note: this could potentially be a smart factory, but currently it is not because
-        we'd have to figure out when to expire the cache and that has some time.
-        """
-        if not self._json:
-             # FIXME: this needs better error handling
-            r : httpx.Response = httpx.get(
-                self._uri,
-                follow_redirects=True,
-                verify=False,
-                headers={"Accept": "application/activity+json"})
-            r.raise_for_status() # May throw. No need for our own exceptions
-            self._json = r.json()
+        self._json = json
 
 
     def check_is_valid_object(self) -> bool:
         """
         Interpret this instance as an ActivityStreams Object, and check whether it is valid.
         """
-        self._ensure_fetched()
         json = cast(dict, self._json)
         if 'type' not in json:
             return False
@@ -58,7 +37,6 @@ class AnyObject:
         Interpret this instance as an Actor, and return an instance of the Actor class.
         """
         # FIXME: check that this is indeed a valid Actor, and throw exception if it is not
-        self._ensure_fetched()
         return Actor(self)
 
 
@@ -67,7 +45,6 @@ class AnyObject:
         Interpret this instance as a Collection, and return an instance of the Collection class.
         """
         # FIXME: check that this is indeed a valid Collection, and throw exception if it is not
-        self._ensure_fetched()
         return Collection(self)
 
 
@@ -75,7 +52,6 @@ class AnyObject:
         """
         Convenience method to access field 'name' in the JSON.
         """
-        self._ensure_fetched()
         json = cast(dict, self._json)
         return json.get(name)
 
@@ -106,7 +82,6 @@ class Activity:
         self._delegate = delegate
 
 
-
 class Collection:
     """
     A facade in front of AnyObject that interprets AnyObject as a Collection.
@@ -119,54 +94,87 @@ class Collection:
         return 'OrderedCollection' == self._delegate.json_field('type')
 
 
-    def items(self) -> Iterator[AnyObject]:
-        items = self._delegate.json_field('orderedItems' if self.is_ordered() else 'items')
-        if items is not None:
-            for item in items:
-                if isinstance(item,str):
-                    yield AnyObject(item)
-                else:
-                    raise Exception(f'Cannot process yet: {item}')
-        elif first := self._delegate.json_field('first') is not None:
-            if isinstance(first,str):
-                first_collection = AnyObject(first).as_collection()
-                yield from first_collection.items()
-            else:
-                raise Exception(f'Cannot process yet: {first}')
-        elif next := self._delegate.json_field('next') is not None:
-            if isinstance(next,str):
-                next_collection = AnyObject(next).as_collection()
-                yield from next_collection.items()
-            else:
-                raise Exception(f'Cannot process yet: {first}')
+    # Work in progress
+
+    # def items(self) -> Iterator[AnyObject]:
+    #     items = self._delegate.json_field('orderedItems' if self.is_ordered() else 'items')
+    #     if items is not None:
+    #         for item in items:
+    #             if isinstance(item,str):
+    #                 yield AnyObject(item)
+    #             else:
+    #                 raise Exception(f'Cannot process yet: {item}')
+    #     elif first := self._delegate.json_field('first') is not None:
+    #         if isinstance(first,str):
+    #             first_collection = AnyObject(first).as_collection()
+    #             yield from first_collection.items()
+    #         else:
+    #             raise Exception(f'Cannot process yet: {first}')
+    #     elif next := self._delegate.json_field('next') is not None:
+    #         if isinstance(next,str):
+    #             next_collection = AnyObject(next).as_collection()
+    #             yield from next_collection.items()
+    #         else:
+    #             raise Exception(f'Cannot process yet: {first}')
 
 
-    def contains(self, matcher: Callable[[AnyObject],bool]) -> bool:
-        """
-        Returns true if this Collection contains an item, as determined by the
-        matcher object. This method passes the members of this collection to the
-        matcher one at a time, and the matcher decides when there is a match.
-        """
-        for item in self.items():
-            if matcher(item):
-                return True
-        return False
+    # def contains(self, matcher: Callable[[AnyObject],bool]) -> bool:
+    #     """
+    #     Returns true if this Collection contains an item, as determined by the
+    #     matcher object. This method passes the members of this collection to the
+    #     matcher one at a time, and the matcher decides when there is a match.
+    #     """
+    #     for item in self.items():
+    #         if matcher(item):
+    #             return True
+    #     return False
 
 
-    def contains_item_with_id(self, id: str) -> bool:
-        """
-        Convenience method that looks for items that are simple object identifiers.
-        FIXME: this can be much more complicated in ActivityStreams, but this
-        implementation is all we need right now.
-        """
-        return self.contains(lambda candidate: id == candidate if isinstance(candidate,str) else False)
-
-
+    # def contains_item_with_id(self, id: str) -> bool:
+    #     """
+    #     Convenience method that looks for items that are simple object identifiers.
+    #     FIXME: this can be much more complicated in ActivityStreams, but this
+    #     implementation is all we need right now.
+    #     """
+    #     return self.contains(lambda candidate: id == candidate if isinstance(candidate,str) else False)
 
 
 class ActivityPubDiagNode(ActivityPubNode, WebDiagClient, WebDiagServer):
-    def fetch_remote_actor_document(remote_actor_uri: str) -> Actor:
-        pass
+    pass
+
+    # Work in progress
+
+    # def fetch_remote_actor_document(remote_actor_uri: str) -> Actor:
+    #     pass
 
 
+    # def set_inbox_uri_to(actor_uri: str, inbox_uri: str | None):
+    #     pass
 
+
+    # def set_outbox_uri_to(actor_uri: str, outbox_uri: str | None):
+    #     pass
+
+
+    # def add_to_followers_collection(actor_uri: str, to_be_added_actor_uri: str):
+    #     pass
+
+
+    # def add_to_following_collection(actor_uri: str, to_be_added_actor_uri: str):
+    #     pass
+
+
+    # def add_to_outbox(actor_uri: str, to_be_added_activity: Activity):
+    #     pass
+
+
+    # def add_to_inbox(actor_uri: str, to_be_added_activity: Activity):
+    #     pass
+
+
+    # def read_inbox_of(actor_uri: str, inbox_collection: Collection):
+    #     pass
+
+
+    # def read_outbox_of(actor_uri: str, outbox_collection: Collection):
+    #     pass
