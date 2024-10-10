@@ -141,11 +141,31 @@ class WebDiagServer(WebServer):
         # This cannot be done manually
 
 
-    def diag_override_http_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+    def diag_override_http_response(self, code: Callable[[],Any], request: HttpRequest, overridden_response: HttpResponse) -> None:
         """
-        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+        Instruct the server to temporarily return the overridden_response when the
+        specified request is made during execution of `code`.
         """
-        raise NotImplementedByNodeError(self, WebDiagServer.diag_override_http_response)
+        self._start_override_http_response(request, overridden_response)
+        try:
+            code()
+        finally:
+            self._stop_override_http_response(request)
+
+
+    def _start_override_http_response(self, request: HttpRequest, overridden_response: HttpResponse) -> None:
+        """
+        Override this to instruct the WebServer to return an alternate response when
+        the provided request is made.
+        """
+        raise NotImplementedByNodeError(self, WebDiagServer._start_override_http_response)
+
+
+    def _stop_override_http_response(self, request: HttpRequest) -> None:
+        """
+        Corresponding "stop override" method.
+        """
+        raise NotImplementedByNodeError(self, WebDiagServer._stop_override_http_response)
 
 
 class WebDiagClient(WebClient):

@@ -3,7 +3,7 @@ from typing import Any, Callable, Iterator, cast
 import httpx
 
 from . import ActivityPubNode
-
+from feditest.protocols.web.diag import WebDiagClient, WebDiagServer
 
 # Note:
 # The data elements held by the classes here are all untyped. That's because we want to be able
@@ -98,6 +98,15 @@ class Actor:
         return self._delegate.json_field('following')
 
 
+class Activity:
+    """
+    A facade in front of AnyObject that interprets AnyObject as an Activity.
+    """
+    def __init__(self, delegate: AnyObject):
+        self._delegate = delegate
+
+
+
 class Collection:
     """
     A facade in front of AnyObject that interprets AnyObject as a Collection.
@@ -155,26 +164,9 @@ class Collection:
 
 
 
-class ActivityPubDiagNode(ActivityPubNode):
-    def obtain_followers_collection_uri(self, actor_uri: str) -> str:
-        """
-        Determine the URI that points to the provided Actor's followers collection.
-        This is a separate API call because there is no guarantee that FediTest tests is permitted
-        to access the Actor JSON file and may not be able to get it from there.
-        The default implementation determines this from the Actor file. Subclasses may override.
-        """
-        actor = AnyObject(actor_uri).as_actor()
-        return actor.followers_uri()
+class ActivityPubDiagNode(ActivityPubNode, WebDiagClient, WebDiagServer):
+    def fetch_remote_actor_document(remote_actor_uri: str) -> Actor:
+        pass
 
-
-    def obtain_following_collection_uri(self, actor_uri: str) -> str:
-        """
-        Determine the URI that points to the provided Actor's following collection.
-        This is a separate API call because there is no guarantee that FediTest tests is permitted
-        to access the Actor JSON file and may not be able to get it from there.
-        The default implementation determines this from the Actor file. Subclasses may override.
-        """
-        actor = AnyObject(actor_uri).as_actor()
-        return actor.following_uri()
 
 

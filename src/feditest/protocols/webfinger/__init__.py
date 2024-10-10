@@ -60,7 +60,8 @@ class WebFingerClient(WebClient):
         The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
         'https://example.com/aabc' (not escaped).
         This returns None as it is unreasonable to assume that a non-diag Node can implement
-        this call otherwise. It is used with a WebFingerDiagServer to determine whether
-        this WebFingerClient performs valid WebFinger queries.
+        this call otherwise. However, it may throw exceptions.
+        It is used with a WebFingerDiagServer to determine whether this WebFingerClient performs
+        valid WebFinger queries.
         """
         raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
