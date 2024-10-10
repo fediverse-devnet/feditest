@@ -170,7 +170,7 @@ class WebDiagServer(WebServer):
 
 class WebDiagClient(WebClient):
     """
-    Abstract class used for Nodes that speak HTTP as client.
+    Abstract class used for diagnostic Nodes that speak HTTP as client.
     """
     def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         """
@@ -182,7 +182,7 @@ class WebDiagClient(WebClient):
 
     def http_get(self, uri: str, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         """
-        Make this WebClientperform an HTTP get on the provided uri.
+        Make this WebClient perform an HTTP GET on the provided uri.
         """
         parsed = ParsedUri.parse(uri)
         if not parsed:

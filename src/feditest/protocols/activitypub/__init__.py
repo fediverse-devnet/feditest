@@ -39,9 +39,9 @@ class ActivityPubNode(WebServer):
     #    first exchange public keys etc. and for that it would have to be an HTTP server,
     #    with DNS and TLS certs and nope, we are not going there.
     #
-    # Instead, we ask the ActivityPubDiagNode in the Constellation to perform the fetch
+    # Instead, we ask an ActivityPubDiagNode in the Constellation to perform the fetch
     # of the followers collection on our behalf. It is already part of the Constellation
     # and likely has already exchanged keys.
     #
-    # So: you find what you want on the "other" node which is likeley an ActivityPubDiagNode
+    # So: you find what you want on the "other" Node which is likeley an ActivityPubDiagNode
     # anyway.
