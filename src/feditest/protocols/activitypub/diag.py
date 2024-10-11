@@ -139,7 +139,7 @@ class Collection:
     #     return self.contains(lambda candidate: id == candidate if isinstance(candidate,str) else False)
 
 
-class ActivityPubDiagNode(ActivityPubNode, WebDiagClient, WebDiagServer):
+class ActivityPubDiagNode(WebDiagClient, WebDiagServer,ActivityPubNode):
     pass
 
     # Work in progress

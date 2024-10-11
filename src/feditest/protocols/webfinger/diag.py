@@ -3,10 +3,10 @@
 
 import json
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from feditest.nodedrivers import NotImplementedByNodeError
-from feditest.protocols.web.diag import HttpRequestResponsePair
+from feditest.protocols.web.diag import HttpRequestResponsePair, WebDiagClient
 from . import WebFingerClient, WebFingerServer
 
 from feditest.utils import (
@@ -477,7 +477,7 @@ class WebFingerQueryResponse:
     exc : Exception | None #
 
 
-class WebFingerDiagClient(WebFingerClient):
+class WebFingerDiagClient(WebFingerClient, WebDiagClient):
     """
     A Node that acts as a WebFinger client.
     """
@@ -503,9 +503,40 @@ class WebFingerDiagClient(WebFingerClient):
         raise NotImplementedByNodeError(self, WebFingerDiagClient.diag_perform_webfinger_query)
 
 
+    class WrongHttpStatusError(RuntimeError):
+        """
+        Raised when an HTTP status was obtained that was wrong for the situation.
+        """
+        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
+            self._http_request_response_pair = http_request_response_pair
+
+
+        def __str__(self):
+            return 'Wrong HTTP status code.' \
+                   + f'\n -> { self._http_request_response_pair.response.http_status }'
+
+
+    class WrongContentTypeError(RuntimeError):
+        """
+        Raised when payload of a content type was received that was wrong for the situation
+        """
+        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
+            self._http_request_response_pair = http_request_response_pair
+
+
+        def __str__(self):
+            return 'Wrong HTTP content type.' \
+                   + f'\n -> "{ self._http_request_response_pair.response.content_type() }"'
+
+
 class WebFingerDiagServer(WebFingerServer):
-    def diag_override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
-        """
-        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
-        """
-        raise NotImplementedByNodeError(self, WebFingerDiagServer.diag_override_webfinger_response)
+    """
+    """
+
+    # Work in progress
+
+    # def diag_override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+    #     """
+    #     Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+    #     """
+    #     raise NotImplementedByNodeError(self, WebFingerDiagServer.diag_override_webfinger_response)

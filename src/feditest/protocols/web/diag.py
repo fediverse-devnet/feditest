@@ -22,7 +22,7 @@ class HttpRequest:
     accept_header : str | None = None
     payload : bytes | None = None
     content_type : str | None = None
-    when_started: date = datetime.now(UTC)
+    when_started: datetime = datetime.now(UTC) # Always need one so we can compare in the WebServerLog
 
 
 @dataclass
@@ -155,32 +155,6 @@ class WebDiagClient(WebClient):
             f'Unsuccessful HTTP request: { self._request.uri.get_uri() }'
 
 
-    class WrongHttpStatusError(RuntimeError):
-        """
-        Raised when an HTTP status was obtained that was wrong for the situation.
-        """
-        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
-            self._http_request_response_pair = http_request_response_pair
-
-
-        def __str__(self):
-            return 'Wrong HTTP status code.' \
-                   + f'\n -> { self._http_request_response_pair.response.http_status }'
-
-
-    class WrongContentTypeError(RuntimeError):
-        """
-        Raised when payload of a content type was received that was wrong for the situation
-        """
-        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
-            self._http_request_response_pair = http_request_response_pair
-
-
-        def __str__(self):
-            return 'Wrong HTTP content type.' \
-                   + f'\n -> "{ self._http_request_response_pair.response.content_type() }"'
-
-
     class TlsError(RuntimeError):
         """
         Raised when the provided TLS certificate was invalid.
@@ -238,6 +212,7 @@ class WebDiagServer(WebServer):
         # This cannot be done manually
 
 
+    @final
     def diag_override_http_response(self, code: Callable[[],Any], request: HttpRequest, overridden_response: HttpResponse) -> None:
         """
         Instruct the server to temporarily return the overridden_response when the
