@@ -111,7 +111,7 @@ class WebDiagClient(WebClient):
 
     def http_get(self, uri: str, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
         """
-        Make this WebClient perform an HTTP GET on the provided uri.
+        Convenience function that makes it easier to invoke making this WebClient perform an HTTP GET request.
         """
         parsed = ParsedUri.parse(uri)
         if not parsed:

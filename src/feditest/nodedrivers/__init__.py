@@ -30,7 +30,7 @@ HOSTNAME_PAR = TestPlanNodeParameter(
 class Account(ABC):
     """
     The notion of an existing account on a Node. As different Nodes have different ideas about
-    what they know about an Account, this is an entirey abstract base class here.
+    what they know about an Account, this is an entirely abstract base class here.
     """
     def __init__(self, role: str | None):
         self._role = role

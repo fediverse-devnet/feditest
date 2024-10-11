@@ -56,7 +56,7 @@ class WebFingerServer(WebServer):
         raise NotImplementedByNodeError(self, WebFingerServer.obtain_non_existing_account_identifier)
 
 
-    def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
+    def obtain_account_identifier_requiring_percent_encoding(self, rolename: str | None = None) -> str:
         """
         Smart factory method to return the identifier of an existing or newly created account on this
         Node that contains characters that require percent-encoding when provided as resource in a WebFinger

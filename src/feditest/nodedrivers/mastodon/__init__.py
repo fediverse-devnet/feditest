@@ -565,7 +565,7 @@ class NodeWithMastodonAPI(FediverseNode):
         return non_account.webfinger_uri
 
     # Not implemented:
-    # def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
+    # def obtain_account_identifier_requiring_percent_encoding(self, rolename: str | None = None) -> str:
     # def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
 
 # From WebServer
