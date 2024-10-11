@@ -2,13 +2,68 @@
 WebFinger testing utils
 """
 
+from urllib.parse import quote, urlparse
 from typing import Any, Type
 
 from multidict import MultiDict
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
+from .diag import ClaimedJrd, WebFingerQueryResponse
+
+
+class UnsupportedUriSchemeError(RuntimeError):
+    """
+    Raised when a WebFinger resource uses a scheme other than http, https, acct
+    """
+    def __init__(self, resource_uri: str):
+        self.resource_uri = resource_uri
+
+
+class CannotDetermineWebFingerHostError(RuntimeError):
+    """
+    Raised when the WebFinger host could not be determined.
+    """
+    def __init__(self, resource_uri: str):
+        self.resource_uri = resource_uri
+
+
+def construct_webfinger_uri_for(
+    resource_uri: str,
+    rels: list[str] | None = None,
+    hostname: str | None = None
+) -> str:
+    """
+    Helper method to construct the WebFinger URI from a resource URI, an optional list
+    of rels to ask for, and (if given) a non-default hostname
+    """
+    if not hostname:
+        parsed_resource_uri = urlparse(resource_uri)
+        match parsed_resource_uri.scheme:
+            case "acct":
+                _, hostname = parsed_resource_uri.path.split(
+                    "@", maxsplit=1
+                )  # 1: number of splits, not number of elements
+
+            case 'http':
+                hostname = parsed_resource_uri.netloc
+
+            case 'https':
+                hostname = parsed_resource_uri.netloc
+
+            case _:
+                raise UnsupportedUriSchemeError(resource_uri)
+
+    if not hostname:
+        raise CannotDetermineWebFingerHostError(resource_uri)
+
+    uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
+    if rels:
+        for rel in rels:
+            uri += f"&rel={ quote(rel) }"
+
+    return uri
+
 
 class RecursiveEqualToMatcher(BaseMatcher):
     """

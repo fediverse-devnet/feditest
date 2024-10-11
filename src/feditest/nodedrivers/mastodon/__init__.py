@@ -11,7 +11,6 @@ import sys
 import time
 from typing import Any, Callable, cast
 
-from feditest import AssertionFailure, InteropLevel, SpecLevel
 from feditest.nodedrivers import (
     Account,
     AccountManager,
@@ -25,7 +24,6 @@ from feditest.nodedrivers import (
     APP_VERSION_PAR,
     HOSTNAME_PAR
 )
-from feditest.protocols.activitypub import AnyObject
 from feditest.protocols.fediverse import FediverseNode
 from feditest.reporting import is_trace_active, trace
 from feditest.testplan import InvalidAccountSpecificationException, TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
@@ -518,35 +516,38 @@ class NodeWithMastodonAPI(FediverseNode):
     # def obtain_following_collection_uri(self, actor_uri: str) -> str:
 
     # Python 3.12 @override
-    def assert_member_of_collection_at(
-        self,
-        candidate_member_uri: str,
-        collection_uri: str,
-        spec_level: SpecLevel | None = None,
-        interop_level: InteropLevel | None= None
-    ):
-        collection = AnyObject(collection_uri).as_collection()
-        if not collection.contains_item_with_id(candidate_member_uri):
-            raise AssertionFailure(
-                spec_level or SpecLevel.UNSPECIFIED,
-                interop_level or InteropLevel.UNKNOWN,
-                f"Node { self }: {candidate_member_uri} not in {collection_uri}")
+
+    # Work in progress
+
+    # def assert_member_of_collection_at(
+    #     self,
+    #     candidate_member_uri: str,
+    #     collection_uri: str,
+    #     spec_level: SpecLevel | None = None,
+    #     interop_level: InteropLevel | None= None
+    # ):
+    #     collection = AnyObject(collection_uri).as_collection()
+    #     if not collection.contains_item_with_id(candidate_member_uri):
+    #         raise AssertionFailure(
+    #             spec_level or SpecLevel.UNSPECIFIED,
+    #             interop_level or InteropLevel.UNKNOWN,
+    #             f"Node { self }: {candidate_member_uri} not in {collection_uri}")
 
 
-    # Python 3.12 @override
-    def assert_not_member_of_collection_at(
-        self,
-        candidate_member_uri: str,
-        collection_uri: str,
-        spec_level: SpecLevel | None = None,
-        interop_level: InteropLevel | None= None
-    ):
-        collection = AnyObject(collection_uri).as_collection()
-        if collection.contains_item_with_id(candidate_member_uri):
-            raise AssertionFailure(
-                spec_level or SpecLevel.UNSPECIFIED,
-                interop_level or InteropLevel.UNKNOWN,
-                f"Node { self }: {candidate_member_uri} must not be in {collection_uri}")
+    # # Python 3.12 @override
+    # def assert_not_member_of_collection_at(
+    #     self,
+    #     candidate_member_uri: str,
+    #     collection_uri: str,
+    #     spec_level: SpecLevel | None = None,
+    #     interop_level: InteropLevel | None= None
+    # ):
+    #     collection = AnyObject(collection_uri).as_collection()
+    #     if collection.contains_item_with_id(candidate_member_uri):
+    #         raise AssertionFailure(
+    #             spec_level or SpecLevel.UNSPECIFIED,
+    #             interop_level or InteropLevel.UNKNOWN,
+    #             f"Node { self }: {candidate_member_uri} must not be in {collection_uri}")
 
 # From WebFingerServer
 
@@ -564,7 +565,7 @@ class NodeWithMastodonAPI(FediverseNode):
         return non_account.webfinger_uri
 
     # Not implemented:
-    # def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
+    # def obtain_account_identifier_requiring_percent_encoding(self, rolename: str | None = None) -> str:
     # def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
 
 # From WebServer

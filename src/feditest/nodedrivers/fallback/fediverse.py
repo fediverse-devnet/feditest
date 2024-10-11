@@ -53,16 +53,6 @@ ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
         https_uri_validate
 )
 
-"""
-Pre-existing accounts in TestPlans are specified as follows:
-* URI_KEY: URI that either is a WebFinger resource (e.g. acct:joe@example.com or https://example.com/ ) or an Actor URI
-* ROLE_KEY: optional account role
-* ACTOR_URI_KEY: optional https URI that points to the Actor. This is calculated by WebFinger lookup if not provided
-
-Known non-existing accounts are specified as follows:
-* URI_KEY: URI that neither is a WebFinger resource nor an Actor URI
-* ROLE_KEY: optional non-existing account role
-"""
 
 class FallbackFediverseAccount(Account):
     def __init__(self, role: str | None, uri: str, actor_uri: str | None):

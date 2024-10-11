@@ -5,7 +5,10 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from feditest.protocols.web.traffic import HttpRequestResponsePair
+from feditest.nodedrivers import NotImplementedByNodeError
+from feditest.protocols.web.diag import HttpRequestResponsePair, WebDiagClient
+from . import WebFingerClient, WebFingerServer
+
 from feditest.utils import (
     http_https_acct_uri_parse_validate,
     rfc5646_language_tag_parse_validate,
@@ -253,7 +256,9 @@ working-copy-of"""
         """
         return value.find('/') > 0
 
+
     VALID_JRD_KEYS = { "subject", "aliases", "properties", "links" }
+
 
     def validate(self) -> None: # pylint: disable=too-many-branches,too-many-statements
         """
@@ -470,3 +475,68 @@ class WebFingerQueryResponse:
     http_request_response_pair: HttpRequestResponsePair
     jrd : ClaimedJrd | None # This may be an invalid jrd
     exc : Exception | None #
+
+
+class WebFingerDiagClient(WebFingerClient, WebDiagClient):
+    """
+    A Node that acts as a WebFinger client.
+    """
+    # Python 3.12 @override
+    def perform_webfinger_query(self, resource_uri: str) -> None:
+        self.diag_perform_webfinger_query(resource_uri)
+
+
+    def diag_perform_webfinger_query(
+        self,
+        resource_uri: str,
+        rels: list[str] | None = None,
+        server: WebFingerServer | None = None
+    ) -> WebFingerQueryResponse:
+        """
+        Make this Node perform a WebFinger query for the provided resource_uri.
+        The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
+        'https://example.com/aabc' (not escaped).
+        rels is an optional list of 'rel' query parameters.
+        server, if given, indicates the non-default server that is supposed to perform the query
+        Return the result of the query.
+        """
+        raise NotImplementedByNodeError(self, WebFingerDiagClient.diag_perform_webfinger_query)
+
+
+    class WrongHttpStatusError(RuntimeError):
+        """
+        Raised when an HTTP status was obtained that was wrong for the situation.
+        """
+        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
+            self._http_request_response_pair = http_request_response_pair
+
+
+        def __str__(self):
+            return 'Wrong HTTP status code.' \
+                   + f'\n -> { self._http_request_response_pair.response.http_status }'
+
+
+    class WrongContentTypeError(RuntimeError):
+        """
+        Raised when payload of a content type was received that was wrong for the situation
+        """
+        def __init__(self, http_request_response_pair: HttpRequestResponsePair):
+            self._http_request_response_pair = http_request_response_pair
+
+
+        def __str__(self):
+            return 'Wrong HTTP content type.' \
+                   + f'\n -> "{ self._http_request_response_pair.response.content_type() }"'
+
+
+class WebFingerDiagServer(WebFingerServer):
+    """
+    """
+
+    # Work in progress
+
+    # def diag_override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
+    #     """
+    #     Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
+    #     """
+    #     raise NotImplementedByNodeError(self, WebFingerDiagServer.diag_override_webfinger_response)

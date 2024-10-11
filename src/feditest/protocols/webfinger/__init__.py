@@ -2,12 +2,25 @@
 Abstractions for the WebFinger protocol
 """
 
-from typing import Any, Callable
-from urllib.parse import quote, urlparse
-
 from feditest.nodedrivers import NotImplementedByNodeError
 from feditest.protocols.web import WebClient, WebServer
-from feditest.protocols.webfinger.traffic import WebFingerQueryResponse
+
+
+class WebFingerClient(WebClient):
+    """
+    A Node that acts as a WebFinger client.
+    """
+    def perform_webfinger_query(self, resource_uri: str) -> None:
+        """
+        Make this Node perform a WebFinger query for the provided resource_uri.
+        The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
+        'https://example.com/aabc' (not escaped).
+        This returns None as it is unreasonable to assume that a non-diag Node can implement
+        this call otherwise. However, it may throw exceptions.
+        It is used with a WebFingerDiagServer to determine whether this WebFingerClient performs
+        valid WebFinger queries.
+        """
+        raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
 
 
 class WebFingerServer(WebServer):
@@ -43,7 +56,7 @@ class WebFingerServer(WebServer):
         raise NotImplementedByNodeError(self, WebFingerServer.obtain_non_existing_account_identifier)
 
 
-    def obtain_account_identifier_requiring_percent_encoding(self, nickname: str | None = None) -> str:
+    def obtain_account_identifier_requiring_percent_encoding(self, rolename: str | None = None) -> str:
         """
         Smart factory method to return the identifier of an existing or newly created account on this
         Node that contains characters that require percent-encoding when provided as resource in a WebFinger
@@ -52,86 +65,3 @@ class WebFingerServer(WebServer):
         If the Node does not ever issue such identifiers, raise NotImplementedByNodeException
         """
         raise NotImplementedByNodeError(self, WebFingerServer.obtain_account_identifier_requiring_percent_encoding)
-
-
-    def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
-        """
-        Instruct the server to temporarily return the overridden_json_response when the client_operation is performed.
-        """
-        raise NotImplementedByNodeError(self, WebFingerServer.override_webfinger_response)
-
-
-class WebFingerClient(WebClient):
-    """
-    A Node that acts as a WebFinger client.
-    """
-    def perform_webfinger_query(
-        self,
-        resource_uri: str,
-        rels: list[str] | None = None,
-        server: WebFingerServer | None = None
-    ) -> WebFingerQueryResponse:
-        """
-        Make this Node perform a WebFinger query for the provided resource_uri.
-        The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or
-        'https://example.com/aabc' (not escaped).
-        rels is an optional list of 'rel' query parameters.
-        server, if given, indicates the non-default server that is supposed to perform the query
-        Return the result of the query. This should return WebFingerQueryResponse in as many cases
-        as possible, but the WebFingerQueryResponse may indicate errors.
-        """
-        raise NotImplementedByNodeError(self, WebFingerClient.perform_webfinger_query)
-
-
-    def construct_webfinger_uri_for(
-        self,
-        resource_uri: str,
-        rels: list[str] | None = None,
-        hostname: str | None = None
-    ) -> str:
-        """
-        Helper method to construct the WebFinger URI from a resource URI, an optional list
-        of rels to ask for, and (if given) a non-default hostname
-        """
-        if not hostname:
-            parsed_resource_uri = urlparse(resource_uri)
-            match parsed_resource_uri.scheme:
-                case "acct":
-                    _, hostname = parsed_resource_uri.path.split(
-                        "@", maxsplit=1
-                    )  # 1: number of splits, not number of elements
-
-                case 'http':
-                    hostname = parsed_resource_uri.netloc
-
-                case 'https':
-                    hostname = parsed_resource_uri.netloc
-
-                case _:
-                    raise WebFingerClient.UnsupportedUriSchemeError(resource_uri)
-
-        if not hostname:
-            raise WebFingerClient.CannotDetermineWebFingerHostError(resource_uri)
-
-        uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
-        if rels:
-            for rel in rels:
-                uri += f"&rel={ quote(rel) }"
-
-        return uri
-
-
-    class UnsupportedUriSchemeError(RuntimeError):
-        """
-        Raised when a WebFinger resource uses a scheme other than http, https, acct
-        """
-        def __init__(self, resource_uri: str):
-            self.resource_uri = resource_uri
-
-
-    class CannotDetermineWebFingerHostError(RuntimeError):
-        """
-        Raised when the WebFinger host could not be determined.
-        """
-        def __init__(self, resource_uri: str):
-            self.resource_uri = resource_uri
