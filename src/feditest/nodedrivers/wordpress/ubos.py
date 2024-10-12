@@ -21,9 +21,9 @@ from feditest.nodedrivers.wordpress import (
     USERID_ACCOUNT_FIELD,
     USERID_NON_EXISTING_ACCOUNT_FIELD,
     WordPressAccount,
-    WordPressNonExistingAccount,
     WordPressPlusPluginsNode
 )
+from feditest.protocols.fediverse import FediverseNonExistingAccount
 from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
 
@@ -49,7 +49,7 @@ class WordPressUbosAccountManager(DefaultAccountManager):
 
 class WordPressPlusPluginsUbosNode(WordPressPlusPluginsNode):
     """
-    A WordPress + plugins Node running on UBOS. This means we know how to interact with it exactly.
+    A WordPress+plugins Node running on UBOS. This means we know how to interact with it exactly.
     """
     # Python 3.12 @override
     def provision_account_for_role(self, role: str | None = None) -> Account | None:
@@ -135,7 +135,7 @@ class WordPressPlusPluginsUbosNodeDriver(UbosNodeDriver):
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
             for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
-                non_existing_accounts.append(WordPressNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                non_existing_accounts.append(FediverseNonExistingAccount.create_from_non_existing_account_info_in_testplan(
                         non_existing_account_info,
                         f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 
@@ -163,7 +163,7 @@ class WordPressPlusPluginsUbosNodeDriver(UbosNodeDriver):
                     }
                 },
                 defaults = {
-                    'app' : 'WordPress + plugins'
+                    'app' : 'WordPress+plugins'
                 }),
             WordPressUbosAccountManager(accounts, non_existing_accounts)
         )

@@ -23,9 +23,9 @@ FEDITEST?=$(VENV)/bin/feditest -v
 DOMAIN?=--domain 1234.lan
 
 
-default : all
+default : lint
 
-all : build lint tests
+all : lint tests
 
 build : venv
 	$(VENV)/bin/pip install .
@@ -55,7 +55,7 @@ tests.smoke : venv
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --constellation tests.smoke/mastodon.ubos.constellation.json $(DOMAIN)
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --constellation tests.smoke/wordpress.ubos.constellation.json $(DOMAIN)
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/mastodon_mastodon.ubos.constellation.json $(DOMAIN)
-	# Currently broken: $(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/wordpress_mastodon.ubos.constellation.json $(DOMAIN)
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/wordpress_mastodon.ubos.constellation.json $(DOMAIN)
 
 release :
 	@which $(PYTHON) || ( echo 'No executable called "python". Append your python to the make command, like "make PYTHON=your-python"' && false )

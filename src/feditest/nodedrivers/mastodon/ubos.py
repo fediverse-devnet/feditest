@@ -21,7 +21,6 @@ from feditest.nodedrivers import (
 from feditest.nodedrivers.mastodon import (
     MastodonAccount,
     MastodonNode,
-    MastodonNonExistingAccount,
     MastodonUserPasswordAccount,
     NodeWithMastodonApiConfiguration,
     EMAIL_ACCOUNT_FIELD,
@@ -49,6 +48,7 @@ from feditest.nodedrivers.ubos import (
     TLSCERT_PAR,
     TLSKEY_PAR
 )
+from feditest.protocols.fediverse import FediverseNonExistingAccount
 from feditest.registry import registry_singleton
 from feditest.reporting import error, trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameterMalformedError
@@ -199,7 +199,7 @@ class MastodonUbosNode(MastodonNode):
         # We just make it up
         userid = self._generate_candidate_userid()
 
-        return MastodonNonExistingAccount(role, userid)
+        return FediverseNonExistingAccount(role, userid)
 
 
     def add_cert_to_trust_store(self, root_cert: str) -> None:
@@ -266,7 +266,7 @@ class MastodonUbosNodeDriver(UbosNodeDriver):
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
             for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
-                non_existing_accounts.append(MastodonNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                non_existing_accounts.append(FediverseNonExistingAccount.create_from_non_existing_account_info_in_testplan(
                         non_existing_account_info,
                         f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 

@@ -144,37 +144,37 @@ class ActivityPubDiagNode(WebDiagClient, WebDiagServer,ActivityPubNode):
 
     # Work in progress
 
-    # def fetch_remote_actor_document(remote_actor_uri: str) -> Actor:
+    # def fetch_remote_actor_document(remote_actor_acct_uri: str) -> Actor:
     #     pass
 
 
-    # def set_inbox_uri_to(actor_uri: str, inbox_uri: str | None):
+    # def set_inbox_uri_to(actor_acct_uri: str, inbox_uri: str | None):
     #     pass
 
 
-    # def set_outbox_uri_to(actor_uri: str, outbox_uri: str | None):
+    # def set_outbox_uri_to(actor_acct_uri: str, outbox_uri: str | None):
     #     pass
 
 
-    # def add_to_followers_collection(actor_uri: str, to_be_added_actor_uri: str):
+    # def add_to_followers_collection(actor_acct_uri: str, to_be_added_actor_acct_uri: str):
     #     pass
 
 
-    # def add_to_following_collection(actor_uri: str, to_be_added_actor_uri: str):
+    # def add_to_following_collection(actor_acct_uri: str, to_be_added_actor_acct_uri: str):
     #     pass
 
 
-    # def add_to_outbox(actor_uri: str, to_be_added_activity: Activity):
+    # def add_to_outbox(actor_acct_uri: str, to_be_added_activity: Activity):
     #     pass
 
 
-    # def add_to_inbox(actor_uri: str, to_be_added_activity: Activity):
+    # def add_to_inbox(actor_acct_uri: str, to_be_added_activity: Activity):
     #     pass
 
 
-    # def read_inbox_of(actor_uri: str, inbox_collection: Collection):
+    # def read_inbox_of(actor_acct_uri: str, inbox_collection: Collection):
     #     pass
 
 
-    # def read_outbox_of(actor_uri: str, outbox_collection: Collection):
+    # def read_outbox_of(actor_acct_uri: str, outbox_collection: Collection):
     #     pass

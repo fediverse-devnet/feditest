@@ -1,7 +1,7 @@
 """
 """
 
-import re
+import time
 from typing import cast
 
 from feditest.nodedrivers import (
@@ -18,11 +18,17 @@ from feditest.nodedrivers import (
 from feditest.nodedrivers.mastodon import (
     AccountOnNodeWithMastodonAPI,
     Mastodon, # Re-import from there to avoid duplicating the package import hackery
-    MastodonOAuthApp,
     NodeWithMastodonAPI,
     NodeWithMastodonApiConfiguration
 )
-from feditest.protocols.fediverse import FediverseNode
+from feditest.protocols.fediverse import (
+    ROLE_ACCOUNT_FIELD,
+    ROLE_NON_EXISTING_ACCOUNT_FIELD,
+    USERID_ACCOUNT_FIELD,
+    USERID_NON_EXISTING_ACCOUNT_FIELD,
+    FediverseNode,
+    FediverseNonExistingAccount
+)
 from feditest.reporting import is_trace_active, trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
 from feditest.utils import boolean_parse_validate, hostname_validate, prompt_user
@@ -43,40 +49,10 @@ def _oauth_token_validate(candidate: str) -> str | None:
     return candidate if len(candidate)>10 else None
 
 
-def _userid_validate(candidate: str) -> str | None:
-    """
-    Validate a WordPress user name. Avoids user input errors.
-    FIXME this is a wild guess and can be better.
-    """
-    candidate = candidate.strip()
-    return candidate if re.match(r'[a-zA-Z0-9_]', candidate) else None
-
-
-USERID_ACCOUNT_FIELD = TestPlanNodeAccountField(
-        'userid',
-        """Mastodon userid for a user (e.g. "joe") (required).""",
-        _userid_validate
-)
 OAUTH_TOKEN_ACCOUNT_FIELD = TestPlanNodeAccountField(
         'oauth_token',
         """OAuth token of a user so the "Enable Mastodon apps" API can be invoked.""",
         _oauth_token_validate
-)
-ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
-        'role',
-        """A symbolic name for the Account as used by tests (optional).""",
-        lambda x: len(x)
-)
-
-USERID_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
-        'userid',
-        """Mastodon userid for a non-existing user (e.g. "joe")  (required).""",
-        _userid_validate
-)
-ROLE_NON_EXISTING_ACCOUNT_FIELD = TestPlanNodeNonExistingAccountField(
-        'role',
-        """A symbolic name for the non-existing Account as used by tests (optional).""",
-        lambda x: len(x)
 )
 
 
@@ -105,14 +81,10 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
 
 
     @property
-    def actor_uri(self):
-        return f'https://{ self.node.hostname }/author/{ self.userid }/'
-
-
     def mastodon_user_client(self) -> Mastodon:
         if self._mastodon_user_client is None:
             node = cast(NodeWithMastodonAPI, self._node)
-            oauth_app = cast(MastodonOAuthApp, node._mastodon_oauth_app)
+            oauth_app = node._obtain_mastodon_oauth_app()
             self._ensure_oauth_token(oauth_app.client_id)
             trace(f'Logging into WordPress at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self._oauth_token }".')
             client = Mastodon(
@@ -138,44 +110,10 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
         self._oauth_token = real_node._provision_oauth_token_for(self, oauth_client_id)
 
 
-class WordPressNonExistingAccount(NonExistingAccount):
-    def __init__(self, role: str | None, userid: str):
-        super().__init__(role)
-        self.userid = userid
-
-
-    @staticmethod
-    def create_from_non_existing_account_info_in_testplan(non_existing_account_info_in_testplan: dict[str, str | None], context_msg: str = ''):
-        """
-        Parses the information provided in an "non_existing_account" dict of TestPlanConstellationNode
-        """
-        userid = USERID_NON_EXISTING_ACCOUNT_FIELD.get_validate_from_or_raise(non_existing_account_info_in_testplan, context_msg)
-        role = ROLE_ACCOUNT_FIELD.get_validate_from(non_existing_account_info_in_testplan, context_msg)
-        return WordPressNonExistingAccount(role, userid)
-
-
-    @property
-    def webfinger_uri(self):
-        return f'acct:{ self.userid }@{ self.node.hostname }'
-
-
-    @property
-    def actor_uri(self):
-        return f'https://{ self.node.hostname }/users/{ self.userid }'
-
-
 class WordPressPlusPluginsNode(NodeWithMastodonAPI):
     """
     A Node running WordPress with the ActivityPub plugin.
     """
-    # Python 3.12 @override -- implement WordPress scheme
-    def _actor_uri_to_userid(self, actor_uri: str) -> str:
-        if m:= re.match('^https://([^/]+)/author/([^/]+)/?$', actor_uri):
-            if m.group(1) == self._config.hostname:
-                return m.group(2)
-        raise ValueError( f'Cannot find actor at this node: { actor_uri }' )
-
-
     def _provision_oauth_token_for(self, account: WordPressAccount, oauth_client_id: str) -> str:
         ret = cast(str, prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ account.userid  }"'
                               + f' on constellation role "{ self.rolename }", OAuth client id "{ oauth_client_id }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
@@ -183,9 +121,22 @@ class WordPressPlusPluginsNode(NodeWithMastodonAPI):
         return ret
 
 
+    # Python 3.12 @override
+    def _run_poor_mans_cron(self) -> None:
+        # Seems we need two HTTP GETs
+        url = f'https://{ self.hostname }/wp-cron.php?doing_wp_cron'
+        session = self._obtain_requests_session()
+
+        # There must be a better way. But this seems to do it. 15 might be enough. 10 might not.
+        for _ in range(20):
+            time.sleep(1)
+            trace('Triggering wp-cron at { url }')
+            session.get(url)
+
+
 class WordPressPlusPluginsSaasNodeDriver(NodeDriver):
     """
-    Create a WordPress + ActivityPubPlugin Node that already runs as Saas
+    Create a WordPress+plugins Node that already runs as Saas
     """
     # Python 3.12 @override
     @staticmethod
@@ -207,13 +158,13 @@ class WordPressPlusPluginsSaasNodeDriver(NodeDriver):
 
     # Python 3.12 @override
     def create_configuration_account_manager(self, rolename: str, test_plan_node: TestPlanConstellationNode) -> tuple[NodeConfiguration, AccountManager | None]:
-        app = test_plan_node.parameter_or_raise(APP_PAR, { APP_PAR.name:  'WordPress + ActivityPub plugin' }) # Let user give a more descriptive name if they want to
+        app = test_plan_node.parameter_or_raise(APP_PAR, { APP_PAR.name:  'WordPress+plugins' }) # Let user give a more descriptive name if they want to
         app_version = test_plan_node.parameter(APP_VERSION_PAR)
         hostname = test_plan_node.parameter_or_raise(HOSTNAME_PAR)
         verify_tls_certificate = test_plan_node.parameter_or_raise(VERIFY_API_TLS_CERTIFICATE_PAR, { VERIFY_API_TLS_CERTIFICATE_PAR.name: 'true' })
 
         if not hostname:
-            hostname = prompt_user(f'Enter the hostname for the WordPress + ActivityPub plugin Node of constellation role "{ rolename }"'
+            hostname = prompt_user(f'Enter the hostname for the WordPress+plugins Node of constellation role "{ rolename }"'
                                         + f' (node parameter "{ HOSTNAME_PAR }"): ',
                                         parse_validate=hostname_validate)
 
@@ -227,7 +178,7 @@ class WordPressPlusPluginsSaasNodeDriver(NodeDriver):
         non_existing_accounts : list[NonExistingAccount] = []
         if test_plan_node.non_existing_accounts:
             for index, non_existing_account_info in enumerate(test_plan_node.non_existing_accounts):
-                non_existing_accounts.append(WordPressNonExistingAccount.create_from_non_existing_account_info_in_testplan(
+                non_existing_accounts.append(FediverseNonExistingAccount.create_from_non_existing_account_info_in_testplan(
                         non_existing_account_info,
                         f'Constellation role "{ rolename }", NodeDriver "{ self }, Non-existing account { index }: '))
 
