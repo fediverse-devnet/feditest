@@ -1,8 +1,0 @@
-{
-    "roles": {
-        "server": {
-            "nodedriver": "WordPressPlusPluginsUbosNodeDriver"
-        }
-    },
-    "name": null
-}
