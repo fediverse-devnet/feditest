@@ -53,6 +53,11 @@ class ParsedUri(ABC):
 
 
     @abstractmethod
+    def get_scheme(self) -> str:
+        ...
+
+
+    @abstractmethod
     def get_uri(self) -> str:
         ...
 
@@ -71,6 +76,12 @@ class ParsedNonAcctUri(ParsedUri):
         self._query_params : dict[str,list[str]] | None = None
 
 
+    # Python 3.12 @override
+    def get_scheme(self) -> str:
+        return self.scheme
+
+
+    # Python 3.12 @override
     def get_uri(self) -> str:
         ret = f'{ self.scheme }:'
         if self.netloc:
@@ -112,6 +123,7 @@ class ParsedNonAcctUri(ParsedUri):
         return None
 
 
+    # Python 3.12 @override
     def __repr__(self):
         return f'ParsedNonAcctUri({ self.get_uri() })'
 
@@ -134,10 +146,25 @@ class ParsedAcctUri(ParsedUri):
         self.host = host
 
 
+    # Python 3.12 @override
+    def get_scheme(self) -> str:
+        return 'acct'
+
+
+    def get_user(self) -> str:
+        return self.user
+
+
+    def get_host(self) -> str:
+        return self.host
+
+
+    # Python 3.12 @override
     def get_uri(self) -> str:
         return f'acct:{ self.user }@{ self.host }'
 
 
+    # Python 3.12 @override
     def __repr__(self):
         return f'ParsedAcctUri({ self.get_uri() })'
 
