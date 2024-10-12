@@ -8,17 +8,15 @@ from typing import cast
 import pytest
 
 import feditest
-from feditest.nodedrivers.fallback.fediverse import (
-    FallbackFediverseAccount,
-    FallbackFediverseNonExistingAccount,
-    ACTOR_URI_ACCOUNT_FIELD,
-    ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD,
-    ROLE_ACCOUNT_FIELD,
-    URI_ACCOUNT_FIELD,
-    ROLE_NON_EXISTING_ACCOUNT_FIELD,
-    URI_NON_EXISTING_ACCOUNT_FIELD,
-)
 from feditest.nodedrivers.saas import FediverseSaasNodeDriver
+from feditest.protocols.fediverse import (
+    ROLE_ACCOUNT_FIELD,
+    ROLE_NON_EXISTING_ACCOUNT_FIELD,
+    USERID_ACCOUNT_FIELD,
+    USERID_NON_EXISTING_ACCOUNT_FIELD,
+    FediverseAccount,
+    FediverseNonExistingAccount
+)
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
 
 
@@ -42,21 +40,19 @@ def init():
 def the_test_plan() -> TestPlan:
     node_driver = FediverseSaasNodeDriver()
     parameters = {
-        'hostname' : 'localhost', # Avoid interactive question
+        'hostname' : 'example.com', # Avoid interactive question
         'app' : 'test-dummy' # Avoid interactive question
     }
     plan_accounts = [
         {
             ROLE_ACCOUNT_FIELD.name : 'role1',
-            URI_ACCOUNT_FIELD.name : 'acct:foo@bar.com',
-            ACTOR_URI_ACCOUNT_FIELD.name : 'https://bar.com/user/foo'
+            USERID_ACCOUNT_FIELD.name : 'foo'
         }
     ]
     plan_non_existing_accounts = [
         {
             ROLE_NON_EXISTING_ACCOUNT_FIELD.name : 'nonrole1',
-            URI_NON_EXISTING_ACCOUNT_FIELD.name : 'acct:foo@nowhere.com',
-            ACTOR_URI_NON_EXISTING_ACCOUNT_FIELD.name : 'https://nowhere.com/user/foo'
+            USERID_NON_EXISTING_ACCOUNT_FIELD.name : 'nonfoo'
         }
     ]
     node1 = TestPlanConstellationNode(node_driver, parameters, plan_accounts, plan_non_existing_accounts)
@@ -74,15 +70,16 @@ def test_parse(the_test_plan: TestPlan) -> None:
     node_driver = node1.nodedriver
 
     node_config, account_manager = node_driver.create_configuration_account_manager(NODE1_ROLE, node1)
+    node_driver.provision_node('test', node_config, account_manager)
 
-    acc1 = cast(FallbackFediverseAccount | None, account_manager.get_account_by_role('role1'))
+    acc1 = cast(FediverseAccount | None, account_manager.get_account_by_role('role1'))
 
     assert acc1
     assert acc1.role == 'role1'
-    assert acc1.uri == 'acct:foo@bar.com'
+    assert acc1.actor_acct_uri == 'acct:foo@example.com'
 
-    non_acc1 = cast(FallbackFediverseNonExistingAccount | None, account_manager.get_non_existing_account_by_role('nonrole1'))
+    non_acc1 = cast(FediverseNonExistingAccount | None, account_manager.get_non_existing_account_by_role('nonrole1'))
     assert non_acc1
     assert non_acc1.role == 'nonrole1'
-    assert non_acc1.uri == 'acct:foo@nowhere.com'
+    assert non_acc1.actor_acct_uri == 'acct:nonfoo@example.com'
 

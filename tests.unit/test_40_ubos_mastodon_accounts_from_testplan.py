@@ -10,7 +10,6 @@ import pytest
 import feditest
 from feditest.nodedrivers.mastodon import (
     MastodonAccount,
-    MastodonNonExistingAccount,
     MastodonOAuthTokenAccount,
     MastodonUserPasswordAccount,
     EMAIL_ACCOUNT_FIELD,
@@ -22,6 +21,7 @@ from feditest.nodedrivers.mastodon import (
     USERID_NON_EXISTING_ACCOUNT_FIELD
 )
 from feditest.nodedrivers.mastodon.ubos import MastodonUbosNodeDriver
+from feditest.protocols.fediverse import FediverseNonExistingAccount
 from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
 
 
@@ -95,7 +95,7 @@ def test_parse(the_test_plan: TestPlan) -> None:
     assert isinstance(acc2, MastodonOAuthTokenAccount)
     assert acc2._oauth_token == 'tokentokentoken'
 
-    non_acc1 = cast(MastodonNonExistingAccount | None, account_manager.get_non_existing_account_by_role('nonrole1'))
+    non_acc1 = cast(FediverseNonExistingAccount | None, account_manager.get_non_existing_account_by_role('nonrole1'))
     assert non_acc1
     assert non_acc1.role == 'nonrole1'
     assert non_acc1.userid == 'nouser'

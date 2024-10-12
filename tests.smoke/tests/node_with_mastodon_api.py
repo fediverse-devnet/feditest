@@ -16,7 +16,7 @@ from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
 #     ) -> None:
 #         # FIXME: need to implement property mastodon_api_app_version
 #         # This should access Mastodon without an authenticated user and we don't currently have code for how to do that
-#         assert re.match(r'\d+\.\d+\.\d+', server.mastodon_api_app_version), "Invalid version"
+#         assert re.fullmatch(r'\d+\.\d+\.\d+', server.mastodon_api_app_version), "Invalid version"
 
 
 @test
@@ -28,14 +28,14 @@ class CreateNoteTest:
         server: NodeWithMastodonAPI
     ) -> None:
         self.server = server
-        self.actor_uri = None
+        self.actor_acct_uri = None
         self.note_uri = None
 
 
     @step
     def provision_actor(self):
-        self.actor_uri = self.server.obtain_actor_document_uri()
-        assert self.actor_uri
+        self.actor_acct_uri = self.server.obtain_actor_acct_uri()
+        assert self.actor_acct_uri
 
 
 #    @step
@@ -45,13 +45,13 @@ class CreateNoteTest:
 
     @step
     def create_note(self):
-        self.note_uri = self.server.make_create_note(self.actor_uri, f"testing make_create_note {datetime.now()}")
+        self.note_uri = self.server.make_create_note(self.actor_acct_uri, f"testing make_create_note {datetime.now()}")
         assert self.note_uri
 
 
     @step
     def wait_for_note_in_inbox(self):
-        self.server.wait_until_actor_has_received_note(self.actor_uri, self.note_uri)
+        self.server.wait_until_actor_has_received_note(self.actor_acct_uri, self.note_uri)
 
 
 #    @step
@@ -63,6 +63,6 @@ class CreateNoteTest:
         """
         Clean up data. This is here so the test is usable with non-brand-new instances.
         """
-        self.server.delete_all_followers_of(self.actor_uri)
-        self.server.delete_all_statuses_by(self.actor_uri)
+        self.server.delete_all_followers_of(self.actor_acct_uri)
+        self.server.delete_all_statuses_by(self.actor_acct_uri)
 

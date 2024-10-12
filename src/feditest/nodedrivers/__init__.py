@@ -372,7 +372,7 @@ class NodeConfiguration:
 
 
     def __str__(self) -> str:
-        return f'NodeConfiguration ({ type(self).__name__ }): node driver: "{ self.node_driver }", app: "{ self.app }", hostname: "{ self.hostname }"'
+        return f'NodeConfiguration: node driver: "{ self.node_driver }", app: "{ self.app }", hostname: "{ self.hostname }"'
 
 
 class Node(ABC):
