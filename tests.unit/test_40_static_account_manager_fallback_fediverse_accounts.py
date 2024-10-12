@@ -45,7 +45,6 @@ def account_manager() -> StaticAccountManager:
 
     ret = StaticAccountManager(initial_accounts, initial_non_existing_accounts)
     return ret
-    node_driver.provision_node('test', node_config, account_manager)
 
 
 def test_initial_accounts(account_manager: StaticAccountManager) -> None:
@@ -100,7 +99,7 @@ def test_allocates_accounts_correctly(account_manager: StaticAccountManager) -> 
    acc2 = cast(FediverseAccount | None, account_manager.obtain_account_by_role('role2'))
    assert acc2
    assert acc2.role is None
-   assert acc2.userid == f'user-2-unallocated'
+   assert acc2.userid == 'user-2-unallocated'
 
 
 def test_allocates_non_existing_accountscorrectly(account_manager: StaticAccountManager) -> None:
@@ -117,7 +116,7 @@ def test_allocates_non_existing_accountscorrectly(account_manager: StaticAccount
    acc0 = cast(FediverseNonExistingAccount | None, account_manager.obtain_non_existing_account_by_role('role0'))
    assert acc0
    assert acc0.role is None
-   assert acc0.userid == f'nonuser-0-unallocated'
+   assert acc0.userid == 'nonuser-0-unallocated'
 
    acc2 = cast(FediverseNonExistingAccount | None, account_manager.get_non_existing_account_by_role('role2'))
    assert acc2 is None
@@ -125,4 +124,4 @@ def test_allocates_non_existing_accountscorrectly(account_manager: StaticAccount
    acc2 = cast(FediverseNonExistingAccount | None, account_manager.obtain_non_existing_account_by_role('role2'))
    assert acc2
    assert acc2.role is None
-   assert acc2.userid == f'nonuser-2-unallocated'
+   assert acc2.userid == 'nonuser-2-unallocated'
