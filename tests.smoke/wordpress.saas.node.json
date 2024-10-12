@@ -1,0 +1,16 @@
+{
+    "nodedriver": "WordPressPlusPluginsSaasNodeDriver",
+    "parameters": {
+        "hostname" : "testing.feditest.org",
+        "verify_api_tls_certificate" : false
+    },
+    "accounts": [
+        {
+            "userid" : "testing",
+            "password" : "qwerqwer",
+            "email": "testing@feditest.org"
+        }
+    ],
+    "non_existing_accounts": [
+    ]
+}

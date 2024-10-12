@@ -1,0 +1,17 @@
+{
+    "constellation": {
+        "roles": {
+            "client": null,
+            "server": null
+        },
+        "name": null
+    },
+    "tests": [
+        {
+            "name": "webfinger::fetch",
+            "rolemapping": null,
+            "skip": null
+        }
+    ],
+    "name": null
+}

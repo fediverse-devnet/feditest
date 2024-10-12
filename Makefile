@@ -48,14 +48,22 @@ lint : build
 
 tests : tests.unit tests.smoke
 
-tests.unit : venv
+tests.unit :
 	$(VENV)/bin/pytest -v
 
-tests.smoke : venv
-	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --constellation tests.smoke/mastodon.ubos.constellation.json $(DOMAIN)
-	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --constellation tests.smoke/wordpress.ubos.constellation.json $(DOMAIN)
-	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/mastodon_mastodon.ubos.constellation.json $(DOMAIN)
-	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --constellation tests.smoke/wordpress_mastodon.ubos.constellation.json $(DOMAIN)
+tests.smoke : tests.smoke.webfinger tests.smoke.fediverse
+
+# Run WordPress tests first: they run faster as installation is faster
+
+tests.smoke.webfinger :
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/webfinger.session.json --node client=tests.smoke/imp.node.json --node server=tests.smoke/wordpress.ubos.node.json $(DOMAIN)
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/webfinger.session.json --node client=tests.smoke/imp.node.json --node server=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
+
+tests.smoke.fediverse :
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --node server=tests.smoke/wordpress.ubos.node.json $(DOMAIN)
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --node server=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --node leader_node=tests.smoke/mastodon.ubos.node.json --node follower_node=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
+	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --node leader_node=tests.smoke/wordpress.ubos.node.json --node follower_node=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
 
 release :
 	@which $(PYTHON) || ( echo 'No executable called "python". Append your python to the make command, like "make PYTHON=your-python"' && false )
@@ -69,4 +77,4 @@ release :
 	@echo The actual push to pypi.org you need to do manually. Enter:
 	@echo venv.release/bin/twine upload dist/*
 
-.PHONY: all default venv build lint tests tests.unit tests.smoke release
+.PHONY: all default venv build lint tests tests.unit tests.smoke tests.smoke.webfinger tests.smoke.fediverse release
