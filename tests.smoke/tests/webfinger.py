@@ -2,7 +2,7 @@ from feditest import InteropLevel, SpecLevel, assert_that, test
 from feditest.protocols.webfinger import WebFingerServer
 from feditest.protocols.webfinger.diag import WebFingerDiagClient
 from feditest.protocols.webfinger.utils import wf_error
-from hamcrest import none, not_none
+from hamcrest import not_none
 
 
 @test
