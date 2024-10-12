@@ -12,7 +12,7 @@ class ActivityPubNode(WebServer):
     """
     def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
         """
-        Smart factory method to return the URI to an Actor document on this Node that
+        Smart factory method to return the https URI to an Actor document on this Node that
         either exists already or is newly created. Different rolenames produce different
         results; the same rolename produces the same result.
         rolename: refer to this Actor by this rolename; used to disambiguate multiple
