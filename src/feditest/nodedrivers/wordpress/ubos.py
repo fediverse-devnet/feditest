@@ -163,7 +163,7 @@ class WordPressPlusPluginsUbosNodeDriver(UbosNodeDriver):
                     }
                 },
                 defaults = {
-                    'app' : 'WordPress + ActivityPub plugin'
+                    'app' : 'WordPress + plugins'
                 }),
             WordPressUbosAccountManager(accounts, non_existing_accounts)
         )
