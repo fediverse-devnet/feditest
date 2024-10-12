@@ -150,7 +150,7 @@ class Registry(msgspec.Struct):
         if not appname:
             safe_appname = 'unnamed'
         elif m := re.match('^([0-9A-Za-z]*)', appname):
-            safe_appname = m.group(1).lower()
+            safe_appname = m.group(1).lower() # take the first word
         else:
             safe_appname = 'other'
 

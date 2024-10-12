@@ -49,7 +49,7 @@ class WordPressUbosAccountManager(DefaultAccountManager):
 
 class WordPressPlusPluginsUbosNode(WordPressPlusPluginsNode):
     """
-    A WordPress + ActivityPubPlugin Node running on UBOS. This means we know how to interact with it exactly.
+    A WordPress + plugins Node running on UBOS. This means we know how to interact with it exactly.
     """
     # Python 3.12 @override
     def provision_account_for_role(self, role: str | None = None) -> Account | None:
@@ -163,7 +163,7 @@ class WordPressPlusPluginsUbosNodeDriver(UbosNodeDriver):
                     }
                 },
                 defaults = {
-                    'app' : 'WordPress + ActivityPub plugin'
+                    'app' : 'WordPress + plugins'
                 }),
             WordPressUbosAccountManager(accounts, non_existing_accounts)
         )
