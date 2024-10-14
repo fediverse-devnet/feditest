@@ -28,8 +28,8 @@ T = TypeVar("T")
 all_tests : dict[str,Test] = {}
 
 # Used to collect supposed tested during annotation processing, destructively processed, ignored afterwards
-_registered_as_test : dict[str,Any] = {}
-_registered_as_test_step : dict[str,Any] = {}
+_registered_as_test : dict[str,Callable[..., None] | type] = {}
+_registered_as_test_step : dict[str,Callable[..., None]] = {}
 
 _loading_tests = False
 
@@ -125,7 +125,7 @@ def load_default_tests() -> None:
     # Do not replace those lambda parameters with _: we need to look up their names for role mapping
 
 
-def test(to_register: type[Any]) -> type[Any]:
+def test(to_register: Callable[..., None] | type) -> Callable[..., None] | type:
     """
     Use as a decorator to register a supposed test. Use either on a function (running of which constitutes the entire test)
     or on a class (where the tests consists of running __init__ and then all the contained functions maked with @step).
