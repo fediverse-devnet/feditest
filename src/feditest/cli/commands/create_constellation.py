@@ -4,7 +4,7 @@ Combine node definitions into a constellation.
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
-from feditest.cli.util import create_constellation_from_nodes
+from feditest.cli.utils import create_constellation_from_nodes
 from feditest.testplan import TestPlanConstellation, TestPlanConstellationNode
 
 

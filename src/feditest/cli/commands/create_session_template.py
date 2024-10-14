@@ -6,7 +6,7 @@ as input for generate-testplan.
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
-from feditest.cli.util import create_session_template_from_tests
+from feditest.cli.utils import create_session_template_from_tests
 
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
