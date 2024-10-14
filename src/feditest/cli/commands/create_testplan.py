@@ -4,7 +4,7 @@ Create a test plan.
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 import feditest
-from feditest.cli.util import create_plan_from_session_templates_and_constellations
+from feditest.cli.utils import create_plan_from_session_templates_and_constellations
 from feditest.reporting import fatal
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:

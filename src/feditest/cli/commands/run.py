@@ -5,7 +5,7 @@ Run one or more tests
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 import feditest
-from feditest.cli.util import (
+from feditest.cli.utils import (
     create_plan_from_session_templates_and_constellations,
     create_plan_from_testplan
 )
