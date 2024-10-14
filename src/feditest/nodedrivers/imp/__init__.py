@@ -28,12 +28,12 @@ class Imp(AbstractWebFingerDiagClient):
     """
     # Python 3.12 @override
     def http(self, request: HttpRequest, follow_redirects: bool = True, verify=False) -> HttpRequestResponsePair:
-        trace( f'Performing HTTP { request.method } on { request.uri.get_uri() }')
+        trace( f'Performing HTTP { request.method } on { request.parsed_uri.uri }')
 
         httpx_response = None
         # Do not follow redirects automatically, we need to know whether there are any
         with httpx.Client(verify=verify, follow_redirects=follow_redirects) as httpx_client:
-            httpx_request = httpx.Request(request.method, request.uri.get_uri(), headers=_HEADERS) # FIXME more arguments
+            httpx_request = httpx.Request(request.method, request.parsed_uri.uri, headers=_HEADERS) # FIXME more arguments
             httpx_response = httpx_client.send(httpx_request)
 
 # FIXME: catch Tls exception and raise WebDiagClient.TlsError

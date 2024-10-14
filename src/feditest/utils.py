@@ -52,13 +52,15 @@ class ParsedUri(ABC):
         return ParsedNonAcctUri(parsed.scheme, parsed.netloc, parsed.path, parsed.params, parsed.query, parsed.fragment)
 
 
+    @property
     @abstractmethod
-    def get_scheme(self) -> str:
+    def scheme(self) -> str:
         ...
 
 
+    @property
     @abstractmethod
-    def get_uri(self) -> str:
+    def uri(self) -> str:
         ...
 
 
@@ -67,32 +69,59 @@ class ParsedNonAcctUri(ParsedUri):
     ParsedUris that are "normal" URIs such as http URIs.
     """
     def __init__(self, scheme: str, netloc: str, path: str, params: str, query: str, fragment: str):
-        self.scheme = scheme
-        self.netloc = netloc
-        self.path = path
-        self.params = params
-        self.query = query
-        self.fragment = fragment
+        self._scheme = scheme
+        self._netloc = netloc
+        self._path = path
+        self._params = params
+        self._query = query
+        self._fragment = fragment
         self._query_params : dict[str,list[str]] | None = None
 
 
     # Python 3.12 @override
-    def get_scheme(self) -> str:
-        return self.scheme
+    @property
+    def scheme(self) -> str:
+        return self._scheme
+
+
+    @property
+    def netloc(self) -> str:
+        return self._netloc
+
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+
+    @property
+    def params(self) -> str:
+        return self._params
+
+
+    @property
+    def fragment(self) -> str:
+        return self._fragment
+
+
+    @property
+    def query(self) -> str:
+        return self._query
 
 
     # Python 3.12 @override
-    def get_uri(self) -> str:
-        ret = f'{ self.scheme }:'
-        if self.netloc:
-            ret += f'//{ self.netloc}'
-        ret += self.path
-        if self.params:
-            ret += f';{ self.params}'
-        if self.query:
-            ret += f'?{ self.query }'
-        if self.fragment:
-            ret += f'#{ self.fragment }'
+    @property
+    def uri(self) -> str:
+        ret = f'{ self._scheme }:'
+        if self._netloc:
+            ret += f'//{ self._netloc}'
+        ret += self._path
+        if self._params:
+            ret += f';{ self._params}'
+        if self._query:
+            ret += f'?{ self._query }'
+        if self._fragment:
+            ret += f'#{ self._fragment }'
         return ret
 
 
@@ -125,13 +154,13 @@ class ParsedNonAcctUri(ParsedUri):
 
     # Python 3.12 @override
     def __repr__(self):
-        return f'ParsedNonAcctUri({ self.get_uri() })'
+        return f'ParsedNonAcctUri({ self.uri })'
 
 
     def _parse_query_params(self):
         if self._query_params:
             return
-        if self.query:
+        if self._query:
             self._query_params = parse_qs(self.query)
         else:
             self._query_params = {}
@@ -142,31 +171,35 @@ class ParsedAcctUri(ParsedUri):
     ParsedUris that are acct: URIs
     """
     def __init__(self, user: str, host: str):
-        self.user = user
-        self.host = host
+        self._user = user
+        self._host = host
 
 
     # Python 3.12 @override
-    def get_scheme(self) -> str:
+    @property
+    def scheme(self) -> str:
         return 'acct'
 
 
-    def get_user(self) -> str:
-        return self.user
+    @property
+    def user(self) -> str:
+        return self._user
 
 
-    def get_host(self) -> str:
-        return self.host
+    @property
+    def host(self) -> str:
+        return self._host
 
 
     # Python 3.12 @override
-    def get_uri(self) -> str:
+    @property
+    def uri(self) -> str:
         return f'acct:{ self.user }@{ self.host }'
 
 
     # Python 3.12 @override
     def __repr__(self):
-        return f'ParsedAcctUri({ self.get_uri() })'
+        return f'ParsedAcctUri({ self.uri })'
 
 
 
@@ -248,7 +281,7 @@ def account_id_parse_validate(candidate: str) -> ParsedUri | None:
 def account_id_validate(candidate: str) -> str | None:
     parsed = account_id_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -266,7 +299,7 @@ def https_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def https_uri_validate(candidate: str) -> str | None:
     parsed = https_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -284,7 +317,7 @@ def http_https_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def http_https_uri_validate(candidate: str) -> str | None:
     parsed = http_https_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -308,7 +341,7 @@ def http_https_root_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def http_https_root_uri_validate(candidate: str) -> str | None:
     parsed = http_https_root_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -331,7 +364,7 @@ def http_https_acct_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def http_https_acct_uri_validate(candidate: str) -> str | None:
     parsed = http_https_acct_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -347,7 +380,7 @@ def uri_parse_validate(candidate: str) -> ParsedUri | None:
 def uri_validate(candidate: str) -> str | None:
     parsed = uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 

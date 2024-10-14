@@ -214,12 +214,12 @@ def wf_error(response: WebFingerQueryResponse) -> str:
         # Make this more compact than the default
         msg = str(response.exc.args[0]).split('\n', maxsplit=1)[0]
         msg += f' ({ len(response.exc.exceptions) })'
-        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
+        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.parsed_uri.uri }".'
         for i, exc in enumerate(response.exc.exceptions):
             msg += f'\n{ i }: { exc }'
 
     else:
         msg = str(response.exc).split('\n', maxsplit=1)[0]
-        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
+        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.parsed_uri.uri }".'
         msg += '\n'.join(str(response.exc).split('\n')[1:])
     return msg

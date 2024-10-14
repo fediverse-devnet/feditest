@@ -17,7 +17,7 @@ class HttpRequest:
     """
     Captures an HTTP request.
     """
-    uri: ParsedUri
+    parsed_uri: ParsedUri
     method: str = 'GET'
     accept_header : str | None = None
     payload : bytes | None = None
@@ -136,7 +136,7 @@ class WebDiagClient(WebClient):
 
 
         def __str__(self):
-            f'Too many redirects: { self._request.uri.get_uri() }'
+            f'Too many redirects: { self._request.uri.uri }'
 
 
     class HttpUnsuccessfulError(RuntimeError):
@@ -152,7 +152,7 @@ class WebDiagClient(WebClient):
 
 
         def __str__(self):
-            f'Unsuccessful HTTP request: { self._request.uri.get_uri() }'
+            f'Unsuccessful HTTP request: { self._request.uri.uri }'
 
 
     class TlsError(RuntimeError):
