@@ -14,7 +14,7 @@ from typing import Any, Callable, List, Optional, TypeVar
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
-from feditest.reporting import trace, warning
+from feditest.reporting import warning
 
 def _version(default_version="0.0.0"):
     try:
@@ -209,7 +209,7 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
                     try :
                         spec.loader.exec_module(module)
                     except BaseException as e:
-                        trace(f'Attempt to lead module { module_name } failed. Skipping.', e)
+                        warning(f'Attempt to lead module { module_name } failed. Skipping.', e)
         finally:
             sys.path = sys_path_before
 
