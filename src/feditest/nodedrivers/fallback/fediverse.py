@@ -44,8 +44,8 @@ class FallbackFediverseNode(FediverseNode):
     def provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
         userid = cast(str, prompt_user(
                 f'Node { self }:'
-                + f' provide the userid of a non-existing account with account role "{ role }" (the user part of the with acct: IRO) (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
-                parse_validate=https_uri_validate))
+                + f' provide the userid of a non-existing account with account role "{ role }" (the user part of the with acct: URI) (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
+                parse_validate=userid_validate))
         return FediverseNonExistingAccount(role, userid)
 
 
@@ -144,6 +144,25 @@ class FallbackFediverseNode(FediverseNode):
                 parse_validate=boolean_parse_validate)
         if not answer:
             raise TimeoutException(f'Actor { actor_acct_uri } is still followed by actor { to_be_unfollowing_actor_acct_uri}.', max_wait)
+
+# From WebFingerServer
+
+    # Python 3.12 @override
+    def obtain_account_identifier(self, rolename: str | None = None) -> str:
+        account_manager = cast(AccountManager, self._account_manager)
+        account = cast(FediverseAccount, account_manager.obtain_account_by_role(rolename))
+        return account.actor_acct_uri
+
+
+    # Python 3.12 @override
+    def obtain_non_existing_account_identifier(self, rolename: str | None = None ) -> str:
+        account_manager = cast(AccountManager, self._account_manager)
+        non_account = cast(FediverseNonExistingAccount, account_manager.obtain_non_existing_account_by_role(rolename))
+        return non_account.actor_acct_uri
+
+    # Not implemented:
+    # def obtain_account_identifier_requiring_percent_encoding(self, rolename: str | None = None) -> str:
+    # def override_webfinger_response(self, client_operation: Callable[[],Any], overridden_json_response: Any):
 
 
 class AbstractFallbackFediverseNodeDriver(NodeDriver):
