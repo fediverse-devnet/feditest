@@ -168,6 +168,9 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         if they do not have the requested behavior (or it cannot be scripted) and
         the corresponding tests does not run.
         """
+        if auto_accept_follow:
+            return # Assumed default
+
         raise NotImplementedByNodeError(self, FediverseNode.set_auto_accept_follow)
 
 
