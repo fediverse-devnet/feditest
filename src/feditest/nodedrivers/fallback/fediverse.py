@@ -12,7 +12,6 @@ from feditest.nodedrivers import (
     NodeDriver,
     NonExistingAccount,
     OutOfAccountsException,
-    TimeoutException,
     APP_PAR,
     APP_VERSION_PAR,
     HOSTNAME_PAR
@@ -28,24 +27,24 @@ from feditest.protocols.fediverse import (
     FediverseNonExistingAccount
 )
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField
-from feditest.utils import appname_validate, boolean_parse_validate, hostname_validate, https_uri_validate, prompt_user
+from feditest.utils import appname_validate, boolean_parse_validate, hostname_validate, https_uri_validate, prompt_user, prompt_user_parse_validate
 
 
 class FallbackFediverseNode(FediverseNode):
     # Python 3.12 @override
     def provision_account_for_role(self, role: str | None = None) -> Account | None:
-        userid = cast(str, prompt_user(
+        userid = prompt_user_parse_validate(
                 f'Node { self }:'
                 + f' for the account with account role "{ role }", enter its userid (the user part of the acct: URI) (node account field "{ USERID_ACCOUNT_FIELD.name }"): ',
-                parse_validate=userid_validate))
+                parse_validate=userid_validate)
         return FediverseAccount(role, userid)
 
 
     def provision_non_existing_account_for_role(self, role: str | None = None) -> NonExistingAccount | None:
-        userid = cast(str, prompt_user(
+        userid = prompt_user_parse_validate(
                 f'Node { self }:'
                 + f' provide the userid of a non-existing account with account role "{ role }" (the user part of the with acct: URI) (node non_existing_account field "{ USERID_NON_EXISTING_ACCOUNT_FIELD.name }"): ',
-                parse_validate=userid_validate))
+                parse_validate=userid_validate)
         return FediverseNonExistingAccount(role, userid)
 
 
@@ -68,32 +67,35 @@ class FallbackFediverseNode(FediverseNode):
     # Python 3.12 @override
     def make_create_note(self, actor_acct_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
         if deliver_to :
-            return cast(str, prompt_user(
+            return prompt_user_parse_validate(
                     f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" create a Note'
                     + ' to be delivered to ' + ", ".join(deliver_to)
                     + ' and enter its URI when created.'
-                    + f' Note content:"""\n{ content }\n"""' ))
-        return cast(str, prompt_user(
+                    + f' Note content:"""\n{ content }\n"""',
+                parse_validate=https_uri_validate)
+        return prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" create a Note'
                 + ' and enter its URI when created.'
-                + f' Note content:"""\n{ content }\n"""' ))
+                + f' Note content:"""\n{ content }\n"""',
+                parse_validate=https_uri_validate)
 
 
 
     # Python 3.12 @override
     def make_announce_object(self, actor_acct_uri, to_be_announced_object_uri: str) -> str:
-        return cast(str, prompt_user(
+        return prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" boost "{ to_be_announced_object_uri }"'
                 + ' and enter the Announce object\'s local URI:',
-                parse_validate=https_uri_validate))
+                parse_validate=https_uri_validate)
 
 
     # Python 3.12 @override
     def make_reply_note(self, actor_acct_uri, to_be_replied_to_object_uri: str, reply_content: str) -> str:
-        return cast(str, prompt_user(
+        return prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" reply to object with "{ to_be_replied_to_object_uri }"'
                 + ' and enter the Announce object\'s URI when created.'
-                + f' Reply content:"""\n{ reply_content }\n"""' ))
+                + f' Reply content:"""\n{ reply_content }\n"""',
+                parse_validate=https_uri_validate)
 
 
     # Python 3.12 @override
@@ -102,48 +104,26 @@ class FallbackFediverseNode(FediverseNode):
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" follow actor "{ to_follow_actor_acct_uri }"'
                 + ' and hit return when done.')
 
-
     # We leave the NotImplementedByNodeError raised by the superclass for all other follow-related actions
     # until we have a better idea :-)
 
     # Python 3.12 @override
-    def wait_until_actor_is_following_actor(self, actor_acct_uri: str, to_be_followed_actor_acct_uri: str, max_wait: float = 5.) -> None:
+    def actor_has_received_note(self, actor_acct_uri: str, object_uri: str) -> str | None:
         answer = prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until actor "{ actor_acct_uri }" is following actor "{ to_be_followed_actor_acct_uri }"'
-                + ' and enter "true"; "false" if it didn\'t happen.',
-                parse_validate=boolean_parse_validate)
-        if not answer:
-            raise TimeoutException(f'Actor { actor_acct_uri } not following actor { to_be_followed_actor_acct_uri}.', max_wait)
+                f'On FediverseNode "{ self.hostname }", has actor "{ actor_acct_uri }" received the note "{ object_uri }"?'
+                + ' Enter the content of the note, or leave empty if it didn\'t happen.')
+        if answer:
+            return answer
+        return None
 
 
     # Python 3.12 @override
-    def wait_until_actor_is_followed_by_actor(self, actor_acct_uri: str, to_be_following_actor_acct_uri: str, max_wait: float = 5.) -> None:
-        answer = prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until actor "{ actor_acct_uri }" is followed by actor "{ to_be_following_actor_acct_uri }"'
-                + ' and enter "true"; "false" if it didn\'t happen.',
+    def actor_is_following_actor(self, actor_acct_uri: str, leader_actor_acct_uri: str) -> bool:
+        answer = prompt_user_parse_validate(
+                f'On FediverseNode "{ self.hostname }", is actor "{ actor_acct_uri }" following actor "{ leader_actor_acct_uri }"?'
+                + ' Enter "true" or "false".',
                 parse_validate=boolean_parse_validate)
-        if not answer:
-            raise TimeoutException(f'Actor { actor_acct_uri } not followed by actor { to_be_following_actor_acct_uri}.', max_wait)
-
-
-    # Python 3.12 @override
-    def wait_until_actor_is_unfollowing_actor(self, actor_acct_uri: str, to_be_unfollowed_actor_acct_uri: str, max_wait: float = 5.) -> None:
-        answer = prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until actor "{ actor_acct_uri }" is not following any more actor "{ to_be_unfollowed_actor_acct_uri }"'
-                + ' and enter "true"; "false" if it didn\'t happen.',
-                parse_validate=boolean_parse_validate)
-        if not answer:
-            raise TimeoutException(f'Actor { actor_acct_uri } still following actor { to_be_unfollowed_actor_acct_uri}.', max_wait)
-
-
-    # Python 3.12 @override
-    def wait_until_actor_is_unfollowed_by_actor(self, actor_acct_uri: str, to_be_unfollowing_actor_acct_uri: str, max_wait: float = 5.) -> None:
-        answer = prompt_user(
-                f'On FediverseNode "{ self.hostname }", wait until in actor "{ actor_acct_uri }" is not followed any more by actor "{ to_be_unfollowing_actor_acct_uri }"'
-                + ' and enter "true"; "false" if it didn\'t happen.',
-                parse_validate=boolean_parse_validate)
-        if not answer:
-            raise TimeoutException(f'Actor { actor_acct_uri } is still followed by actor { to_be_unfollowing_actor_acct_uri}.', max_wait)
+        return answer
 
 # From WebFingerServer
 
@@ -189,11 +169,13 @@ class AbstractFallbackFediverseNodeDriver(NodeDriver):
         hostname = test_plan_node.parameter(HOSTNAME_PAR)
 
         if not hostname:
-            hostname = prompt_user(f'Enter the hostname for the Node of constellation role "{ rolename }" (node parameter "hostname"): ',
-                                        parse_validate=hostname_validate)
+            hostname = prompt_user_parse_validate(
+                    f'Enter the hostname for the Node of constellation role "{ rolename }" (node parameter "hostname"): ',
+                    parse_validate=hostname_validate)
         if not app:
-            app = prompt_user(f'Enter the name of the app at constellation role "{ rolename }" and hostname "{ hostname }" (node parameter "app"): ',
-                                   parse_validate=appname_validate)
+            app = prompt_user_parse_validate(
+                    f'Enter the name of the app at constellation role "{ rolename }" and hostname "{ hostname }" (node parameter "app"): ',
+                    parse_validate=appname_validate)
 
         accounts : list[Account] = []
         if test_plan_node.accounts:

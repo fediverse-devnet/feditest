@@ -16,7 +16,7 @@ def userid_validate(candidate: str) -> str | None:
     userpart of https://datatracker.ietf.org/doc/html/rfc7565
     """
     candidate = candidate.strip()
-    return candidate if re.fullmatch(r'[-\.~a-zA-Z0-9_!$&''()\*\+,;=]([-\.~a-zA-Z0-9_!$&''()*+,;=]|%[0-9a-fA-F]{2})*', candidate) else None
+    return candidate if re.fullmatch(r'[-\.~a-zA-Z0-9_!$&''()*+,;=]([-\.~a-zA-Z0-9_!$&''()*+,;=]|%[0-9a-fA-F]{2})*', candidate) else None
 
 
 ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
@@ -205,49 +205,17 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.make_follow_undo)
 
 
-    def wait_until_actor_has_received_note(self, actor_acct_uri: str, object_uri: str, max_wait: float = 5.) -> str:
+    def actor_has_received_note(self, actor_acct_uri: str, object_uri: str) -> str | None:
         """
-        Wait until the object at object_uri has arrived with the Actor at actor_acct_uri.
-        This method does not state that the object needs to have arrived in the Actor's, inbox,
-        as Nodes might implement different routing strategies (including antispam).
-        If the condition has not arrived by the time max_wait seconds have passed, throw
-        Return value: the content of the Note
-        a TimeoutException.
+        If the note at object_uri has arrived with the Actor at actor_acct_uri, return the content
+        of the note.
         """
-        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_has_received_note)
+        raise NotImplementedByNodeError(self, FediverseNode.actor_has_received_note)
 
 
-    def wait_until_actor_is_following_actor(self, actor_acct_uri: str, to_be_followed_uri: str, max_wait: float = 5.) -> None:
+    def actor_is_following_actor(self, actor_acct_uri: str, leader_actor_acct_uri: str) -> bool:
         """
-        Wait until the Actor at actor_acct_uri is following the Actor at to_be_followed_uri on this Node.
-        If the condition has not arrived by the time max_wait seconds have passed, throw
-        a TimeoutException.
+        Return True if the Actor at actor_acct_uri is following the Actor at leader_actor_acct_uri,
+        in the opinion of this Node.
         """
-        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_following_actor)
-
-
-    def wait_until_actor_is_followed_by_actor(self, actor_acct_uri: str, to_be_following_uri: str, max_wait: float = 5.) -> None:
-        """
-        Wait until the Actor at actor_acct_uri is being followed by the Actor with to_be_following_uri on this Node.
-        If the condition has not arrived by the time max_wait seconds have passed, throw
-        a TimeoutException.
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_followed_by_actor)
-
-
-    def wait_until_actor_is_unfollowing_actor(self, actor_acct_uri: str, to_be_unfollowed_uri: str, max_wait: float = 5.) -> None:
-        """
-        Wait until the Actor at actor_acct_uri has ceased following the Actor at to_be_unfollowed_uri on this Node.
-        If the condition has not arrived by the time max_wait seconds have passed, throw
-        a TimeoutException.
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_unfollowing_actor)
-
-
-    def wait_until_actor_is_unfollowed_by_actor(self, actor_acct_uri: str, to_be_unfollowing_uri: str, max_wait: float = 5.) -> None:
-        """
-        Wait until the Actor at actor_acct_uri has ceased following the Actor with to_be_unfollowing_uri on this Node.
-        If the condition has not arrived by the time max_wait seconds have passed, throw
-        a TimeoutException.
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.wait_until_actor_is_unfollowed_by_actor)
+        raise NotImplementedByNodeError(self, FediverseNode.actor_is_following_actor)

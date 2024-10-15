@@ -31,7 +31,7 @@ from feditest.protocols.fediverse import (
 )
 from feditest.reporting import is_trace_active, trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
-from feditest.utils import boolean_parse_validate, hostname_validate, prompt_user
+from feditest.utils import boolean_parse_validate, hostname_validate, prompt_user_parse_validate
 
 
 VERIFY_API_TLS_CERTIFICATE_PAR = TestPlanNodeParameter(
@@ -115,9 +115,9 @@ class WordPressPlusPluginsNode(NodeWithMastodonAPI):
     A Node running WordPress with the ActivityPub plugin.
     """
     def _provision_oauth_token_for(self, account: WordPressAccount, oauth_client_id: str) -> str:
-        ret = cast(str, prompt_user(f'Enter the OAuth token for the Mastodon API for user "{ account.userid  }"'
-                              + f' on constellation role "{ self.rolename }", OAuth client id "{ oauth_client_id }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
-                              parse_validate=_oauth_token_validate))
+        ret = prompt_user_parse_validate(f'Enter the OAuth token for the Mastodon API for user "{ account.userid  }"'
+                                       + f' on constellation role "{ self.rolename }", OAuth client id "{ oauth_client_id }" (user field "{ OAUTH_TOKEN_ACCOUNT_FIELD }"): ',
+                                       parse_validate=_oauth_token_validate)
         return ret
 
 
@@ -164,9 +164,9 @@ class WordPressPlusPluginsSaasNodeDriver(NodeDriver):
         verify_tls_certificate = test_plan_node.parameter_or_raise(VERIFY_API_TLS_CERTIFICATE_PAR, { VERIFY_API_TLS_CERTIFICATE_PAR.name: 'true' })
 
         if not hostname:
-            hostname = prompt_user(f'Enter the hostname for the WordPress+plugins Node of constellation role "{ rolename }"'
-                                        + f' (node parameter "{ HOSTNAME_PAR }"): ',
-                                        parse_validate=hostname_validate)
+            hostname = prompt_user_parse_validate(f'Enter the hostname for the WordPress+plugins Node of constellation role "{ rolename }"'
+                                                + f' (node parameter "{ HOSTNAME_PAR }"): ',
+                                                parse_validate=hostname_validate)
 
         accounts : list[Account] = []
         if test_plan_node.accounts:

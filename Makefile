@@ -51,17 +51,17 @@ tests : tests.unit tests.smoke
 tests.unit :
 	$(VENV)/bin/pytest -v
 
-tests.smoke : tests.smoke.webfinger tests.smoke.fediverse
-
-# Run WordPress tests first: they run faster as installation is faster
+tests.smoke : tests.smoke.webfinger tests.smoke.api tests.smoke.fediverse
 
 tests.smoke.webfinger :
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/webfinger.session.json --node client=tests.smoke/imp.node.json --node server=tests.smoke/wordpress.ubos.node.json $(DOMAIN)
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/webfinger.session.json --node client=tests.smoke/imp.node.json --node server=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
 
-tests.smoke.fediverse :
+tests.smoke.api :
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --node server=tests.smoke/wordpress.ubos.node.json $(DOMAIN)
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api.session.json --node server=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
+
+tests.smoke.fediverse :
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --node leader_node=tests.smoke/mastodon.ubos.node.json --node follower_node=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
 	$(FEDITEST) run --testsdir tests.smoke/tests --session tests.smoke/mastodon_api_mastodon_api.session.json --node leader_node=tests.smoke/wordpress.ubos.node.json --node follower_node=tests.smoke/mastodon.ubos.node.json $(DOMAIN)
 
@@ -77,4 +77,4 @@ release :
 	@echo The actual push to pypi.org you need to do manually. Enter:
 	@echo venv.release/bin/twine upload dist/*
 
-.PHONY: all default venv build lint tests tests.unit tests.smoke tests.smoke.webfinger tests.smoke.fediverse release
+.PHONY: all default venv build lint tests tests.unit tests.smoke tests.smoke.webfinger tests.smoke.api tests.smoke.fediverse release
