@@ -264,8 +264,6 @@ class NodeWithMastodonAPI(FediverseNode):
         # The request.Session with the custom certificate authority set as verifier.
         # Allocated when needed, so our custom certificate authority has been created before this is used.
 
-        self._auto_accept_follow = auto_accept_follow # True is default for Mastodon
-
 
 # From FediverseNode
 
@@ -333,8 +331,9 @@ class NodeWithMastodonAPI(FediverseNode):
 
     # Python 3.12 @override
     def set_auto_accept_follow(self, actor_acct_uri: str, auto_accept_follow: bool = True) -> None:
-        if self._auto_accept_follow == auto_accept_follow:
-            return
+        if auto_accept_follow:
+            return # Default for Mastodon
+
         raise NotImplementedByNodeError(self, NodeWithMastodonAPI.set_auto_accept_follow) # Can't find an API call for this
 
 

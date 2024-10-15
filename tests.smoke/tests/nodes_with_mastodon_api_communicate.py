@@ -17,7 +17,6 @@ class FollowTest:
     ) -> None:
         self.leader_node = leader_node
         self.leader_actor_acct_uri = None
-        self.leader_node.set_auto_accept_follow(True)
 
         self.follower_node = follower_node
         self.follower_actor_acct_uri = None
@@ -29,6 +28,7 @@ class FollowTest:
     def provision_actors(self):
         self.leader_actor_acct_uri = self.leader_node.obtain_actor_acct_uri()
         assert self.leader_actor_acct_uri
+        self.leader_node.set_auto_accept_follow(self.leader_actor_acct_uri, True)
 
         self.follower_actor_acct_uri = self.follower_node.obtain_actor_acct_uri()
         assert self.follower_actor_acct_uri
