@@ -627,11 +627,3 @@ class NodeSpecificationInvalidError(RuntimeError):
     """
     def __init__(self, node_driver: NodeDriver, parameter: str, details: str ):
         super().__init__(f"Node specification is invalid for {node_driver}, parameter {parameter}: {details}" )
-
-
-class TimeoutException(RuntimeError):
-    """
-    A result has not arrived within the expected time period.
-    """
-    def __init__(self, msg: str, timeout: float):
-        super().__init__(f'{ msg } (timeout: { timeout })')

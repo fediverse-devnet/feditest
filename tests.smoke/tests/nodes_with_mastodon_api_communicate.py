@@ -7,6 +7,7 @@ import time
 
 from feditest import step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
+from feditest.utils import poll_until
 
 
 @test
@@ -49,12 +50,12 @@ class FollowTest:
         time.sleep(1) # Sometimes there seems to be a race condition in Mastodon, or something like that.
                       # If we proceed too quickly, the API returns 422 "User already exists" or such
                       # in response to a search, which makes no sense.
-        self.leader_node.wait_until_actor_is_followed_by_actor(self.leader_actor_acct_uri, self.follower_actor_acct_uri)
+        poll_until(lambda: self.leader_node.actor_is_followed_by_actor(self.leader_actor_acct_uri, self.follower_actor_acct_uri))
 
 
     @step
     def wait_until_actor_is_following_actor(self):
-        self.follower_node.wait_until_actor_is_following_actor(self.follower_actor_acct_uri, self.leader_actor_acct_uri)
+        poll_until(lambda: self.follower_node.actor_is_following_actor(self.follower_actor_acct_uri, self.leader_actor_acct_uri))
 
 
     @step
@@ -65,7 +66,7 @@ class FollowTest:
 
     @step
     def wait_until_note_received(self):
-        self.follower_node.wait_until_actor_has_received_note(self.follower_actor_acct_uri, self.leader_note_uri)
+        poll_until(lambda: self.follower_node.actor_has_received_note(self.follower_actor_acct_uri, self.leader_note_uri))
 
 
     # @step

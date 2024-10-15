@@ -14,8 +14,9 @@ class FediverseManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     # Python 3.12 @override
     def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FediverseNode:
-        prompt_user(f'Manually provision the Node for constellation role { rolename }'
-                    + f' at host { config.hostname } with app { config.app } and hit return when done.')
+        prompt_user(
+                f'Manually provision the Node for constellation role { rolename }'
+                + f' at host { config.hostname } with app { config.app } and hit return when done.')
         return FallbackFediverseNode(rolename, config, account_manager)
 
 

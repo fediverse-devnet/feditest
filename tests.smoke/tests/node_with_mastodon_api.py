@@ -9,6 +9,7 @@ from datetime import datetime
 
 from feditest import step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
+from feditest.utils import poll_until
 
 # @test
 # def app_version(
@@ -51,7 +52,7 @@ class CreateNoteTest:
 
     @step
     def wait_for_note_in_inbox(self):
-        self.server.wait_until_actor_has_received_note(self.actor_acct_uri, self.note_uri)
+        poll_until(lambda: self.server.actor_has_received_note(self.actor_acct_uri, self.note_uri))
 
 
 #    @step

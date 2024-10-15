@@ -9,6 +9,7 @@ import pkgutil
 import re
 import sys
 import importlib.metadata
+import time
 from types import ModuleType
 from typing import Any, Callable, List, Optional, TypeVar
 from urllib.parse import ParseResult, parse_qs, urlparse
@@ -459,7 +460,35 @@ def boolean_response_parse_validate(candidate:str) -> bool | None:
     return None
 
 
+class TimeoutException(RuntimeError):
+    """
+    A result has not arrived within the expected time period.
+    """
+    def __init__(self, msg: str, timeout: float):
+        super().__init__(f'{ msg } (timeout: { timeout })')
+
+
 T = TypeVar('T')
+
+def poll_until(
+    condition: Callable[[], T | None],
+    retry_count: int = 5,
+    retry_interval: float = 1.0,
+    msg: str | None = None
+) -> T:
+    """
+    Keep invoking condition() until it returns a non-None value or it times out.
+    """
+    for _ in range(retry_count):
+        response = condition()
+        if response:
+            return response
+        time.sleep(retry_interval)
+    if not msg:
+        msg = 'Expected object has not arrived in time'
+    raise TimeoutException(msg, retry_count * retry_interval)
+
+
 def find_first_in_array(array: List[T], condition: Callable[[T], bool]) -> T | None:
     """
     IMHO this should be a python built-in function. The next() workaround confuses me more than I like.
@@ -505,36 +534,29 @@ def format_name_value_string(data: dict[str,str | None]) -> str:
     return ret
 
 
-def prompt_user(question: str, value_if_known: Any | None = None, parse_validate: Callable[[str],Any] | None = None) -> Any | None:
+def prompt_user_parse_validate(question: str, parse_validate: Callable[[str],T | None]) -> T:
     """
-    If an NodeDriver does not natively implement support for a particular method,
-    this method is invoked as a fallback. It prompts the user to enter information
-    at the console.
-
-    This is implemented on NodeDriver rather than Node, so we can also ask
-    provisioning-related questions.
+    Prompt the user to enter a text string at the console. Parse/validate the entered
+    String, and keep asking until validation passes. Return the parsed string.
 
     question: the text to be emitted to the user as a prompt
-    value_if_known: if given, that value can be used instead of asking the user
-    parse_validate: optional function that attempts to parse and validate the provided user input.
-    If the value is valid, it parses the value and returns the parsed version. If not valid, it returns None.
-    return: the value entered by the user, parsed, or None
+    parse_validate: function that attempts to parse and validate the provided user input.
+    return: the value entered by the user (parsed)
     """
-    if value_if_known:
-        if parse_validate is None:
-            return value_if_known
-        ret_parsed = parse_validate(value_if_known)
-        if ret_parsed is not None:
-            return ret_parsed
-        warning(f'Preconfigured value "{ value_if_known }" is invalid, ignoring.')
-
     while True:
         ret = input(f'TESTER ACTION REQUIRED: { question }')
-        if parse_validate is None:
-            return ret
         ret_parsed = parse_validate(ret)
         if ret_parsed is not None:
             return ret_parsed
         print(f'INPUT ERROR: invalid input, try again. Was: "{ ret }"')
 
 
+def prompt_user(question: str) -> str:
+    """
+    Prompt the user to enter a text string at the console.
+
+    question: the text to be emitted to the user as a prompt
+    return: the value entered by the user
+    """
+    ret = input(f'TESTER ACTION REQUIRED: { question }')
+    return ret
