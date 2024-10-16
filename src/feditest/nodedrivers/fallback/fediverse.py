@@ -125,6 +125,14 @@ class FallbackFediverseNode(FediverseNode):
                 parse_validate=boolean_parse_validate)
         return answer
 
+
+    # Python 3.12 @override
+    def note_has_direct_reply(self, actor_acct_uri: str, note_uri: str, reply_uri: str) -> str | None:
+        answer = prompt_user(
+                f'On FediverseNode "{ self.hostname }", does actor "{ actor_acct_uri }" see that note "{ note_uri }" has reply "{ reply_uri }"?'
+                + ' Enter the reply content.')
+        return answer if answer else None
+
 # From WebFingerServer
 
     # Python 3.12 @override
