@@ -268,6 +268,15 @@ class AuthenticatedMastodonApiClient:
         return found is not None
 
 
+    def note_has_direct_reply(self, note_uri: str, reply_uri: str) -> dict[str, Any] | None:
+        if note := self._find_note_dict_by_uri(note_uri):
+            note_id = note['id']
+            response = self.http_get(f'/api/v1/statuses/{ note_id }/context')
+            found = find_first_in_array(response['descendants'], lambda r: r['uri'] == reply_uri)
+            return found
+        raise ValueError(f'Cannot find Note on { self }: "{ note_uri }"')
+
+
     def account_dict(self) -> dict[str, Any]:
         response = self.http_get('/api/v1/accounts/verify_credentials')
         return response
@@ -576,11 +585,21 @@ class NodeWithMastodonAPI(FediverseNode):
         return mastodon_client.actor_is_following_actor(leader_actor_acct_uri)
 
 
+    # Python 3.12 @override
     def actor_is_followed_by_actor(self, actor_acct_uri: str, follower_actor_acct_uri: str) -> bool:
         trace(f'actor_is_followed_by_actor: actor_acct_uri = { actor_acct_uri }, follower_actor_acct_uri = { follower_actor_acct_uri }')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
         return mastodon_client.actor_is_followed_by_actor(follower_actor_acct_uri)
 
+
+    # Python 3.12 @override
+    def note_has_direct_reply(self, actor_acct_uri: str, note_uri: str, reply_uri: str) -> str | None:
+        trace(f'note_has_direct_reply: actor_acct_uri = { actor_acct_uri }, note_uri = { note_uri }, reply_uri = { reply_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        response = mastodon_client.note_has_direct_reply(note_uri, reply_uri)
+        if response:
+            return cast(str, response['content'])
+        return None
 
 # From ActivityPubNode
 
