@@ -17,7 +17,7 @@ from feditest.nodedrivers import (
 )
 from feditest.nodedrivers.mastodon import (
     AccountOnNodeWithMastodonAPI,
-    Mastodon, # Re-import from there to avoid duplicating the package import hackery
+    AuthenticatedMastodonApiClient,
     NodeWithMastodonAPI,
     NodeWithMastodonApiConfiguration
 )
@@ -29,7 +29,7 @@ from feditest.protocols.fediverse import (
     FediverseNode,
     FediverseNonExistingAccount
 )
-from feditest.reporting import is_trace_active, trace
+from feditest.reporting import trace
 from feditest.testplan import TestPlanConstellationNode, TestPlanNodeAccountField, TestPlanNodeNonExistingAccountField, TestPlanNodeParameter
 from feditest.utils import boolean_parse_validate, hostname_validate, prompt_user_parse_validate
 
@@ -60,13 +60,16 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
     """
     Compare with MastodonOAuthTokenAccount.
     """
-    def __init__(self, role: str | None, userid: str, oauth_token: str | None, internal_userid: int | None = None):
+    def __init__(self, role: str | None, userid: str, oauth_token: str | None, internal_userid: int = -1):
         """
+        internal_userid: the number needed to identify the account for oauth token provisioning. There may be better ways
+                         of doing this
         The oauth_token may be None. In which case we dynamically obtain one.
         """
-        super().__init__(role, userid, internal_userid)
+        super().__init__(role, userid)
         self._oauth_token = oauth_token
-        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
+        self._internal_userid = internal_userid
+        self._mastodon_client: AuthenticatedMastodonApiClient | None = None # Allocated as needed
 
 
     @staticmethod
@@ -81,33 +84,32 @@ class WordPressAccount(AccountOnNodeWithMastodonAPI):
 
 
     @property
-    def mastodon_user_client(self) -> Mastodon:
-        if self._mastodon_user_client is None:
+    def mastodon_client(self) -> AuthenticatedMastodonApiClient:
+        if self._mastodon_client is None:
             node = cast(NodeWithMastodonAPI, self._node)
             oauth_app = node._obtain_mastodon_oauth_app()
-            self._ensure_oauth_token(oauth_app.client_id)
-            trace(f'Logging into WordPress at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ self._oauth_token }".')
-            client = Mastodon(
-                client_id = oauth_app.client_id,
-                client_secret=oauth_app.client_secret,
-                access_token=self._oauth_token,
-                api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session,
-                version_check_mode='none', # mastodon.py cannot parse this version string, e.g. "WordPress/6.5.3, EMA/0.9.4" instead of Mastodon's "4.1.12"
-                debug_requests = is_trace_active()
-            )
-            self._mastodon_user_client = client
-        return self._mastodon_user_client
+            oauth_token = self.oauth_token(oauth_app.client_id)
+            trace(f'Logging into WordPress at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token "{ oauth_token }".')
+            self._mastodon_client = AuthenticatedMastodonApiClient(oauth_app, self, oauth_token)
+        return self._mastodon_client
 
 
-    def _ensure_oauth_token(self, oauth_client_id: str) -> None:
+    # Python 3.12 @override
+    @property
+    def internal_userid(self) -> int:
+        if self._internal_userid >= 0:
+            return self._internal_userid
+        return self.account_dict['id']
+
+
+    def oauth_token(self, oauth_client_id: str) -> str:
         """
         Helper to dynamically provision an OAuth token if we don't have one yet.
         """
-        if self._oauth_token:
-            return
-        real_node = cast(WordPressPlusPluginsNode, self._node)
-        self._oauth_token = real_node._provision_oauth_token_for(self, oauth_client_id)
+        if not self._oauth_token:
+            real_node = cast(WordPressPlusPluginsNode, self._node)
+            self._oauth_token = real_node._provision_oauth_token_for(self, oauth_client_id)
+        return self._oauth_token
 
 
 class WordPressPlusPluginsNode(NodeWithMastodonAPI):

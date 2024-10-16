@@ -4,10 +4,10 @@
 from abc import abstractmethod
 import certifi
 from dataclasses import dataclass
-import importlib
 import requests
-import sys
-from typing import cast
+from requests.exceptions import HTTPError
+from typing import cast, Any
+from urllib.parse import urlencode
 
 from feditest.nodedrivers import (
     Account,
@@ -31,7 +31,7 @@ from feditest.protocols.fediverse import (
     FediverseNonExistingAccount,
     userid_validate
 )
-from feditest.reporting import is_trace_active, trace
+from feditest.reporting import trace
 from feditest.testplan import (
     InvalidAccountSpecificationException,
     TestPlanConstellationNode,
@@ -48,25 +48,6 @@ from feditest.utils import (
     ParsedUri,
     ParsedAcctUri
 )
-
-# We use the Mastodon.py module primarily because of its built-in support for rate limiting.
-# Also it seems to have implemented some workarounds for inconsistent implementations by
-# different apps, which we don't want to reinvent.
-#
-# Importing it isn't so easy:
-# This kludge is needed because the node driver loader
-# will always try to load the current mastodon subpackage (relative)
-# instead of absolute package
-if "mastodon" in sys.modules:
-    m = sys.modules.pop("mastodon")
-    try:
-        mastodon_api = importlib.import_module("mastodon")
-        from mastodon_api import AttribAccessDict, Mastodon # type: ignore
-    finally:
-        sys.modules["mastodon"] = m
-else:
-    from mastodon import AttribAccessDict, Mastodon # type: ignore
-
 
 VERIFY_API_TLS_CERTIFICATE_PAR = TestPlanNodeParameter(
     'verify_api_tls_certificate',
@@ -110,6 +91,55 @@ OAUTH_TOKEN_ACCOUNT_FIELD = TestPlanNodeAccountField(
 )
 
 
+def mastodon_api_invoke_get(
+    api_base_url: str,
+    session: requests.Session,
+    path: str,
+    headers: dict[str,str] | None
+) -> dict[str,Any]:
+    url = api_base_url + path
+    real_headers = dict(headers) if headers else {}
+    real_headers['User-Agent'] = 'FediTest'
+
+    try :
+        response = session.get(url, headers=real_headers)
+        if response.status_code >= 400: # taken from requests' raise_for_status()
+            raise HTTPError(f'HTTP status { response.status_code }: { response.content.decode("utf-8") }', response=response)
+        return response.json()
+
+    finally:
+        curl = f'curl { url }'
+        for key, value in real_headers.items():
+            curl += f' -H "{ key }={ value }"'
+        trace(f'Mastodon API call as curl: { curl } returns { response }')
+
+
+def mastodon_api_invoke_post(
+    api_base_url: str,
+    session: requests.Session,
+    path: str,
+    args: dict[str,str] | None = None,
+    headers: dict[str,str] | None = None
+) -> dict[str,Any]:
+    url = api_base_url + path
+    real_headers = dict(headers) if headers else {}
+    real_headers['User-Agent'] = 'FediTest'
+
+    try :
+        response = session.post(url, data=args, headers=real_headers)
+        if response.status_code >= 400: # taken from requests' raise_for_status()
+            raise HTTPError(f'HTTP status { response.status_code }: { response.content.decode("utf-8") }', response=response)
+        return response.json()
+    finally:
+        curl = f'curl -X POST { url }'
+        for key, value in real_headers.items():
+            curl += f' -H "{ key }={ value }"'
+        if args:
+            for key, value in args.items():
+                curl += f' -F "{ key }={ value }"'
+        trace(f'Mastodon API call as curl: { curl } returns { response }')
+
+
 @dataclass
 class MastodonOAuthApp:
     """
@@ -122,33 +152,222 @@ class MastodonOAuthApp:
 
     @staticmethod
     def create(api_base_url: str, session: requests.Session) -> 'MastodonOAuthApp':
-        client_id, client_secret = Mastodon.create_app('feditest', api_base_url=api_base_url, session=session)
+        args = {
+            'client_name' : 'feditest',
+            'redirect_uris' : 'urn:ietf:wg:oauth:2.0:oob',
+            'scopes' : 'read write follow push',
+            'website' : 'https://feditest.org/'
+
+        }
+        result = mastodon_api_invoke_post(api_base_url, session, '/api/v1/apps', args=args)
+        client_id = result['client_id']
+        client_secret = result['client_secret']
+
         trace(f'Created Mastodon app with client_id="{ client_id }", client_secret="{ client_secret }".')
         return MastodonOAuthApp(client_id, client_secret, api_base_url, session)
 
 
+class AuthenticatedMastodonApiClient:
+    def __init__(self, app: MastodonOAuthApp, account: 'AccountOnNodeWithMastodonAPI', bearer_token: str):
+        """
+        Represents an authenticated client to a Mastodon instance, for client acct_uri with bearer_token
+        """
+        self._app = app
+        self._account = account
+        self._auth_header = {
+            'Authorization' : 'Bearer ' + bearer_token
+        }
+
+
+    def http_get(self, path: str) -> Any:
+        return mastodon_api_invoke_get(self._app.api_base_url, self._app.session, path, self._auth_header)
+
+
+    def http_post(self, path: str, args: dict[str,str] | None = None) -> Any:
+        return mastodon_api_invoke_post(self._app.api_base_url, self._app.session, path, args=args, headers=self._auth_header)
+
+
+    def make_create_note(self, content: str, deliver_to: list[str] | None = None) -> dict[str, str]:
+        if deliver_to: # The only way we can address specific accounts in Mastodon
+            for to in deliver_to:
+                if to_account := self._find_account_dict_by_other_actor_acct_uri(to):
+                    to_handle = f'@{to_account["acct"]}'
+                    content += f' {to_handle}'
+                else:
+                    raise ValueError(f'Cannot find account for Actor on { self }: "{ to }"')
+
+        args = {
+            'status' : content
+        }
+        response = self.http_post('/api/v1/statuses', args)
+        return response
+
+
+    def make_announce_object(self, to_be_announced_object_uri: str) -> dict[str, str]:
+        if local_note := self._find_note_dict_by_uri(to_be_announced_object_uri):
+            local_note_id = local_note['id']
+            response = self.http_post(f'/api/v1/statuses/{ local_note_id }/reblog')
+            return response
+        raise ValueError(f'Cannot find Note on { self } : "{ to_be_announced_object_uri }"')
+
+
+    def make_reply_note(self, to_be_replied_to_object_uri: str, reply_content: str) -> dict[str, str]:
+        if local_note := self._find_note_dict_by_uri(to_be_replied_to_object_uri):
+            local_note_id = local_note['id']
+
+            args = {
+                'status' : reply_content,
+                'in_reply_to_id' : local_note_id
+            }
+            response = self.http_post('/api/v1/statuses', args)
+            return response
+        raise ValueError(f'Cannot find Note on { self }: "{ to_be_replied_to_object_uri }"')
+
+
+    def make_follow(self, to_follow_actor_acct_uri: str) -> dict[str, str]:
+        if to_follow_account := self._find_account_dict_by_other_actor_acct_uri(to_follow_actor_acct_uri):
+            local_to_follow_account_id = to_follow_account['id']
+            response = self.http_post(f'/api/v1/accounts/{ local_to_follow_account_id }/follow')
+            return response
+        raise ValueError(f'Cannot find account for Actor on { self }: "{ to_follow_actor_acct_uri }"')
+
+
+    def make_follow_undo(self, following_actor_acct_uri: str) -> dict[str,str]:
+        if following_account := self._find_account_dict_by_other_actor_acct_uri(following_actor_acct_uri):
+            following_account_id = following_account['id']
+
+            response = self.http_post(f'/api/v1/accounts/{ following_account_id }/unfollow')
+            return response
+        raise ValueError(f'Account not found with Actor URI: { following_actor_acct_uri }')
+
+
+    def actor_has_received_note(self,  object_uri: str) -> dict[str, Any]:
+        # Depending on how the Note is addressed and follow status, Mastodon puts it into the Home timeline or only
+        # into notifications.
+        elements = self.http_get('/api/v1/timelines/home')
+        response = find_first_in_array(elements, lambda s: s['uri'] == object_uri)
+        if not response:
+            elements = self.http_get('/api/v1/notifications')
+            notifications_response = find_first_in_array(elements, lambda s: s['status']['uri'] == object_uri)
+            if notifications_response:
+                response = notifications_response['status']
+        return response
+
+
+    def actor_is_following_actor(self, leader_actor_acct_uri: str) -> bool:
+        this_account_id = self._account.internal_userid
+        response = self.http_get(f'/api/v1/accounts/{ this_account_id }/following')
+        found = find_first_in_array(response, lambda r: r['acct'] == leader_actor_acct_uri[5:]) # remove acct:
+        return found is not None
+
+
+    def actor_is_followed_by_actor(self, follower_actor_acct_uri: str) -> bool:
+        this_account_id = self._account.internal_userid
+        response = self.http_get(f'/api/v1/accounts/{ this_account_id }/followers')
+        found = find_first_in_array(response, lambda r: r['acct'] == follower_actor_acct_uri[5:]) # remove acct:
+        return found is not None
+
+
+    def account_dict(self) -> dict[str, Any]:
+        response = self.http_get('/api/v1/accounts/verify_credentials')
+        return response
+
+
+    def delete_all_followers(self) -> None:
+        this_account_id = self._account.internal_userid
+        while True:
+            response = self.http_get(f'/api/v1/accounts/{ this_account_id }/followers')
+            if len(response) == 0:
+                return
+
+            for follower_dict in response:
+                follower_id = follower_dict['id']
+                self.http_post(f'/api/v1/accounts/{ follower_id }/unfollow')
+
+
+    def delete_all_following(self) -> None:
+        this_account_id = self._account.internal_userid
+        while True:
+            response = self.http_get(f'/api/v1/accounts/{ this_account_id }/following')
+            if len(response) == 0:
+                return
+
+            for following_dict in response:
+                following_id = following_dict['id']
+                self.http_post(f'/api/v1/accounts/{ following_id }/remove_from_followers')
+
+
+    def delete_all_statuses(self) -> None:
+        while True:
+            response = self.http_get('/api/v1/statuses')
+            if len(response) == 0:
+                return
+
+            for status_dict in response:
+                status_id = status_dict['id']
+                self.http_post(f'/api/v1/statuses/{ status_id }')
+
+
+    def _find_account_dict_by_other_actor_acct_uri(self, other_actor_acct_uri: str) -> dict[str,Any]:
+        """
+        Find the account info for another Actor with
+        other_actor_acct_uri, or None.
+        """
+        # Search for @foo@bar.com, not acct:foo@bar.com or foo@bar.com
+        handle_without_at = other_actor_acct_uri.replace('acct:', '')
+        handle_with_at = '@' + handle_without_at
+
+        args = {
+            'q' : handle_with_at,
+            'resolve' : 1,
+            'type' : 'accounts'
+        }
+        results = self.http_get('/api/v2/search?' + urlencode(args))
+
+        # Mastodon has the foo@bar.com in the 'acct' field
+        ret = find_first_in_array(results.get('accounts'), lambda b: b['acct'] == handle_without_at)
+        if isinstance(ret, dict):
+            return cast(dict[str,Any], ret)
+        raise ValueError(f'Unexpected type: { ret }')
+
+
+    def _find_note_dict_by_uri(self, uri: str) -> dict[str,Any]:
+        """
+        Find a the dict for a status, or None.
+        """
+        args = {
+            'q' : uri,
+            'resolve' : 1,
+            'type' : 'statuses'
+        }
+        results = self.http_get('/api/v2/search?' + urlencode(args))
+
+        ret = find_first_in_array(results.get('statuses'), lambda b: b['uri'] == uri)
+        if isinstance(ret, dict):
+            return cast(dict[str,Any], ret)
+        raise ValueError(f'Unexpected type: { ret }')
+
+
 class AccountOnNodeWithMastodonAPI(FediverseAccount): # this is intended to be abstract
-    def __init__(self, role: str | None, userid: str, internal_userid: int | None = None):
-        """
-        userid: the string representing the user, e.g. "joe"
-        internal_userid: the id of the user object in the API, e.g. 1
-        """
+    def __init__(self, role: str | None, userid: str):
         super().__init__(role, userid)
-        self._internal_userid = internal_userid
+        self._account_dict : dict[str, Any] | None = None
 
 
     @property
+    def account_dict(self) -> dict[str, Any]:
+        if self._account_dict is None:
+            self._account_dict = self.mastodon_client.account_dict()
+        return self._account_dict
+
+    @property
     def internal_userid(self) -> int:
-        if not self._internal_userid:
-            mastodon_client = self.mastodon_user_client
-            actor = mastodon_client.account_verify_credentials()
-            self._internal_userid = cast(int, actor.id)
-        return self._internal_userid
+        return self.account_dict['id']
 
 
     @property
     @abstractmethod
-    def mastodon_user_client(self) -> Mastodon:
+    def mastodon_client(self) -> AuthenticatedMastodonApiClient:
         ...
 
 
@@ -183,28 +402,30 @@ class MastodonUserPasswordAccount(MastodonAccount):
         super().__init__(role, username)
         self._password = password
         self._email = email
-        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
+        self._mastodon_client: AuthenticatedMastodonApiClient | None = None # Allocated as needed
 
 
     # Python 3.12 @override
     @property
-    def mastodon_user_client(self) -> Mastodon:
-        if self._mastodon_user_client is None:
+    def mastodon_client(self) -> AuthenticatedMastodonApiClient:
+        if self._mastodon_client is None:
             node = cast(NodeWithMastodonAPI, self._node)
             oauth_app = node._obtain_mastodon_oauth_app()
             trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" as "{ self._email }" with password.')
-            client = Mastodon(
-                client_id = oauth_app.client_id,
-                client_secret = oauth_app.client_secret,
-                api_base_url = oauth_app.api_base_url,
-                session = oauth_app.session,
-                debug_requests = is_trace_active()
-            )
-            client.log_in(username = self._email, password = self._password) # returns the token
 
-            self._mastodon_user_client = client
-
-        return self._mastodon_user_client
+            args = {
+                'username' : self._email,
+                'password' : self._password,
+                'redirect_uri' : 'urn:ietf:wg:oauth:2.0:oob',
+                'grant_type' : 'password',
+                'client_id' : oauth_app.client_id,
+                'client_secret': oauth_app.client_secret,
+                'scope': 'read write follow push'
+            }
+            result = mastodon_api_invoke_post(oauth_app.api_base_url, oauth_app.session, '/oauth/token', args=args)
+            token = result['access_token']
+            self._mastodon_client = AuthenticatedMastodonApiClient(oauth_app, self, token)
+        return self._mastodon_client
 
 
 class MastodonOAuthTokenAccount(MastodonAccount):
@@ -214,26 +435,18 @@ class MastodonOAuthTokenAccount(MastodonAccount):
     def __init__(self, role: str | None, userid: str, oauth_token: str):
         super().__init__(role, userid)
         self._oauth_token = oauth_token
-        self._mastodon_user_client: Mastodon | None = None # Allocated as needed
+        self._mastodon_client: AuthenticatedMastodonApiClient | None = None # Allocated as needed
 
 
     # Python 3.12 @override
     @property
-    def mastodon_user_client(self) -> Mastodon:
-        if self._mastodon_user_client is None:
+    def mastodon_client(self) -> AuthenticatedMastodonApiClient:
+        if self._mastodon_client is None:
             node = cast(NodeWithMastodonAPI, self._node)
             oauth_app = node._obtain_mastodon_oauth_app()
             trace(f'Logging into Mastodon at "{ oauth_app.api_base_url }" with userid "{ self.userid }" with OAuth token.')
-            client = Mastodon(
-                client_id = oauth_app.client_id,
-                client_secret=oauth_app.client_secret,
-                access_token=self._oauth_token,
-                api_base_url=oauth_app.api_base_url,
-                session=oauth_app.session,
-                debug_requests = is_trace_active()
-            )
-            self._mastodon_user_client = client
-        return self._mastodon_user_client
+            self._mastodon_client = AuthenticatedMastodonApiClient(oauth_app, self, self._oauth_token)
+        return self._mastodon_client
 
 
 class NodeWithMastodonApiConfiguration(NodeConfiguration):
@@ -289,55 +502,35 @@ class NodeWithMastodonAPI(FediverseNode):
     def make_create_note(self, actor_acct_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
         trace('make_create_note:')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-
-        if deliver_to: # The only way we can address specific accounts in Mastodon
-            for to in deliver_to:
-                if to_account := self._find_account_dict_by_other_actor_acct_uri(mastodon_client, to):
-                    to_handle = f"@{to_account.acct}"
-                    content += f" {to_handle}"
-                else:
-                    raise ValueError(f'Cannot find account for Actor on { self }: "{ to }"')
-        response = mastodon_client.status_post(content)
-        trace(f'make_create_note returns with { response }')
+        response = mastodon_client.make_create_note(content, deliver_to)
         self._run_poor_mans_cron()
-        return response.uri
+        return response['uri']
 
 
     # Python 3.12 @override
-    def make_announce_object(self, actor_acct_uri, to_be_announced_object_uri: str) -> str:
+    def make_announce_object(self, actor_acct_uri: str, to_be_announced_object_uri: str) -> str:
         trace('make_announce_object:')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-
-        if local_note := self._find_note_dict_by_uri(mastodon_client, to_be_announced_object_uri):
-            reblog = mastodon_client.status_reblog(local_note)
-            trace(f'make_announce_object returns with { reblog }')
-            self._run_poor_mans_cron()
-            return reblog.uri
-        raise ValueError(f'Cannot find Note on { self } : "{ to_be_announced_object_uri }"')
+        response = mastodon_client.make_announce_object(to_be_announced_object_uri)
+        self._run_poor_mans_cron()
+        return response['uri']
 
 
     # Python 3.12 @override
-    def make_reply_note(self, actor_acct_uri, to_be_replied_to_object_uri: str, reply_content: str) -> str:
+    def make_reply_note(self, actor_acct_uri: str, to_be_replied_to_object_uri: str, reply_content: str) -> str:
         trace('make_reply_note:')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-        if local_note := self._find_note_dict_by_uri(mastodon_client, to_be_replied_to_object_uri):
-            reply = mastodon_client.status_reply(to_status=local_note, status=reply_content)
-            trace(f'make_reply returns with { reply }')
-            self._run_poor_mans_cron()
-            return reply.uri
-
-        raise ValueError(f'Cannot find Note on { self }: "{ to_be_replied_to_object_uri }"')
+        response = mastodon_client.make_reply_note(to_be_replied_to_object_uri, reply_content)
+        self._run_poor_mans_cron()
+        return response['uri']
 
 
     # Python 3.12 @override
     def make_follow(self, actor_acct_uri: str, to_follow_actor_acct_uri: str) -> None:
         trace('make_follow:')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-
-        if to_follow_account := self._find_account_dict_by_other_actor_acct_uri(mastodon_client, to_follow_actor_acct_uri):
-            relationship = mastodon_client.account_follow(to_follow_account) # noqa: F841
-            return
-        raise ValueError(f'Cannot find account for Actor on { self }: "{ to_follow_actor_acct_uri }"')
+        mastodon_client.make_follow(to_follow_actor_acct_uri)
+        self._run_poor_mans_cron()
 
 
     # Python 3.12 @override
@@ -362,60 +555,31 @@ class NodeWithMastodonAPI(FediverseNode):
     def make_follow_undo(self, actor_acct_uri: str, following_actor_acct_uri: str) -> None:
         trace('make_follow_undo:')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-
-        if following_account := self._find_account_dict_by_other_actor_acct_uri(mastodon_client, following_actor_acct_uri):
-            relationship = mastodon_client.account_unfollow(following_account) # noqa: F841
-            self._run_poor_mans_cron()
-            return
-        raise ValueError(f'Account not found with Actor URI: { following_actor_acct_uri }')
+        mastodon_client.make_follow_undo(following_actor_acct_uri)
+        self._run_poor_mans_cron()
 
 
    # Python 3.12 @override
     def actor_has_received_note(self, actor_acct_uri: str, object_uri: str) -> str | None:
         trace('actor_has_received_note:')
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-        # Depending on how the Note is addressed and follow status, Mastodon puts it into the Home timeline or only
-        # into notifications.
-        elements = mastodon_client.timeline_home(local=True, remote=True)
-        response = find_first_in_array(elements, lambda s: s.uri == object_uri)
-        if not response:
-            elements = mastodon_client.notifications()
-            notifications_response = find_first_in_array(elements, lambda s: s.status.uri == object_uri)
-            if notifications_response:
-                response = notifications_response.status
+        response = mastodon_client.actor_has_received_note(object_uri)
         if response:
-            return response.content
+            return response['content']
         return None
 
 
    # Python 3.12 @override
     def actor_is_following_actor(self, actor_acct_uri: str, leader_actor_acct_uri: str) -> bool:
         trace(f'actor_is_following_actor: actor_acct_uri = { actor_acct_uri }, leader_actor_acct_uri = { leader_actor_acct_uri }')
-        account = self._get_account_by_actor_acct_uri(actor_acct_uri)
-        if account is None:
-            raise ValueError(f'Cannot find Account on { self }: "{ actor_acct_uri }"')
-        mastodon_client = account.mastodon_user_client
-
-        relationships = mastodon_client.account_following(account.internal_userid)
-        if relationships:
-            relationship = find_first_in_array(relationships, lambda r: r.acct == leader_actor_acct_uri[5:]) # remove acct:
-            return relationship is not None
-
-        return False
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        return mastodon_client.actor_is_following_actor(leader_actor_acct_uri)
 
 
     def actor_is_followed_by_actor(self, actor_acct_uri: str, follower_actor_acct_uri: str) -> bool:
         trace(f'actor_is_followed_by_actor: actor_acct_uri = { actor_acct_uri }, follower_actor_acct_uri = { follower_actor_acct_uri }')
-        account = self._get_account_by_actor_acct_uri(actor_acct_uri)
-        if account is None:
-            raise ValueError(f'Cannot find Account on { self }: "{ actor_acct_uri }"')
-        mastodon_client = account.mastodon_user_client
-
-        relationships = mastodon_client.account_followers(account.internal_userid) # this returns a list
-        if relationships:
-            relationship = find_first_in_array(relationships, lambda r: r.acct == follower_actor_acct_uri[5:]) # remove acct:
-            return relationship is not None
-        return False
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        return mastodon_client.actor_is_followed_by_actor(follower_actor_acct_uri)
 
 
 # From ActivityPubNode
@@ -523,25 +687,19 @@ class NodeWithMastodonAPI(FediverseNode):
 
     def delete_all_followers_of(self, actor_acct_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-        actor = mastodon_client.account_verify_credentials()
-        for followed in mastodon_client.account_followers(actor.id):
-            mastodon_client.account_unfollow(followed.id)
+        mastodon_client.delete_all_followers()
         self._run_poor_mans_cron()
 
 
     def delete_all_following_of(self, actor_acct_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-        actor = mastodon_client.account_verify_credentials()
-        for following in mastodon_client.account_following(actor.id):
-            mastodon_client.account_unfollow(following.id)
+        mastodon_client.delete_all_following()
         self._run_poor_mans_cron()
 
 
     def delete_all_statuses_by(self, actor_acct_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
-        actor = mastodon_client.account_verify_credentials()
-        for status in mastodon_client.account_statuses(actor.id):
-            mastodon_client.status_delete(status)
+        mastodon_client.delete_all_statuses()
         self._run_poor_mans_cron()
 
 # Internal implementation helpers
@@ -576,7 +734,7 @@ class NodeWithMastodonAPI(FediverseNode):
         return cast(MastodonAccount | None, ret)
 
 
-    def _get_mastodon_client_by_actor_acct_uri(self, actor_acct_uri: str) -> Mastodon:
+    def _get_mastodon_client_by_actor_acct_uri(self, actor_acct_uri: str) -> AuthenticatedMastodonApiClient:
         """
         Convenience method to get the instance of the Mastodon client object for a given actor URI.
         """
@@ -584,33 +742,7 @@ class NodeWithMastodonAPI(FediverseNode):
         if account is None:
             raise Exception(f'On Node { self }, failed to find account with for "{ actor_acct_uri }".')
 
-        return account.mastodon_user_client
-
-
-    def _find_account_dict_by_other_actor_acct_uri(self, mastodon_client: Mastodon, other_actor_acct_uri: str) -> AttribAccessDict | None:
-        """
-        Using the specified Mastodon client, find an account dict for another Actor with
-        other_actor_acct_uri, or None.
-        """
-        # Search for @foo@bar.com, not acct:foo@bar.com or foo@bar.com
-        handle_without_at = other_actor_acct_uri.replace('acct:', '')
-        handle_with_at = '@' + handle_without_at
-        trace(f'On node { self } as { mastodon_client.account }, search for "{ handle_with_at }", result-type=accounts')
-        results = mastodon_client.search(q=handle_with_at, result_type="accounts")
-
-        # Mastodon has the foo@bar.com in the 'acct' field
-        ret = find_first_in_array(results.get("accounts"), lambda b: b.acct == handle_without_at)
-        return ret
-
-
-    def _find_note_dict_by_uri(self, mastodon_client: Mastodon, uri: str) -> AttribAccessDict | None:
-        """
-        Using the specified Mastodon client, find a the dict for a status, or None.
-        """
-        trace(f'On node { self } as { mastodon_client.account }, search for "{ uri }", result-type=statuses')
-        results = mastodon_client.search(q=uri, result_type="statuses")
-        ret = find_first_in_array(results.get("statuses"), lambda b: b.uri == uri)
-        return ret
+        return account.mastodon_client
 
 
     def _actor_acct_uri_to_userid(self, actor_acct_uri: str) -> str:

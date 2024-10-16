@@ -23,7 +23,7 @@ dependencies = [
   "jinja2",
   "pyhamcrest",
   "pytest",
-  "mastodon.py",
+  "requests",
   "types-requests",
   "pre-commit"
 ]
