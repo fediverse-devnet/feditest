@@ -105,7 +105,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--testsdir', action='append', default=['tests'], help='Directory or directories where to find tests')
     parser.add_argument('--nodedriversdir', action='append', help='Directory or directories where to find extra drivers for nodes that can be tested')
     parser.add_argument('--domain', type=hostname_validate, help='Local-only DNS domain for the DNS hostnames that are auto-generated for nodes')
-    parser.add_argument('--interactive', action="store_true", help="Run the tests interactively")
+    parser.add_argument('-i', '--interactive', action="store_true", help="Run the tests interactively")
     parser.add_argument('--who', action='store_true', help="Record who ran the test plan on what host.")
 
     # test plan options. We do not use argparse groups, as the situation is more complicated than argparse seems to support
