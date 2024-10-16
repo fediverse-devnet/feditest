@@ -9,7 +9,6 @@ import pkgutil
 import re
 import sys
 import importlib.metadata
-import time
 from types import ModuleType
 from typing import Any, Callable, List, Optional, TypeVar
 from urllib.parse import ParseResult, parse_qs, urlparse
@@ -29,6 +28,9 @@ FEDITEST_VERSION = _version('feditest')
 ACCT_REGEX = re.compile(r"acct:([-a-zA-Z0-9\._~][-a-zA-Z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-zA-Z0-9\.:]+)")
 SSH_REGEX = re.compile(r"ssh://([-a-z-A-Z0-9\._~!$&'\(\)\*\+,;=%:]+@)?([-a-zA-Z0-9\.:]+)(:[0-9]+)?")
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
+
+T = TypeVar("T")
+
 
 class ParsedUri(ABC):
     """
@@ -458,35 +460,6 @@ def boolean_response_parse_validate(candidate:str) -> bool | None:
     if candidate.startswith('f'):
         return False
     return None
-
-
-class TimeoutException(RuntimeError):
-    """
-    A result has not arrived within the expected time period.
-    """
-    def __init__(self, msg: str, timeout: float):
-        super().__init__(f'{ msg } (timeout: { timeout })')
-
-
-T = TypeVar('T')
-
-def poll_until(
-    condition: Callable[[], T | None],
-    retry_count: int = 5,
-    retry_interval: float = 1.0,
-    msg: str | None = None
-) -> T:
-    """
-    Keep invoking condition() until it returns a non-None value or it times out.
-    """
-    for _ in range(retry_count):
-        response = condition()
-        if response:
-            return response
-        time.sleep(retry_interval)
-    if not msg:
-        msg = 'Expected object has not arrived in time'
-    raise TimeoutException(msg, retry_count * retry_interval)
 
 
 def find_first_in_array(array: List[T], condition: Callable[[T], bool]) -> T | None:

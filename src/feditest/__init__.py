@@ -6,6 +6,7 @@ import importlib
 from collections.abc import Callable
 from enum import Enum
 from inspect import getmembers, getmodule, isfunction
+import time
 from types import FunctionType
 from typing import Any, Type, TypeVar, cast
 
@@ -324,3 +325,55 @@ def assert_that(
             warning("arg1 should be boolean, but was {}".format(type(actual_or_assertion)))
         _assert_bool(assertion=cast(bool, actual_or_assertion), reason=cast(str, matcher), spec_level=spec_level, interop_level=interop_level)
 
+
+def poll_until(
+    condition: Callable[[], T | None],
+    msg: str | None = None,
+    retry_count: int = 5,
+    retry_interval: float = 1.0,
+    spec_level: SpecLevel | None = None,
+    interop_level: InteropLevel | None = None
+) -> T:
+    """
+    Keep invoking condition() until it returns a non-None value or it times out.
+    If it times out, raise an AssertionFailure, otherwise return the found value..
+    """
+    for _ in range(retry_count):
+        response = condition()
+        if response:
+            return response
+        time.sleep(retry_interval)
+    if not msg:
+        msg = 'Expected object has not arrived in time'
+    if spec_level is None:
+        spec_level = SpecLevel.MUST
+    if interop_level is None:
+        interop_level = InteropLevel.UNKNOWN
+    raise AssertionFailure(spec_level, interop_level, msg)
+
+
+def poll_but_not(
+    condition: Callable[[], T | None],
+    msg: str | None = None,
+    retry_count: int = 5,
+    retry_interval: float = 1.0,
+    spec_level: SpecLevel | None = None,
+    interop_level: InteropLevel | None = None
+) -> None:
+    """
+    Keep invoking condition() until it returns a non-None value or it times out.
+    If it times out, all is well.
+    If it finds a value, raise an AssertionFailure.
+    This is the opposite of poll_until.
+    """
+    for _ in range(retry_count):
+        response = condition()
+        if response:
+            if not msg:
+                msg = f'Unexpected object has arrived: { response }'
+            if spec_level is None:
+                spec_level = SpecLevel.MUST
+            if interop_level is None:
+                interop_level = InteropLevel.UNKNOWN
+            raise AssertionFailure(spec_level, interop_level, msg)
+        time.sleep(retry_interval)
