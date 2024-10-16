@@ -3,6 +3,7 @@
 
 from abc import abstractmethod
 import certifi
+import json
 from dataclasses import dataclass
 import requests
 from requests.exceptions import HTTPError
@@ -98,8 +99,13 @@ def mastodon_api_invoke_get(
     headers: dict[str,str] | None
 ) -> dict[str,Any]:
     url = api_base_url + path
-    real_headers = dict(headers) if headers else {}
-    real_headers['User-Agent'] = 'FediTest'
+    real_headers = {
+        'user-agent' : 'FediTest',
+        'accept' : 'application/json+activity'
+    }
+    if headers:
+        for key, value in headers.items():
+            real_headers[key.lower()] = value
 
     try :
         response = session.get(url, headers=real_headers)
@@ -110,8 +116,8 @@ def mastodon_api_invoke_get(
     finally:
         curl = f'curl { url }'
         for key, value in real_headers.items():
-            curl += f' -H "{ key }={ value }"'
-        trace(f'Mastodon API call as curl: { curl } returns { response }')
+            curl += f' -H "{ key }: { value }"'
+        trace(f'Mastodon API call as curl: { curl } returns { response }: { json.dumps(response.json()) }')
 
 
 def mastodon_api_invoke_post(
@@ -122,8 +128,13 @@ def mastodon_api_invoke_post(
     headers: dict[str,str] | None = None
 ) -> dict[str,Any]:
     url = api_base_url + path
-    real_headers = dict(headers) if headers else {}
-    real_headers['User-Agent'] = 'FediTest'
+    real_headers = {
+        'user-agent' : 'FediTest',
+        'accept' : 'application/json+activity'
+    }
+    if headers:
+        for key, value in headers.items():
+            real_headers[key.lower()] = value
 
     try :
         response = session.post(url, data=args, headers=real_headers)
@@ -133,11 +144,11 @@ def mastodon_api_invoke_post(
     finally:
         curl = f'curl -X POST { url }'
         for key, value in real_headers.items():
-            curl += f' -H "{ key }={ value }"'
+            curl += f' -H "{ key }: { value }"'
         if args:
             for key, value in args.items():
                 curl += f' -F "{ key }={ value }"'
-        trace(f'Mastodon API call as curl: { curl } returns { response }')
+        trace(f'Mastodon API call as curl: { curl } returns { response }: { json.dumps(response.json()) }')
 
 
 @dataclass
