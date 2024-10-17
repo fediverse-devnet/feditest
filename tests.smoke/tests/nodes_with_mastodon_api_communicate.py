@@ -65,7 +65,7 @@ class FollowTest:
 
     @step
     def wait_until_note_received(self):
-        poll_until(lambda: self.follower_node.actor_has_received_note(self.follower_actor_acct_uri, self.leader_note_uri))
+        poll_until(lambda: self.follower_node.actor_has_received_object(self.follower_actor_acct_uri, self.leader_note_uri))
 
 
     # @step

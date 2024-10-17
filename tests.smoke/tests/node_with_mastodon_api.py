@@ -50,7 +50,7 @@ class CreateNoteTest:
 
     @step
     def wait_for_note_in_inbox(self):
-        poll_until(lambda: self.server.actor_has_received_note(self.actor_acct_uri, self.note_uri))
+        poll_until(lambda: self.server.actor_has_received_object(self.actor_acct_uri, self.note_uri))
 
 
 #    @step

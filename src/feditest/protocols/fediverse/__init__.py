@@ -120,34 +120,7 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         """
         raise NotImplementedByNodeError(self, FediverseNode.obtain_actor_acct_uri)
 
-
-    def make_create_note(self, actor_acct_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
-        """"
-        Perform whatever actions are necessary so the actor with actor_acct_uri will have created
-        a Note object on this Node with the specified content.
-        deliver_to: make sure the Node is delivered to these Actors (i.e. in arrives in their inbox)
-        return: URI to the Note object
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.make_create_note)
-
-
-    def make_announce_object(self, actor_acct_uri, to_be_announced_object_uri: str) -> str:
-        """
-        Perform whatever actions are necessary so the actor with actor_acct_uri will have Announced
-        on this Node, the object with announced_object_uri.
-        return: URI to the Announce object
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.make_announce_object)
-
-
-    def make_reply_note(self, actor_acct_uri, to_be_replied_to_object_uri: str, reply_content: str) -> str:
-        """
-        Perform whatever actions are necessary so the actor with actor_acct_uri will have created
-        a Note object that replies to the object at to_be_replied_to_object_uri with the specified content.
-        return: URI to the Reply object
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.make_reply_note)
-
+# Operations related to relations between actors
 
     def make_follow(self, actor_acct_uri: str, to_follow_actor_acct_uri: str) -> None:
         """
@@ -196,21 +169,13 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.make_follow_reject)
 
 
-    def make_follow_undo(self, actor_acct_uri: str, following_actor_acct_uri: str) -> None:
+    def make_unfollow(self, actor_acct_uri: str, following_actor_acct_uri: str) -> None:
         """
-        Perform whatever actions are necessary so the actor with actor_acct_uri will have created
+        Perform whatever actions are necessary so the actor with actor_acct_uri will have
         unfollowed the Actor with following_actor_acct_uri.
         The actor with actor_acct_uri must be on this Node.
         """
-        raise NotImplementedByNodeError(self, FediverseNode.make_follow_undo)
-
-
-    def actor_has_received_note(self, actor_acct_uri: str, object_uri: str) -> str | None:
-        """
-        If the note at object_uri has arrived with the Actor at actor_acct_uri, return the content
-        of the note.
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.actor_has_received_note)
+        raise NotImplementedByNodeError(self, FediverseNode.make_unfollow)
 
 
     def actor_is_following_actor(self, actor_acct_uri: str, leader_actor_acct_uri: str) -> bool:
@@ -221,19 +186,23 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.actor_is_following_actor)
 
 
-    def note_has_direct_reply(self, actor_acct_uri: str, note_uri: str, reply_uri: str) -> str | None:
+    def actor_is_followed_by_actor(self, actor_acct_uri: str, follower_actor_acct_uri: str) -> bool:
         """
-        Return the reply's content if the Actor at actor_acct_uri can see that the Note at note_uri has a reply
-        note with reply_uri on this Node.
+        Return True if the Actor at actor_acct_uri is followed by Actor at follower_actor_acct_uri,
+        in the opinion of this Node.
         """
-        raise NotImplementedByNodeError(self, FediverseNode.note_has_direct_reply)
+        raise NotImplementedByNodeError(self, FediverseNode.actor_is_followed_by_actor)
 
+# Operations related to content creation, modification, deletion
 
-    def access_note(self, actor_acct_uri: str, note_uri: str) -> str | None:
+    def make_create_note(self, actor_acct_uri: str, content: str, deliver_to: list[str] | None = None) -> str:
+        """"
+        Perform whatever actions are necessary so the actor with actor_acct_uri will have created
+        a Note object on this Node with the specified content.
+        deliver_to: make sure the Node is delivered to these Actors (i.e. in arrives in their inbox)
+        return: URI to the Note object
         """
-        Return the content of the Note at not_uri if the Actor at actor_acct_uri can access it.
-        """
-        raise NotImplementedByNodeError(self, FediverseNode.access_note)
+        raise NotImplementedByNodeError(self, FediverseNode.make_create_note)
 
 
     def update_note(self, actor_acct_uri: str, note_uri: str, new_content: str) -> None:
@@ -242,3 +211,79 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         note with reply_uri on this Node.
         """
         raise NotImplementedByNodeError(self, FediverseNode.update_note)
+
+
+    def delete_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        """
+        Delete a note (boost, announce).
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.delete_object)
+
+# Operations related to engaging with existing content
+
+    def make_reply_note(self, actor_acct_uri: str, to_be_replied_to_object_uri: str, reply_content: str) -> str:
+        """
+        Perform whatever actions are necessary so the actor with actor_acct_uri will have created
+        a Note object that replies to the object at to_be_replied_to_object_uri with the specified content.
+        return: URI to the Reply object
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.make_reply_note)
+
+
+    def like_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        """
+        Like an object (like a note).
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.like_object)
+
+
+    def announce_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        """
+        Announce an object (boost, reblog).
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.announce_object)
+
+
+    def actor_has_received_object(self, actor_acct_uri: str, object_uri: str) -> str | None:
+        """
+        If the object at object_uri has arrived with the Actor at actor_acct_uri, return the content
+        of the object.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.actor_has_received_object)
+
+# Operations related to examining existing objects
+
+    def note_content(self, actor_acct_uri: str, note_uri: str) -> str | None:
+        """
+        Return the content of the Note at not_uri if the Actor at actor_acct_uri can access it.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.note_content)
+
+
+    def object_author(self, actor_acct_uri: str, object_uri: str) -> str | None:
+        """
+        Return the actor acct URI of actor that is the author of the object at object_uri.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.object_author)
+
+
+    def direct_replies_to_object(self, actor_acct_uri: str, object_uri: str) -> list[str]:
+        """
+        Return the URIs of the objects that directly reply to the object at object_uri.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.direct_replies_to_object)
+
+
+    def object_likers(self, actor_acct_uri: str, object_uri: str) -> list[str]:
+        """
+        Return the set of actor acct URI of the actors that liked this object.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.object_likers)
+
+
+    def object_announcers(self, actor_acct_uri: str, object_uri: str) -> list[str]:
+        """
+        Return the set of actor acct URI of the actors that announced/boosted/reblogged this object.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.object_announcers)
+

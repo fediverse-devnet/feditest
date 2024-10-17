@@ -270,7 +270,7 @@ def boolean_parse_validate(candidate: Any | None) -> bool | None:
     return None
 
 
-def account_id_parse_validate(candidate: str) -> ParsedUri | None:
+def acct_uri_parse_validate(candidate: str) -> ParsedUri | None:
     """
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return ParsedUri if valid, None otherwise
@@ -281,11 +281,18 @@ def account_id_parse_validate(candidate: str) -> ParsedUri | None:
     return None
 
 
-def account_id_validate(candidate: str) -> str | None:
-    parsed = account_id_parse_validate(candidate)
+def acct_uri_validate(candidate: str) -> str | None:
+    parsed = acct_uri_parse_validate(candidate)
     if parsed:
         return parsed.uri
     return None
+
+
+def acct_uri_list_validate(candidate: str) -> str | None:
+    for uri in candidate.split():
+        if not acct_uri_validate(uri):
+            return None
+    return candidate
 
 
 def https_uri_parse_validate(candidate: str) -> ParsedUri | None:
@@ -304,6 +311,13 @@ def https_uri_validate(candidate: str) -> str | None:
     if parsed:
         return parsed.uri
     return None
+
+
+def https_uri_list_validate(candidate: str) -> str | None:
+    for uri in candidate.split():
+        if not https_uri_validate(uri):
+            return None
+    return candidate
 
 
 def http_https_uri_parse_validate(candidate: str) -> ParsedUri | None:
