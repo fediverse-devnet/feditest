@@ -133,6 +133,21 @@ class FallbackFediverseNode(FediverseNode):
                 + ' Enter the reply content.')
         return answer if answer else None
 
+
+    # Python 3.12 @override
+    def access_note(self, actor_acct_uri: str, note_uri: str) -> str | None:
+        answer = prompt_user(
+                f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access note "{ note_uri }" and enter its content.')
+        return answer if answer else None
+
+
+    # Python 3.12 @override
+    def update_note(self, actor_acct_uri: str, note_uri: str, new_content: str) -> None:
+        prompt_user(
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" update the object at "{ note_uri }"'
+                + ' with new content:"""\n{ new_content }\n"""')
+
+
 # From WebFingerServer
 
     # Python 3.12 @override
