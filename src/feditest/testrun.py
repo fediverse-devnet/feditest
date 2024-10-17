@@ -289,7 +289,7 @@ class TestRunClass(TestRunTest):
                 if run_step.exception:
                     break
 
-                plan_step_index = controller.determine_next_session_index(plan_step_index)
+                plan_step_index = controller.determine_next_test_step_index(plan_step_index)
 
         except feditest.testruncontroller.AbortTestException as e: # User input
             self.exception = e
