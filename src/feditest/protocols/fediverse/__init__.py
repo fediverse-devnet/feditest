@@ -16,7 +16,7 @@ def userid_validate(candidate: str) -> str | None:
     userpart of https://datatracker.ietf.org/doc/html/rfc7565
     """
     candidate = candidate.strip()
-    return candidate if re.fullmatch(r'[-\.~a-zA-Z0-9_!$&''()*+,;=]([-\.~a-zA-Z0-9_!$&''()*+,;=]|%[0-9a-fA-F]{2})*', candidate) else None
+    return candidate if re.fullmatch(r'[-.~a-zA-Z0-9_!$&''()*+,;=]([-.~a-zA-Z0-9_!$&''()*+,;=]|%[0-9a-fA-F]{2})*', candidate) else None
 
 
 ROLE_ACCOUNT_FIELD = TestPlanNodeAccountField(
