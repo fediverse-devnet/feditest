@@ -5,9 +5,8 @@ Tests that two nodes that implement the Mastodon API can follow each other.
 from datetime import datetime
 import time
 
-from feditest import step, test
+from feditest import poll_until, step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
-from feditest.utils import poll_until
 
 
 @test

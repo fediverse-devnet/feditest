@@ -5,11 +5,9 @@ problems here are problems in our NodeDriver, not Fediverse interop problems.
 """
 
 from datetime import datetime
-# import re
 
-from feditest import step, test
+from feditest import poll_until, step, test
 from feditest.nodedrivers.mastodon import NodeWithMastodonAPI
-from feditest.utils import poll_until
 
 # @test
 # def app_version(
