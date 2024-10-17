@@ -221,9 +221,24 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.actor_is_following_actor)
 
 
-    def note_has_direct_reply(self, actor_acct_uri: str, note_uri: str, reply_uri: str) ->   str | None:
+    def note_has_direct_reply(self, actor_acct_uri: str, note_uri: str, reply_uri: str) -> str | None:
         """
         Return the reply's content if the Actor at actor_acct_uri can see that the Note at note_uri has a reply
         note with reply_uri on this Node.
         """
         raise NotImplementedByNodeError(self, FediverseNode.note_has_direct_reply)
+
+
+    def access_note(self, actor_acct_uri: str, note_uri: str) -> str | None:
+        """
+        Return the content of the Note at not_uri if the Actor at actor_acct_uri can access it.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.access_note)
+
+
+    def update_note(self, actor_acct_uri: str, note_uri: str, new_content: str) -> None:
+        """
+        Return the reply's content if the Actor at actor_acct_uri can see that the Note at note_uri has a reply
+        note with reply_uri on this Node.
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.update_note)

@@ -32,7 +32,7 @@ from feditest.protocols.fediverse import (
     FediverseNonExistingAccount,
     userid_validate
 )
-from feditest.reporting import trace
+from feditest.reporting import is_trace_active, trace
 from feditest.testplan import (
     InvalidAccountSpecificationException,
     TestPlanConstellationNode,
@@ -107,20 +107,29 @@ def mastodon_api_invoke_get(
         for key, value in headers.items():
             real_headers[key.lower()] = value
 
+    if is_trace_active():
+        curl = f'curl { url }'
+        for key, value in real_headers.items():
+            curl += f' -H "{ key }: { value }"'
+        trace(f'Mastodon API call as curl: { curl }')
+
+    response_json = None
     try :
         response = session.get(url, headers=real_headers)
         if response.status_code >= 400: # taken from requests' raise_for_status()
             raise HTTPError(f'HTTP status { response.status_code }: { response.content.decode("utf-8") }', response=response)
-        return response.json()
+        response_json = response.json()
+        return response_json
 
     finally:
-        curl = f'curl { url }'
-        for key, value in real_headers.items():
-            curl += f' -H "{ key }: { value }"'
-        trace(f'Mastodon API call as curl: { curl } returns { response }: { json.dumps(response.json()) }')
+        if response_json:
+            trace(f'Mastodon API call returns { response }: { json.dumps(response_json) }')
+        else:
+            trace(f'Mastodon API call returns { response }: Not a JSON response: { response.text }')
 
 
-def mastodon_api_invoke_post(
+def mastodon_api_invoke_post_or_put(
+    method: str,
     api_base_url: str,
     session: requests.Session,
     path: str,
@@ -136,19 +145,31 @@ def mastodon_api_invoke_post(
         for key, value in headers.items():
             real_headers[key.lower()] = value
 
-    try :
-        response = session.post(url, data=args, headers=real_headers)
-        if response.status_code >= 400: # taken from requests' raise_for_status()
-            raise HTTPError(f'HTTP status { response.status_code }: { response.content.decode("utf-8") }', response=response)
-        return response.json()
-    finally:
-        curl = f'curl -X POST { url }'
+    if is_trace_active():
+        curl = f'curl -X { method } { url }'
         for key, value in real_headers.items():
             curl += f' -H "{ key }: { value }"'
         if args:
             for key, value in args.items():
                 curl += f' -F "{ key }={ value }"'
-        trace(f'Mastodon API call as curl: { curl } returns { response }: { json.dumps(response.json()) }')
+        trace(f'Mastodon API call as curl: { curl }')
+
+    response_json = None
+    try :
+        if 'post' == method.lower():
+            response = session.post(url, data=args, headers=real_headers)
+        else:
+            response = session.put(url, data=args, headers=real_headers)
+        if response.status_code >= 400: # taken from requests' raise_for_status()
+            raise HTTPError(f'HTTP status { response.status_code }: { response.content.decode("utf-8") }', response=response)
+        response_json = response.json()
+        return response_json
+
+    finally:
+        if response_json:
+            trace(f'Mastodon API call returns { response }: { json.dumps(response_json) }')
+        else:
+            trace(f'Mastodon API call returns { response }: Not a JSON response: { response.text }')
 
 
 @dataclass
@@ -170,7 +191,7 @@ class MastodonOAuthApp:
             'website' : 'https://feditest.org/'
 
         }
-        result = mastodon_api_invoke_post(api_base_url, session, '/api/v1/apps', args=args)
+        result = mastodon_api_invoke_post_or_put('POST', api_base_url, session, '/api/v1/apps', args=args)
         client_id = result['client_id']
         client_secret = result['client_secret']
 
@@ -195,7 +216,11 @@ class AuthenticatedMastodonApiClient:
 
 
     def http_post(self, path: str, args: dict[str,str] | None = None) -> Any:
-        return mastodon_api_invoke_post(self._app.api_base_url, self._app.session, path, args=args, headers=self._auth_header)
+        return mastodon_api_invoke_post_or_put('POST', self._app.api_base_url, self._app.session, path, args=args, headers=self._auth_header)
+
+
+    def http_put(self, path: str, args: dict[str,str] | None = None) -> Any:
+        return mastodon_api_invoke_post_or_put('PUT', self._app.api_base_url, self._app.session, path, args=args, headers=self._auth_header)
 
 
     def make_create_note(self, content: str, deliver_to: list[str] | None = None) -> dict[str, str]:
@@ -246,7 +271,6 @@ class AuthenticatedMastodonApiClient:
     def make_follow_undo(self, following_actor_acct_uri: str) -> dict[str,str]:
         if following_account := self._find_account_dict_by_other_actor_acct_uri(following_actor_acct_uri):
             following_account_id = following_account['id']
-
             response = self.http_post(f'/api/v1/accounts/{ following_account_id }/unfollow')
             return response
         raise ValueError(f'Account not found with Actor URI: { following_actor_acct_uri }')
@@ -285,6 +309,23 @@ class AuthenticatedMastodonApiClient:
             response = self.http_get(f'/api/v1/statuses/{ note_id }/context')
             found = find_first_in_array(response['descendants'], lambda r: r['uri'] == reply_uri)
             return found
+        raise ValueError(f'Cannot find Note on { self }: "{ note_uri }"')
+
+
+    def access_note(self, note_uri: str) -> dict[str, Any]:
+        if note := self._find_note_dict_by_uri(note_uri):
+            return note
+        raise ValueError(f'Cannot find Note on { self }: "{ note_uri }"')
+
+
+    def update_note(self, note_uri: str, new_content: str) -> dict[str, Any]:
+        if note := self._find_note_dict_by_uri(note_uri):
+            note_id = note['id']
+            args = {
+                'status' : new_content
+            }
+            response = self.http_put(f'/api/v1/statuses/{ note_id }', args)
+            return response
         raise ValueError(f'Cannot find Note on { self }: "{ note_uri }"')
 
 
@@ -442,7 +483,7 @@ class MastodonUserPasswordAccount(MastodonAccount):
                 'client_secret': oauth_app.client_secret,
                 'scope': 'read write follow push'
             }
-            result = mastodon_api_invoke_post(oauth_app.api_base_url, oauth_app.session, '/oauth/token', args=args)
+            result = mastodon_api_invoke_post_or_put('POST', oauth_app.api_base_url, oauth_app.session, '/oauth/token', args=args)
             token = result['access_token']
             self._mastodon_client = AuthenticatedMastodonApiClient(oauth_app, self, token)
         return self._mastodon_client
@@ -611,6 +652,23 @@ class NodeWithMastodonAPI(FediverseNode):
         if response:
             return cast(str, response['content'])
         return None
+
+
+    # Python 3.12 @override
+    def access_note(self, actor_acct_uri: str, note_uri: str) -> str | None:
+        trace(f'access_note: actor_acct_uri = { actor_acct_uri }, note_uri = { note_uri }')
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        response = mastodon_client.access_note(note_uri)
+        if response:
+            return cast(str, response['content'])
+        return None
+
+
+    # Python 3.12 @override
+    def update_note(self, actor_acct_uri: str, note_uri: str, new_content: str) -> None:
+        trace(f'update_note: actor_acct_uri = { actor_acct_uri }, note_uri = { note_uri }, new_content = { new_content }')
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        mastodon_client.update_note(note_uri, new_content)
 
 # From ActivityPubNode
 
