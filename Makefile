@@ -1,7 +1,7 @@
 #
 # make venv
 #     Create a python environment for your platform and install the required dependencies int
-#     it. It will be in ./venv.$(uname -s)
+#     it. It will be in ./venv.linux.default if you are Linux
 #
 # make build
 #     run pip install in your venv
@@ -16,8 +16,8 @@
 #
 
 UNAME?=$(shell uname -s | tr [A-Z] [a-z])
-BRANCH?=$(shell git branch --show-current)
-VENV?=venv.$(UNAME).$(BRANCH)
+TAG?=default
+VENV?=venv.$(UNAME).$(TAG)
 PYTHON?=python3.11
 FEDITEST?=$(VENV)/bin/feditest -v
 DOMAIN?=--domain 1234.lan
