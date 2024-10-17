@@ -5,7 +5,7 @@ Classes that know how to control a TestRun.
 from abc import ABC, abstractmethod
 
 import feditest.testrun
-
+from feditest.reporting import is_trace_active
 
 class TestRunControlException(Exception,ABC):
     """
@@ -164,5 +164,13 @@ class InteractiveTestRunController(TestRunController):
 
 
     def _prompt_user(self, question: str) -> str:
+        # In case of debugging, there's a lot of output, and it can be hard to tell where the steps end
+        if is_trace_active():
+            print()
+
         ret = input(f'Interactive: { question }')
+
+        if is_trace_active():
+            print()
+
         return ret
