@@ -332,12 +332,19 @@ class AuthenticatedMastodonApiClient:
     def actor_has_received_object(self,  object_uri: str) -> dict[str, Any]:
         # Depending on how the Note is addressed and follow status, Mastodon puts it into the Home timeline or only
         # into notifications.
+        # Check for it in the home timeline.
         elements = self.http_get('/api/v1/timelines/home')
+        #   Home timeline first case: a post was created by an account we follow
         response = find_first_in_array(elements, lambda s: s['uri'] == object_uri)
         if not response:
+            #   Home timeline second case: an announce/boost was created by an account we follow -- need to look for the original URI
+            if reblog_response := find_first_in_array(elements, lambda s: 'reblog' in s and s['reblog']['uri'] == object_uri) :
+                response = reblog_response['reblog']
+        if not response:
+            # Check for it in notifications: mentions arrive here
             elements = self.http_get('/api/v1/notifications')
-            notifications_response = find_first_in_array(elements, lambda s: s['status']['uri'] == object_uri)
-            if notifications_response:
+            # s['status'] exists for some things in notifications, but not others (such as "follow")
+            if notifications_response := find_first_in_array(elements, lambda s: 'status' in s and s['status']['uri'] == object_uri) :
                 response = notifications_response['status']
         return response
 
