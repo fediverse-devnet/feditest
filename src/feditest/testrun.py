@@ -407,7 +407,7 @@ class TestRun(HasStartEndResults):
     def __init__(self, plan: TestPlan, record_who: bool = False):
         super().__init__()
         self.plan = plan
-        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S.%fZ")
+        self.id : str = 'feditest-run-' + datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         self.platform : str = platform.platform()
         self.run_sessions : list[TestRunSession] = []
         self.username : str | None = None
