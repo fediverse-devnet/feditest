@@ -110,7 +110,7 @@ def create_session_template_from_tests(args: Namespace) -> TestPlanSession:
     for constellation_role_name in constellation_role_names:
         constellation_roles[constellation_role_name] = None
 
-    session = TestPlanSession(TestPlanConstellation(constellation_roles), test_plan_specs)
+    session = TestPlanSession(TestPlanConstellation(constellation_roles), test_plan_specs, args.name)
     return session
 
 
