@@ -154,9 +154,23 @@ class FallbackFediverseNode(FediverseNode):
 
 
     # Python 3.12 @override
+    def unlike_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        prompt_user(
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" unlike the object at "{ object_uri }"'
+                + ' and hit return when done.')
+
+
+    # Python 3.12 @override
     def announce_object(self, actor_acct_uri: str, object_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" announce/reblog/boost the object at "{ object_uri }"'
+                + ' and hit return when done.')
+
+
+    # Python 3.12 @override
+    def unannounce_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        prompt_user(
+                f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" unannounce/undo reblog/undo boost the object at "{ object_uri }"'
                 + ' and hit return when done.')
 
 

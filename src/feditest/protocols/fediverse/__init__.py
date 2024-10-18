@@ -237,11 +237,25 @@ class FediverseNode(WebFingerClient, WebFingerServer, ActivityPubNode):
         raise NotImplementedByNodeError(self, FediverseNode.like_object)
 
 
+    def unlike_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        """
+        Unlike an object (like a note) that was previously liked
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.unlike_object)
+
+
     def announce_object(self, actor_acct_uri: str, object_uri: str) -> None:
         """
         Announce an object (boost, reblog).
         """
         raise NotImplementedByNodeError(self, FediverseNode.announce_object)
+
+
+    def unannounce_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        """
+        Undo a previous announce of an object (boost, reblog).
+        """
+        raise NotImplementedByNodeError(self, FediverseNode.unannounce_object)
 
 
     def actor_has_received_object(self, actor_acct_uri: str, object_uri: str) -> str | None:

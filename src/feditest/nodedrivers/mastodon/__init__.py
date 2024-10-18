@@ -321,10 +321,26 @@ class AuthenticatedMastodonApiClient:
         raise ValueError(f'Cannot find Note on { self }: "{ object_uri }"')
 
 
+    def unlike_object(self, object_uri: str) -> None:
+        if note := self._find_note_dict_by_uri(object_uri):
+            note_id = note['id']
+            response = self.http_post(f'/api/v1/statuses/{ note_id }/unfavourite')
+            return response
+        raise ValueError(f'Cannot find Note on { self }: "{ object_uri }"')
+
+
     def announce_object(self, object_uri: str) -> None:
         if note := self._find_note_dict_by_uri(object_uri):
             note_id = note['id']
             response = self.http_post(f'/api/v1/statuses/{ note_id }/reblog')
+            return response
+        raise ValueError(f'Cannot find Note on { self }: "{ object_uri }"')
+
+
+    def unannounce_object(self, object_uri: str) -> None:
+        if note := self._find_note_dict_by_uri(object_uri):
+            note_id = note['id']
+            response = self.http_post(f'/api/v1/statuses/{ note_id }/unreblog')
             return response
         raise ValueError(f'Cannot find Note on { self }: "{ object_uri }"')
 
@@ -691,9 +707,23 @@ class NodeWithMastodonAPI(FediverseNode):
 
 
     # Python 3.12 @override
+    def unlike_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        mastodon_client.unlike_object(object_uri)
+        self._run_poor_mans_cron()
+
+
+    # Python 3.12 @override
     def announce_object(self, actor_acct_uri: str, object_uri: str) -> None:
         mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
         mastodon_client.announce_object(object_uri)
+        self._run_poor_mans_cron()
+
+
+    # Python 3.12 @override
+    def unannounce_object(self, actor_acct_uri: str, object_uri: str) -> None:
+        mastodon_client = self._get_mastodon_client_by_actor_acct_uri(actor_acct_uri)
+        mastodon_client.unannounce_object(object_uri)
         self._run_poor_mans_cron()
 
 
