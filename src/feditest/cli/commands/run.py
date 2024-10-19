@@ -116,7 +116,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--node', action='append',
                         help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
-    parser.add_argument('--test', nargs='+', help='Run this/these named tests(s)')
+    parser.add_argument('--test', action='append', help='Run this/these named tests(s)')
 
     # output options
     parser.add_argument('--tap', nargs="?", const=True, default=False,
