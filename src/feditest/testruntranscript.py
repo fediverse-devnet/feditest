@@ -9,6 +9,7 @@ import sys
 import traceback
 from abc import ABC, abstractmethod
 from datetime import datetime
+import html
 from typing import IO, Iterator, Optional
 
 import jinja2
@@ -562,7 +563,8 @@ class MultifileRunTranscriptSerializer:
             local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
             format_timestamp=lambda ts: ts.strftime("%Y:%m:%d-%H:%M:%S.%fZ") if ts else "",
             format_duration=lambda s: str(s), # makes it easier to change in the future
-            len=len
+            len=len,
+            html_escape=lambda s: html.escape(str(s))
         )
 
         try:
