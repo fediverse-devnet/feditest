@@ -560,7 +560,7 @@ class MultifileRunTranscriptSerializer:
                 r"(\.|::)", r"<wbr>\1", s
             ),
             local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
-            format_timestamp=lambda ts: ts.isoformat() if ts else "",
+            format_timestamp=lambda ts: ts.strftime("%Y:%m:%d-%H:%M:%S.%fZ") if ts else "",
             format_duration=lambda s: str(s), # makes it easier to change in the future
             len=len
         )
