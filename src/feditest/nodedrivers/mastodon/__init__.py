@@ -354,7 +354,7 @@ class AuthenticatedMastodonApiClient:
         response = find_first_in_array(elements, lambda s: s['uri'] == object_uri)
         if not response:
             #   Home timeline second case: an announce/boost was created by an account we follow -- need to look for the original URI
-            if reblog_response := find_first_in_array(elements, lambda s: 'reblog' in s and s['reblog']['uri'] == object_uri) :
+            if reblog_response := find_first_in_array(elements, lambda s: 'reblog' in s and s['reblog'] and 'uri' in s['reblog'] and s['reblog']['uri'] == object_uri) :
                 response = reblog_response['reblog']
         if not response:
             # Check for it in notifications: mentions arrive here
@@ -458,7 +458,7 @@ class AuthenticatedMastodonApiClient:
         raise ValueError(f'Unexpected type: { ret }')
 
 
-    def _find_note_dict_by_uri(self, uri: str) -> dict[str,Any]:
+    def _find_note_dict_by_uri(self, uri: str) -> dict[str,Any] | None:
         """
         Find a the dict for a status, or None.
         """
@@ -470,6 +470,8 @@ class AuthenticatedMastodonApiClient:
         results = self.http_get('/api/v2/search?' + urlencode(args))
 
         ret = find_first_in_array(results.get('statuses'), lambda b: b['uri'] == uri)
+        if ret is None:
+            return None
         if isinstance(ret, dict):
             return cast(dict[str,Any], ret)
         raise ValueError(f'Unexpected type: { ret }')
