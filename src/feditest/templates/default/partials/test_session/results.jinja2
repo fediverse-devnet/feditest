@@ -7,7 +7,7 @@
 {%          if role_name in run_session.constellation.nodes %}
 {%-             set session_node = run_session.constellation.nodes[role_name] %}
         <div class="role">
-            <div class="name">{{ role_name }}</div>
+            <h3 class="name">{{ role_name }}</h3>
             <div class="driver">{{ local_name_with_tooltip(node.nodedriver) }}</div>
             <div class="app">{{ session_node.appdata['app'] }}</div>
             <div class="appversion">{{ session_node.appdata['app_version'] or '?'}}</div>
@@ -45,8 +45,8 @@
 {%-         if test_meta.description %}
             <div class="description">{{ test_meta.description}}</div>
 {%-         endif %}
-            <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }}</p>
-{%-         with result=run_test.worst_result %}
+            <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }} (duration: {{ format_duration(run_test.ended - run_test.started) }})</p>
+            {%-         with result=run_test.worst_result %}
 {%-             include "partials/test_session/testresult.jinja2" %}
 {%-         endwith %}
 {%-         for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
@@ -56,8 +56,7 @@
 {%-             if test_step_meta.description %}
                 <div class="description">{{ test_step_meta.description}}</div>
 {%-             endif %}
-                <p class="when">Started {{ format_timestamp(run_step.started) }}, ended {{ format_timestamp(run_step.ended) }}</p>
-
+                <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }} (duration: {{ format_duration(run_test.ended - run_test.started) }})</p>
 {%-             with result=run_step.result, idmod='step' %}
 {%-                 include "partials/test_session/testresult.jinja2" %}
 {%-             endwith %}
