@@ -44,7 +44,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     # session template options
     parser.add_argument('--name', default=None, required=False, help='Name of the created test session template')
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
-    parser.add_argument('--test', nargs='+', help='Include this/these named tests(s)')
+    parser.add_argument('--test', action='append', help='Include this/these named tests(s)')
 
     # output options
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the created test session template')
