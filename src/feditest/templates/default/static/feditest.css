@@ -63,7 +63,7 @@ footer {
     font-size: smaller;
 }
 
-div.feditest.title {
+div.title {
     text-align: center;
 }
 div.feditest span.prefix,
@@ -131,11 +131,7 @@ div.feditest.session > h3::before {
     border-color: var(--pico-table-border-color);
 }
 
-.feditest div.role > div.name {
-    font-weight: bold;
-}
-
-.feditest div.role > div.name::before {
+.feditest div.role > h3.name::before {
     content: "Role: ";
 }
 
@@ -422,7 +418,6 @@ nav.matrix {
 
 nav.matrix ul {
     display: block;
-    font-size: 1.4rem;
 }
 
 div.feditest.mobile {
