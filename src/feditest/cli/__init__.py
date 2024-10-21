@@ -8,7 +8,7 @@ import sys
 import traceback
 from types import ModuleType
 
-from feditest.reporting import fatal, set_reporting_level
+from feditest.reporting import fatal, set_reporting_level, warning
 from feditest.utils import find_submodules
 import feditest.cli.commands
 
@@ -33,6 +33,10 @@ def main() -> None:
     cmd_name = args.command
 
     set_reporting_level(args.verbose)
+
+    if sys.version_info.major != 3 or sys.version_info != 11:
+        warning(f"feditest currently requires Python 3.11. You are using { sys.version }"
+                + " and may get unpredictable results. We'll get to other versions in the future.")
 
     if cmd_name in cmds:
         try :
