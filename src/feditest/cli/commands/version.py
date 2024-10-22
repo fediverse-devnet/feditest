@@ -14,7 +14,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         parser.print_help()
         return 0
 
-    print(f'feditest version { FEDITEST_VERSION }')
+    print(FEDITEST_VERSION)
     return 0
 
 
