@@ -1,6 +1,6 @@
 # FediTest
 
-Testing distributed, heterogeneous systems...
+Test framework to test distributed, heterogeneous systems...
 
 ...with complex protocols
 

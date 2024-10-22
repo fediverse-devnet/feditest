@@ -27,7 +27,7 @@ dependencies = [
   "types-requests",
   "pre-commit"
 ]
-description = "Testing federated protocols"
+description = "Test framework to test distributed, heterogeneous systems with complex protocols such as the Fediverse"
 readme = "README-PyPI.md"
 
 # We develop on 3.11, so we can support debian 12 (including Raspberry PI OS) systems,
