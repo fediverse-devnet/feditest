@@ -2,7 +2,7 @@
 """
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from feditest.nodedrivers import NotImplementedByNodeError
@@ -471,10 +471,24 @@ working-copy-of"""
 
 
 @dataclass
-class WebFingerQueryResponse:
+class WebFingerQueryDiagResponse:
     http_request_response_pair: HttpRequestResponsePair
     jrd : ClaimedJrd | None # This may be an invalid jrd
-    exc : Exception | None #
+    exceptions : list[Exception] = field(default_factory=list) # List of all things that were found to be wrong
+
+
+    def exceptions_of_type(self, filter_by: type) -> list[Exception]:
+        """
+        Return only the subset of exceptions that are of type filter_by
+        """
+        return [ ex for ex in self.exceptions if isinstance(ex, filter_by) ]
+
+
+    def not_exceptions_of_type(self, filter_by: tuple) -> list[Exception]:
+        """
+        Return only the subset of exceptions that are not of any of the types in filter_by
+        """
+        return [ ex for ex in self.exceptions if not isinstance(ex, filter_by) ]
 
 
 class WebFingerDiagClient(WebFingerClient, WebDiagClient):
@@ -491,7 +505,7 @@ class WebFingerDiagClient(WebFingerClient, WebDiagClient):
         resource_uri: str,
         rels: list[str] | None = None,
         server: WebFingerServer | None = None
-    ) -> WebFingerQueryResponse:
+    ) -> WebFingerQueryDiagResponse:
         """
         Make this Node perform a WebFinger query for the provided resource_uri.
         The resource_uri must be a valid, absolute URI, such as 'acct:foo@bar.com` or

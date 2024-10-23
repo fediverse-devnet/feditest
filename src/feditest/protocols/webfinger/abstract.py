@@ -6,7 +6,7 @@ from typing import cast
 from feditest.protocols.web.diag import HttpRequest, HttpRequestResponsePair, WebDiagClient
 from feditest.protocols.webfinger import WebFingerServer
 from feditest.protocols.webfinger.diag import ClaimedJrd, WebFingerDiagClient
-from feditest.protocols.webfinger.utils import construct_webfinger_uri_for, WebFingerQueryResponse
+from feditest.protocols.webfinger.utils import construct_webfinger_uri_for, WebFingerQueryDiagResponse
 from feditest.utils import ParsedUri
 
 
@@ -17,7 +17,7 @@ class AbstractWebFingerDiagClient(WebFingerDiagClient):
         resource_uri: str,
         rels: list[str] | None = None,
         server: WebFingerServer | None = None
-    ) -> WebFingerQueryResponse:
+    ) -> WebFingerQueryDiagResponse:
         query_url = construct_webfinger_uri_for(resource_uri, rels, server.hostname() if server else None )
         parsed_uri = ParsedUri.parse(query_url)
         if not parsed_uri:
@@ -29,10 +29,10 @@ class AbstractWebFingerDiagClient(WebFingerDiagClient):
             pair = self.http(current_request)
             if pair.response and pair.response.is_redirect():
                 if redirect_count <= 0:
-                    return WebFingerQueryResponse(pair, None, WebDiagClient.TooManyRedirectsError(current_request))
+                    return WebFingerQueryDiagResponse(pair, None, [ WebDiagClient.TooManyRedirectsError(current_request) ])
                 parsed_location_uri = ParsedUri.parse(pair.response.location())
                 if not parsed_location_uri:
-                    return WebFingerQueryResponse(pair, None, ValueError('Location header is not a valid URI:', query_url, '(from', resource_uri, ')'))
+                    return WebFingerQueryDiagResponse(pair, None, [ ValueError('Location header is not a valid URI:', query_url, '(from', resource_uri, ')') ] )
                 current_request = HttpRequest(parsed_location_uri)
             break
 
@@ -67,9 +67,4 @@ class AbstractWebFingerDiagClient(WebFingerDiagClient):
         except Exception as exc:
             excs.append(exc)
 
-        if len(excs) > 1:
-            return WebFingerQueryResponse(ret_pair, jrd, ExceptionGroup('WebFinger errors', excs))
-        elif len(excs) == 1:
-            return WebFingerQueryResponse(ret_pair, jrd, excs[0])
-        else:
-            return WebFingerQueryResponse(ret_pair, jrd, None)
+        return WebFingerQueryDiagResponse(ret_pair, jrd, excs)

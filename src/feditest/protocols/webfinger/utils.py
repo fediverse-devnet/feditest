@@ -9,7 +9,7 @@ from multidict import MultiDict
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from .diag import ClaimedJrd, WebFingerQueryResponse
+from .diag import ClaimedJrd, WebFingerQueryDiagResponse
 
 
 class UnsupportedUriSchemeError(RuntimeError):
@@ -203,23 +203,15 @@ def none_except(*allowed_excs : Type[Exception]) -> NoneExceptMatcher :
     return NoneExceptMatcher(list(allowed_excs))
 
 
-def wf_error(response: WebFingerQueryResponse) -> str:
+def wf_error(response: WebFingerQueryDiagResponse) -> str:
     """
     Construct an error message
     """
-    if not response.exc:
+    if not response.exceptions:
         return 'ok'
 
-    if isinstance(response.exc, ExceptionGroup):
-        # Make this more compact than the default
-        msg = str(response.exc.args[0]).split('\n', maxsplit=1)[0]
-        msg += f' ({ len(response.exc.exceptions) })'
-        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.parsed_uri.uri }".'
-        for i, exc in enumerate(response.exc.exceptions):
-            msg += f'\n{ i }: { exc }'
+    msg = f'Accessed URI: "{ response.http_request_response_pair.request.parsed_uri.uri }":'
+    for i, exc in enumerate(response.exceptions):
+        msg += f'\n{ i }: { exc }'
 
-    else:
-        msg = str(response.exc).split('\n', maxsplit=1)[0]
-        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.parsed_uri.uri }".'
-        msg += '\n'.join(str(response.exc).split('\n')[1:])
     return msg
