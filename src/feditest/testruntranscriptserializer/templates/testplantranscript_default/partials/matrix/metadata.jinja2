@@ -1,0 +1,29 @@
+  <div class="feditest metadata">
+{%- set started = getattr(transcript, 'started') %}
+{%- set ended = getattr(transcript, 'ended') %}
+{%- set duration = ended - started %}
+   <table>
+    <tbody>
+     <tr>
+      <th>Started</th>
+      <td>{{ format_timestamp(started) }}</td>
+     </tr>
+     <tr>
+      <th>Ended</th>
+      <td>{{ format_timestamp(ended) }} (total: {{ format_duration(duration) }})</td>
+     </tr>
+{%- for key in ['username', 'hostname', 'platform'] -%}
+{%-     if getattr(transcript,key) %}
+     <tr>
+      <th>{{ key.capitalize() }}</th>
+      <td>{{ getattr(transcript, key) }}</td>
+     </tr>
+{%-     endif %}
+{%- endfor %}
+     <tr>
+      <th>Feditest&nbsp;version</th>
+      <td>{{ getattr(transcript, 'feditest_version') }}</td>
+     </tr>
+    </tbody>
+   </table>
+   </div>

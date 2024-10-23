@@ -12,7 +12,6 @@ from feditest.cli.utils import create_session_template_from_tests
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
     Run this command.
-    > feditest generate-settion-template --testsdir tests --all --out full-partially-automated-template.json
     """
     if len(remaining):
         parser.print_help()

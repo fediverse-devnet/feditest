@@ -345,8 +345,9 @@ div.feditest.tests .namedesc > span.name {
 .feditest dl.roles {
     display: grid;
     grid-template-columns: auto auto;
-    width: fit-content;
+    justify-items: center;
     column-gap: 8px;
+    text-align: left;
 }
 
 .feditest dl.roles dt::after {

@@ -17,7 +17,7 @@ from feditest.protocols.fediverse import (
     FediverseAccount,
     FediverseNonExistingAccount
 )
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSessionTemplate
 
 
 HOSTNAME = 'localhost'
@@ -37,7 +37,7 @@ def init():
 
 
 @pytest.fixture(autouse=True)
-def the_test_plan() -> TestPlan:
+def test_plan_fixture() -> TestPlan:
     node_driver = FediverseSaasNodeDriver()
     parameters = {
         'hostname' : 'example.com', # Avoid interactive question
@@ -57,16 +57,16 @@ def the_test_plan() -> TestPlan:
     ]
     node1 = TestPlanConstellationNode(node_driver, parameters, plan_accounts, plan_non_existing_accounts)
     constellation = TestPlanConstellation( { NODE1_ROLE : node1 })
-    session = TestPlanSession(constellation, [])
-    ret = TestPlan( [ session ] )
+    session_template = TestPlanSessionTemplate([])
+    ret = TestPlan( session_template, [ constellation ] )
     return ret
 
 
-def test_parse(the_test_plan: TestPlan) -> None:
+def test_parse(test_plan_fixture: TestPlan) -> None:
     """
     Tests parsing the TestPlan
     """
-    node1 = the_test_plan.sessions[0].constellation.roles[NODE1_ROLE]
+    node1 = test_plan_fixture.constellations[0].roles[NODE1_ROLE]
     node_driver = node1.nodedriver
 
     node_config, account_manager = node_driver.create_configuration_account_manager(NODE1_ROLE, node1)

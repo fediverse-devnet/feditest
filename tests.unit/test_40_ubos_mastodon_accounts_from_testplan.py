@@ -22,7 +22,7 @@ from feditest.nodedrivers.mastodon import (
 )
 from feditest.nodedrivers.mastodon.ubos import MastodonUbosNodeDriver
 from feditest.protocols.fediverse import FediverseNonExistingAccount
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSessionTemplate
 
 
 HOSTNAME = 'localhost'
@@ -66,8 +66,8 @@ def the_test_plan() -> TestPlan:
     ]
     node1 = TestPlanConstellationNode(node_driver, parameters, plan_accounts, plan_non_existing_accounts)
     constellation = TestPlanConstellation( { NODE1_ROLE : node1 })
-    session = TestPlanSession(constellation, [])
-    ret = TestPlan( [ session ] )
+    session = TestPlanSessionTemplate([])
+    ret = TestPlan( session, [ constellation ] )
     return ret
 
 
@@ -75,7 +75,7 @@ def test_parse(the_test_plan: TestPlan) -> None:
     """
     Tests parsing the TestPlan
     """
-    node1 = the_test_plan.sessions[0].constellation.roles[NODE1_ROLE]
+    node1 = the_test_plan.constellations[0].roles[NODE1_ROLE]
     node_driver = node1.nodedriver
 
     node_config, account_manager = node_driver.create_configuration_account_manager(NODE1_ROLE, node1)

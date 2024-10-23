@@ -1,18 +1,10 @@
-import contextlib
-import io
 import json
 import os
 import os.path
-import re
-import shutil
-import sys
 import traceback
-from abc import ABC, abstractmethod
 from datetime import datetime
-import html
-from typing import IO, Iterator, Optional
+from typing import IO, Optional
 
-import jinja2
 import msgspec
 
 import feditest
@@ -26,6 +18,7 @@ class TestRunNodeTranscript(msgspec.Struct):
     Information about a node in a constellation in a transcript.
     """
     appdata: dict[str, str | None]
+    node_driver: str
     """
     So far, contains:
     app: name of the app running at the node (required)
@@ -38,6 +31,9 @@ class TestRunConstellationTranscript(msgspec.Struct):
     Information about a constellation in a trranscript
     """
     nodes: dict[str,TestRunNodeTranscript]
+
+    def __str__(self):
+        return ', '.join( [ f'{ role }: { node.node_driver }' for role, node in self.nodes.items() ] )
 
 
 _result_transcript_tracker : list['TestRunResultTranscript'] = []
@@ -299,7 +295,7 @@ class TestRunSessionTranscript(msgspec.Struct):
     """
     Captures information about the run of a single session in a transcript.
     """
-    plan_session_index: int
+    run_session_index: int
     started : datetime
     ended : datetime
     constellation: TestRunConstellationTranscript
@@ -319,7 +315,7 @@ class TestRunSessionTranscript(msgspec.Struct):
 
 
     def __str__(self):
-        return f"Session {self.plan_session_index}"
+        return f"Session {self.run_session_index}"
 
 
 class TestRunTranscript(msgspec.Struct):
@@ -390,253 +386,3 @@ class TestRunTranscript(msgspec.Struct):
             return f'{ self.id } ({ self.plan.name })'
         return self.id
 
-
-class TestRunTranscriptSerializer(ABC):
-    """
-    An object that knows how to serialize a TestRunTranscript into some output format.
-    """
-    def __init__(self, transcript: TestRunTranscript ):
-        self.transcript = transcript
-
-
-    def write(self, dest: str | None = None):
-        """
-        dest: name of the file to write to, or stdout
-        """
-        if dest and isinstance(dest,str):
-            with open(dest, "w", encoding="utf8") as out:
-                self._write(out)
-        else:
-            self._write(sys.stdout)
-
-
-    def write_to_string(self):
-        """
-        Return the written content as a string; this is for testing.
-        """
-        string_io = io.StringIO()
-        self._write(string_io)
-        return string_io.getvalue()
-
-
-    @abstractmethod
-    def _write(self, fd: IO[str]):
-        ...
-
-
-class SummaryTestRunTranscriptSerializer(TestRunTranscriptSerializer):
-    """
-    Knows how to serialize a TestRunTranscript into a single-line summary.
-    """
-    def _write(self, fd: IO[str]):
-        summary = self.transcript.build_summary()
-
-        print(f'Test summary: total={ summary.n_total }'
-              + f', passed={ summary.n_passed }'
-              + f', failed={ summary.n_failed }'
-              + f', skipped={ summary.n_skipped }'
-              + f', errors={ summary.n_errored }.',
-              file=fd)
-
-
-class TapTestRunTranscriptSerializer(TestRunTranscriptSerializer):
-    """
-    Knows how to serialize a TestRunTranscript into a report in TAP format.
-    """
-    def _write(self, fd: IO[str]):
-        plan = self.transcript.plan
-        summary = self.transcript.build_summary()
-
-        fd.write("TAP version 14\n")
-        fd.write(f"# test plan: { plan }\n")
-        for key in ['started', 'ended', 'platform', 'username', 'hostname']:
-            value = getattr(self.transcript, key)
-            if value:
-                fd.write(f"# {key}: {value}\n")
-
-        test_id = 0
-        for session_transcript in self.transcript.sessions:
-            plan_session = plan.sessions[session_transcript.plan_session_index]
-            constellation = plan_session.constellation
-
-            fd.write(f"# session: { plan_session }\n")
-            fd.write(f"# constellation: { constellation }\n")
-            fd.write("#   roles:\n")
-            for role_name, node in plan_session.constellation.roles.items():
-                if role_name in session_transcript.constellation.nodes:
-                    transcript_role = session_transcript.constellation.nodes[role_name]
-                    fd.write(f"#     - name: {role_name}\n")
-                    if node:
-                        fd.write(f"#       driver: {node.nodedriver}\n")
-                    fd.write(f"#       app: {transcript_role.appdata['app']}\n")
-                    fd.write(f"#       app_version: {transcript_role.appdata['app_version'] or '?'}\n")
-                else:
-                    fd.write(f"#     - name: {role_name} -- not instantiated\n")
-
-            for test_index, run_test in enumerate(session_transcript.run_tests):
-                test_id += 1
-
-                plan_test_spec = plan_session.tests[run_test.plan_test_index]
-                test_meta = self.transcript.test_meta[plan_test_spec.name]
-
-                result =  run_test.worst_result
-                if result:
-                    fd.write(f"not ok {test_id} - {test_meta.name}\n")
-                    fd.write("  ---\n")
-                    fd.write(f"  problem: {result.type} ({ result.spec_level }, { result.interop_level })\n")
-                    if result.msg:
-                        fd.write("  message:\n")
-                        fd.write("\n".join( [ f"    { p }" for p in result.msg.strip().split("\n") ] ) + "\n")
-                    fd.write("  where:\n")
-                    for loc in result.stacktrace:
-                        fd.write(f"    {loc[0]} {loc[1]}\n")
-                    fd.write("  ...\n")
-                else:
-                    directives = "" # FIXME f" # SKIP {test.skip}" if test.skip else ""
-                    fd.write(f"ok {test_id} - {test_meta.name}{directives}\n")
-
-        fd.write(f"1..{test_id}\n")
-        fd.write("# test run summary:\n")
-        fd.write(f"#   total: {summary.n_total}\n")
-        fd.write(f"#   passed: {summary.n_passed}\n")
-        fd.write(f"#   failed: {summary.n_failed}\n")
-        fd.write(f"#   skipped: {summary.n_skipped}\n")
-        fd.write(f"#   errors: {summary.n_errored}\n")
-
-
-class MultifileRunTranscriptSerializer:
-    """Generates the Feditest reports into a test matrix and a linked, separate
-    file per session. It uses a template path (comma-delimited string)
-    so variants of reports can be generated while sharing common templates. The file_ext
-    can be specified to support generating other formats like MarkDown.
-
-    The generation uses two primary templates. The 'test_matrix.jinja2' template is used for
-    the matrix generation and 'test_session.jinja2' is used for session file generation.
-
-    Any files in the a directory called "static" in a template folder will be copied verbatim
-    to the output directory (useful for css, etc.). If a file exists in the static folder of more
-    than one directory in the template path, earlier path entries will overwrite later ones.
-    """
-
-    def __init__(
-        self,
-        matrix_file: str | os.PathLike,
-        template_path: str,
-        file_ext: str = "html"
-    ):
-        self.matrix_file = matrix_file
-        templates_base_dir = os.path.join(os.path.dirname(__file__), "templates")
-        self.template_path = [
-            os.path.join(templates_base_dir, t) for t in template_path.split(",")
-        ]
-        self.file_ext = file_ext
-
-
-    def write(self, transcript: TestRunTranscript):
-        dir, base_matrix_file = os.path.split(self.matrix_file)
-        self._copy_static_files_to(dir)
-
-        jinja2_env = self._init_jinja2_env()
-
-        def session_file_path(plan_session):
-            last_dot = base_matrix_file.rfind('.')
-            if last_dot > 0:
-                ret = f'{ base_matrix_file[0:last_dot] }.{ plan_session.name }.{ self.file_ext }'
-            else:
-                ret = f'{ base_matrix_file }.{ plan_session.name }.{ self.file_ext }'
-            return ret
-
-        context = dict(
-            feditest=feditest,
-            run=transcript,
-            summary=transcript.build_summary(),
-            getattr=getattr,
-            sorted=sorted,
-            enumerate=enumerate,
-            get_results_for=_get_results_for,
-            remove_white=lambda s: re.sub("[ \t\n\a]", "_", str(s)),
-            session_file_path=session_file_path,
-            matrix_file_path=base_matrix_file,
-            permit_line_breaks_in_identifier=lambda s: re.sub(
-                r"(\.|::)", r"<wbr>\1", s
-            ),
-            local_name_with_tooltip=lambda n: f'<span title="{ n }">{ n.split(".")[-1] }</span>',
-            format_timestamp=lambda ts: ts.strftime("%Y:%m:%d-%H:%M:%S.%fZ") if ts else "",
-            format_duration=lambda s: str(s), # makes it easier to change in the future
-            len=len,
-            html_escape=lambda s: html.escape(str(s))
-        )
-
-        try:
-            with open(self.matrix_file, "w") as fp:
-                matrix_template = jinja2_env.get_template("test_matrix.jinja2")
-                fp.write(matrix_template.render(**context))
-
-            session_template = jinja2_env.get_template("test_session.jinja2")
-            for run_session in transcript.sessions:
-                session_context = dict(context)
-                session_context.update(
-                    run_session=run_session,
-                    summary=run_session.build_summary(),
-                )
-                plan_session = transcript.plan.sessions[run_session.plan_session_index]
-                with open(os.path.join(dir, session_file_path(plan_session)), "w" ) as fp:
-                    fp.write(session_template.render(**session_context))
-        except jinja2.exceptions.TemplateNotFound as ex:
-            with contextlib.redirect_stdout(sys.stderr):
-                print(f"ERROR: template '{ex}' not found")
-                print("Searched in the following directories:")
-                for entry in self.template_path:
-                    print(f"  {entry}")
-            sys.exit(1)
-
-
-    def _init_jinja2_env(self) -> jinja2.Environment:
-        templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(self.template_path)
-        )
-        templates.filters["regex_sub"] = lambda s, pattern, replacement: re.sub(
-            pattern, replacement, s
-        )
-        return templates
-
-
-    def _copy_static_files_to(self, dir: str | os.PathLike):
-        for path in reversed(self.template_path):
-            static_dir = os.path.join(path, "static")
-            if os.path.exists(static_dir):
-                for dirpath, _, filenames in os.walk(static_dir):
-                    if len(filenames) == 0:
-                        continue
-                    filedir_to = os.path.join(
-                        dir, os.path.relpath(dirpath, static_dir)
-                    )
-                    if not os.path.exists(filedir_to):
-                        os.makedirs(filedir_to, exist_ok=True)
-                    for filename in filenames:
-                        filepath_from = os.path.join(dirpath, filename)
-                        filepath_to = os.path.join(filedir_to, filename)
-                        # Notusing copytree since it would copy static too
-                        shutil.copyfile(filepath_from, filepath_to)
-
-
-def _get_results_for(run_transcript: TestRunTranscript, session_transcript: TestRunSessionTranscript, test_meta: TestMetaTranscript) -> Iterator[TestRunResultTranscript | None]:
-    """
-    Determine the set of test results running test_meta within session_transcript, and return it as an Iterator.
-    This is a set, not a single value, because we might run the same test multiple times (perhaps with differing role
-    assignments) in the same session. The run_transcript is passed in because session_transcript does not have a pointer "up".
-    """
-    plan_session = run_transcript.plan.sessions[session_transcript.plan_session_index]
-    for test_transcript in session_transcript.run_tests:
-        plan_testspec = plan_session.tests[test_transcript.plan_test_index]
-        if plan_testspec.name == test_meta.name:
-            yield test_transcript.worst_result
-    return None
-
-
-class JsonTestRunTranscriptSerializer(TestRunTranscriptSerializer):
-    """
-    An object that knows how to serialize a TestRun into JSON format
-    """
-    def _write(self, fd: IO[str]):
-        self.transcript.write(fd)

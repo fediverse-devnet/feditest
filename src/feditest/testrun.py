@@ -19,7 +19,8 @@ from feditest.reporting import error, fatal, info, trace, warning
 from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,
-    TestPlanSession,
+    TestPlanConstellationNode,
+    TestPlanSessionTemplate,
     TestPlanTestSpec,
 )
 from feditest.testruntranscript import (
@@ -58,7 +59,7 @@ class TestRunConstellation:
     """
     The instance of a TestPlanConstellation associated with a particular test run.
     """
-    def __init__(self, plan_constellation: TestPlanConstellation ):
+    def __init__(self, plan_constellation: TestPlanConstellation):
         self._plan_constellation = plan_constellation
         self._nodes : dict[str, Node] = {}
         self._appdata : dict[str, dict[str, str | None]] = {} # Record what apps and versions are running here. Preserved beyond teardown.
@@ -160,9 +161,10 @@ class HasStartEndResults(ABC):
 
 
 class TestRunTest(HasStartEndResults):
-    def __init__(self, run_session: 'TestRunSession', plan_test_index: int):
+    def __init__(self, run_session: 'TestRunSession', run_constellation: TestRunConstellation, plan_test_index: int):
         super().__init__()
         self.run_session = run_session
+        self.run_constellation = run_constellation
         self.plan_test_index = plan_test_index
 
 
@@ -179,8 +181,8 @@ class TestRunTest(HasStartEndResults):
 
 
 class TestRunFunction(TestRunTest):
-    def __init__(self, run_session: 'TestRunSession', test_from_test_function: feditest.TestFromTestFunction, plan_test_index: int):
-        super().__init__(run_session, plan_test_index)
+    def __init__(self, run_session: 'TestRunSession', run_constellation: TestRunConstellation, test_from_test_function: feditest.TestFromTestFunction, plan_test_index: int):
+        super().__init__(run_session, run_constellation, plan_test_index)
         self.test_from_test_function = test_from_test_function
 
 
@@ -201,7 +203,7 @@ class TestRunFunction(TestRunTest):
             constellation_role_name = local_role_name
             if self.plan_testspec.rolemapping and local_role_name in self.plan_testspec.rolemapping:
                 constellation_role_name = self.plan_testspec.rolemapping[local_role_name]
-            args[local_role_name] = self.run_session.run_constellation.get_node(constellation_role_name) # type: ignore[union-attr]
+            args[local_role_name] = self.run_constellation.get_node(constellation_role_name) # type: ignore[union-attr]
 
         try:
             self.test_from_test_function.test_function(**args)
@@ -250,8 +252,8 @@ class TestRunStepInClass(HasStartEndResults):
 
 
 class TestRunClass(TestRunTest):
-    def __init__(self, run_session: 'TestRunSession', test_from_test_class: feditest.TestFromTestClass, plan_test_index: int):
-        super().__init__(run_session, plan_test_index)
+    def __init__(self, run_session: 'TestRunSession', run_constellation: TestRunConstellation, test_from_test_class: feditest.TestFromTestClass, plan_test_index: int):
+        super().__init__(run_session, run_constellation, plan_test_index)
         self.run_steps : list[TestRunStepInClass] = []
         self.test_from_test_class = test_from_test_class
 
@@ -273,7 +275,7 @@ class TestRunClass(TestRunTest):
             constellation_role_name = local_role_name
             if self.plan_testspec.rolemapping and local_role_name in self.plan_testspec.rolemapping:
                 constellation_role_name = self.plan_testspec.rolemapping[local_role_name]
-            args[local_role_name] = self.run_session.run_constellation.get_node(constellation_role_name) # type: ignore[union-attr]
+            args[local_role_name] = self.run_constellation.get_node(constellation_role_name) # type: ignore[union-attr]
 
         try:
             test_instance = self.test_from_test_class.clazz(**args)
@@ -311,17 +313,17 @@ class TestRunClass(TestRunTest):
 
 
 class TestRunSession(HasStartEndResults):
-    def __init__(self, the_run: 'TestRun', plan_session_index: int):
+    def __init__(self, the_run: 'TestRun', plan_constellation_index: int):
         super().__init__()
         self.the_run = the_run
-        self.plan_session_index = plan_session_index
+        self.plan_constellation_index = plan_constellation_index
         self.run_tests : list[TestRunTest] = []
-        self.run_constellation : TestRunConstellation | None = None
+        self.run_constellation : TestRunConstellation | None = None # keep around for transcript
 
 
     @property
-    def plan_session(self) -> TestPlanSession:
-        return self.the_run.plan.sessions[self.plan_session_index]
+    def plan_session(self) -> TestPlanSessionTemplate:
+        return self.the_run.plan.session_template
 
 
     def __str__(self):
@@ -335,7 +337,6 @@ class TestRunSession(HasStartEndResults):
         return: the number of tests run, or a negative number to signal that not all tests were run or completed
         """
         self.started = datetime.now(UTC)
-        info(f'Started TestRunSession for TestPlanSession { self }')
 
         try:
             plan_test_index = controller.determine_next_test_index()
@@ -346,20 +347,20 @@ class TestRunSession(HasStartEndResults):
                     if test_spec.skip:
                         info('Skipping Test:', test_spec.skip)
                     else:
+                        if not self.run_constellation:
+                            # only allocate the constellation if we actually want to run a test
+                            self.run_constellation = TestRunConstellation(self.the_run.plan.constellations[self.plan_constellation_index])
+                            self.run_constellation.setup()
+
                         test = test_spec.get_test()
                         run_test : TestRunTest | None = None
                         if isinstance(test, feditest.TestFromTestFunction):
-                            run_test = TestRunFunction(self, test, plan_test_index)
+                            run_test = TestRunFunction(self, self.run_constellation, test, plan_test_index)
                         elif isinstance(test, feditest.TestFromTestClass):
-                            run_test = TestRunClass(self, test, plan_test_index)
+                            run_test = TestRunClass(self, self.run_constellation, test, plan_test_index)
                         else:
                             fatal('What is this?', test)
                             return # does not actually return, but makes lint happy
-
-                        if not self.run_constellation:
-                            # only allocate the constellation if we actually want to run a test
-                            self.run_constellation = TestRunConstellation(self.plan_session.constellation)
-                            self.run_constellation.setup()
 
                         self.run_tests.append(run_test) # constellation.setup() may raise, so don't add before that
 
@@ -431,14 +432,14 @@ class TestRun(HasStartEndResults):
         info(f'Started TestRun { self }')
 
         try:
-            plan_session_index = controller.determine_next_session_index()
-            while plan_session_index >=0 and plan_session_index<len(self.plan.sessions):
-                run_session = TestRunSession(self, plan_session_index)
+            plan_constellation_index = controller.determine_next_constellation_index()
+            while plan_constellation_index >=0 and plan_constellation_index<len(self.plan.constellations):
+                run_session = TestRunSession(self, plan_constellation_index)
                 self.run_sessions.append(run_session) # always append, even if we run the session plan session again
 
                 run_session.run(controller)
 
-                plan_session_index = controller.determine_next_session_index(plan_session_index)
+                plan_constellation_index = controller.determine_next_constellation_index(plan_constellation_index)
 
             return
 
@@ -460,8 +461,10 @@ class TestRun(HasStartEndResults):
         trans_test_metas = {}
         for run_session in self.run_sessions:
             nodes_transcript: dict[str, TestRunNodeTranscript] = {}
-            for node_role, appdata in cast(TestRunConstellation, run_session.run_constellation)._appdata.items():
-                nodes_transcript[node_role] = TestRunNodeTranscript(appdata)
+            run_constellation = cast(TestRunConstellation, run_session.run_constellation)
+            for node_role, appdata in run_constellation._appdata.items():
+                node = cast(TestPlanConstellationNode, run_constellation._plan_constellation.roles[node_role])
+                nodes_transcript[node_role] = TestRunNodeTranscript(appdata, cast(str, node.nodedriver))
             trans_constellation = TestRunConstellationTranscript(nodes_transcript)
             trans_tests : list[TestRunTestTranscript] = []
             for run_test in run_session.run_tests:
@@ -492,7 +495,7 @@ class TestRun(HasStartEndResults):
                     trans_test_metas[test.name] = TestMetaTranscript(test.name, test.needed_local_role_names(), meta_steps, test.description)
 
             trans_sessions.append(TestRunSessionTranscript(
-                    run_session.plan_session_index,
+                    run_session.plan_constellation_index,
                     cast(datetime, run_session.started),
                     cast(datetime, run_session.ended),
                     trans_constellation,

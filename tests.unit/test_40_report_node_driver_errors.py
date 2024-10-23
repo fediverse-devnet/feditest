@@ -10,16 +10,14 @@ from feditest.testplan import (
     TestPlan,
     TestPlanConstellation,
     TestPlanConstellationNode,
-    TestPlanSession,
+    TestPlanSessionTemplate,
     TestPlanTestSpec,
 )
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
-from feditest.testruntranscript import (
-    JsonTestRunTranscriptSerializer,
-    SummaryTestRunTranscriptSerializer,
-    TapTestRunTranscriptSerializer,
-)
+from feditest.testruntranscriptserializer.json import JsonTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.summary import SummaryTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.tap import TapTestRunTranscriptSerializer
 
 
 class NodeDriverTestException(Exception):
@@ -62,20 +60,23 @@ def init():
     for t in feditest.all_tests:
         print( f'TEST: { t }')
 
+
 def test_faulty_node_driver_reporting() -> None:
-    plan = TestPlan( [
-        TestPlanSession(
+    plan = TestPlan(
+        TestPlanSessionTemplate(
+            [
+                TestPlanTestSpec('test_40_report_node_driver_errors::init.<locals>.dummy')
+            ]
+        ),
+        [
             TestPlanConstellation( {
                 'node' : TestPlanConstellationNode(
                     nodedriver = 'test_40_report_node_driver_errors.init.<locals>.Faulty_NodeDriver',
                     parameters = { 'app' : 'Dummy for test_faulty_node_driver_reporting'}
                 )
             }),
-            [
-                TestPlanTestSpec('test_40_report_node_driver_errors::init.<locals>.dummy')
-            ]
-        )
-    ])
+        ]
+    )
     run = TestRun(plan)
     controller = AutomaticTestRunController(run)
 
@@ -84,17 +85,14 @@ def test_faulty_node_driver_reporting() -> None:
     transcript : feditest.testruntranscript.TestRunTranscript = run.transcribe()
     # transcript.save('transcript.json')
 
-    summary_serializer = SummaryTestRunTranscriptSerializer(transcript)
-    summary : str = summary_serializer.write_to_string()
+    summary = SummaryTestRunTranscriptSerializer().write_to_string(transcript)
     # print(summary)
     assert 'errors=1' in summary
 
-    tap_serializer = TapTestRunTranscriptSerializer(transcript)
-    tap : str = tap_serializer.write_to_string()
+    tap = TapTestRunTranscriptSerializer().write_to_string(transcript)
     # print(tap)
     assert 'errors: 1' in tap
 
-    json_serializer = JsonTestRunTranscriptSerializer(transcript)
-    j : str = json_serializer.write_to_string()
+    j = JsonTestRunTranscriptSerializer().write_to_string(transcript)
     # print(j)
     assert f'"type": "{NodeDriverTestException.__name__}"' in j

@@ -42,9 +42,9 @@ class TestRunController(ABC):
 
 
     @abstractmethod
-    def determine_next_session_index(self, last_session_index: int = -1) -> int:
+    def determine_next_constellation_index(self, last_constellation_index: int = -1) -> int:
         """
-        last_session_index: -1 means: we haven't started yet
+        last_constellation_index: -1 means: we haven't started yet
         """
         ...
 
@@ -66,8 +66,8 @@ class TestRunController(ABC):
 
 
 class AutomaticTestRunController(TestRunController):
-    def determine_next_session_index(self, last_session_index: int = -1) -> int:
-        return last_session_index+1
+    def determine_next_constellation_index(self, last_constellation_index: int = -1) -> int:
+        return last_constellation_index+1
 
 
     def determine_next_test_index(self, last_test_index: int = -1) -> int:
@@ -79,21 +79,22 @@ class AutomaticTestRunController(TestRunController):
 
 
 class InteractiveTestRunController(TestRunController):
-    def determine_next_session_index(self, last_session_index: int = -1) -> int:
+    def determine_next_constellation_index(self, last_constellation_index: int = -1) -> int:
         """
-        A TestRunSession has just completed. Which TestRunSession should we run next?
+        A TestRunSession with a certain TestRunConstellation has just completed. Which TestRunConstellation should
+        we run it with next?
         """
-        if last_session_index >= 0:
-            prompt = 'Which TestSession to run next? n(ext session), r(repeat just completed session), (session number), q(uit): '
+        if last_constellation_index >= 0:
+            prompt = 'Which Constellation to run tests with next? n(ext constellation), r(repeat just completed constellation), (constellation number), q(uit): '
         else:
-            prompt = 'Which TestSession to run first? n(ext/first session), (session number), q(uit): '
+            prompt = 'Which Constellation to run first? n(ext/first constellation), (constellation number), q(uit): '
         while True:
             answer = self._prompt_user(prompt)
             match answer:
                 case 'n':
-                    return last_session_index+1
+                    return last_constellation_index+1
                 case 'r':
-                    return last_session_index
+                    return last_constellation_index
                 case 'q':
                     raise AbortTestRunException()
             try:

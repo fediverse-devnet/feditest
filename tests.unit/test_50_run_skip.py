@@ -6,7 +6,7 @@ import pytest
 
 import feditest
 from feditest.nodedrivers import SkipTestException
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSessionTemplate, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
 from feditest import test
@@ -59,8 +59,8 @@ def the_test_plan() -> TestPlan:
 
     constellation = TestPlanConstellation({}, 'No nodes needed')
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
-    session = TestPlanSession(constellation, tests, "Test a test that wants to be skipped")
-    ret = TestPlan( [ session ] )
+    session = TestPlanSessionTemplate(tests, "Test a test that wants to be skipped")
+    ret = TestPlan(session, [ constellation ])
     return ret
 
 

@@ -35,14 +35,12 @@ def account_manager() -> StaticAccountManager:
         FediverseAccount(None, 'user-2-unallocated'),
         FediverseAccount('role3', 'user-3-role3'),
     ]
-
     initial_non_existing_accounts : list[FediverseNonExistingAccount] = [
         FediverseNonExistingAccount(None, 'nonuser-0-unallocated'),
         FediverseNonExistingAccount('role1', 'nonuser-1-role1'),
         FediverseNonExistingAccount(None, 'nonuser-2-unallocated'),
         FediverseNonExistingAccount('role3', 'nonuser-3-role3'),
     ]
-
     ret = StaticAccountManager(initial_accounts, initial_non_existing_accounts)
     return ret
 

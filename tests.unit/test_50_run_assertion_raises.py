@@ -8,10 +8,14 @@ import pytest
 
 import feditest
 from feditest import SpecLevel, InteropLevel, assert_that, test
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSessionTemplate, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
-from feditest.testruntranscript import TapTestRunTranscriptSerializer, JsonTestRunTranscriptSerializer, MultifileRunTranscriptSerializer, SummaryTestRunTranscriptSerializer, TestRunTestTranscript
+from feditest.testruntranscript import TestRunTestTranscript
+from feditest.testruntranscriptserializer.json import JsonTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.html import HtmlRunTranscriptSerializer
+from feditest.testruntranscriptserializer.summary import SummaryTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.tap import TapTestRunTranscriptSerializer
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -174,8 +178,8 @@ def the_test_plan() -> TestPlan:
 
     constellation = TestPlanConstellation({}, 'No nodes needed')
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
-    session = TestPlanSession(constellation, tests, "Test tests that raise various AssertionFailures")
-    ret = TestPlan( [ session ] )
+    session = TestPlanSessionTemplate(tests, "Test tests that raise various AssertionFailures")
+    ret = TestPlan( session, [ constellation ] )
     return ret
 
 
@@ -229,10 +233,10 @@ def test_run_testplan(the_test_plan: TestPlan):
     multi_assert( 23, transcript.sessions[0].run_tests, SpecLevel.UNSPECIFIED, InteropLevel.UNKNOWN )
 
     if False: # Make linter happy with import
-        TapTestRunTranscriptSerializer(transcript).write(f'{ basename(__file__) }.transcript.tap')
-        MultifileRunTranscriptSerializer(f'{ basename(__file__) }.transcript.html', 'default').write(transcript)
-        JsonTestRunTranscriptSerializer(transcript).write(f'{ basename(__file__) }.transcript.json')
-        SummaryTestRunTranscriptSerializer(transcript).write(f'{ basename(__file__) }.transcript.summary.txt')
+        TapTestRunTranscriptSerializer().write(transcript, f'{ basename(__file__) }.transcript.tap')
+        HtmlRunTranscriptSerializer().write( transcript, f'{ basename(__file__) }.transcript.html')
+        JsonTestRunTranscriptSerializer().write(transcript, f'{ basename(__file__) }.transcript.json')
+        SummaryTestRunTranscriptSerializer().write(transcript, f'{ basename(__file__) }.transcript.summary.txt')
 
 
 def multi_assert(index: int, t: list[TestRunTestTranscript], spec_level: SpecLevel, interop_level: InteropLevel):

@@ -7,7 +7,7 @@ import pytest
 import feditest
 from feditest import test
 from feditest.nodedrivers import Node
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSessionTemplate, TestPlanTestSpec
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -50,52 +50,44 @@ def unnamed_constellations() -> list[TestPlanConstellation]:
 
 
 @pytest.fixture
-def unnamed_session_templates(test_specs: list[TestPlanTestSpec]) -> list[TestPlanSession]:
-    return [
-        TestPlanSession(TestPlanConstellation({'role_a': None, 'role_b': None}, None), test_specs),
-        TestPlanSession(TestPlanConstellation({'role_a': None, 'role_b': None, 'role_c': None}, None), test_specs),
-    ]
+def unnamed_session_template(test_specs: list[TestPlanTestSpec]) -> TestPlanSessionTemplate:
+    return TestPlanSessionTemplate(test_specs)
 
 
-def construct_testplan(constellations: list[TestPlanConstellation], session_templates: list[TestPlanSession], testplan_name: str) -> TestPlan:
+def construct_testplan(constellations: list[TestPlanConstellation], session_template: TestPlanSessionTemplate, testplan_name: str) -> TestPlan:
     """
     Helper to put it together.
     """
-    sessions = []
-    for session_template in session_templates:
-        for constellation in constellations:
-            session = session_template.instantiate_with_constellation(constellation, constellation.name)
-            sessions.append(session)
-
-    test_plan = TestPlan(sessions, testplan_name)
+    test_plan = TestPlan(session_template, constellations, testplan_name)
     test_plan.simplify()
 
     return test_plan
 
 
-def test_structure(unnamed_constellations: list[TestPlanConstellation], unnamed_session_templates: list[TestPlanSession]) -> None:
+def test_structure(unnamed_constellations: list[TestPlanConstellation], unnamed_session_template: TestPlanSessionTemplate) -> None:
     """
     Test the structure of the TestPlan, ignore the naming.
     """
-    test_plan = construct_testplan(unnamed_constellations, unnamed_session_templates, None)
-    assert len(test_plan.sessions) == 4
+    test_plan = construct_testplan(unnamed_constellations, unnamed_session_template, None)
+    assert test_plan.session_template
+    assert len(test_plan.constellations) == 2
 
 
-def test_all_unnamed(unnamed_constellations: list[TestPlanConstellation], unnamed_session_templates: list[TestPlanSession]) -> None:
+def test_all_unnamed(unnamed_constellations: list[TestPlanConstellation], unnamed_session_template: TestPlanSessionTemplate) -> None:
     """
     Only test the naming.
     """
-    test_plan = construct_testplan(unnamed_constellations, unnamed_session_templates, None)
+    test_plan = construct_testplan(unnamed_constellations, unnamed_session_template, None)
     assert test_plan.name is None
     assert str(test_plan) == "Unnamed"
 
 
-def test_testplan_named(unnamed_constellations: list[TestPlanConstellation], unnamed_session_templates: list[TestPlanSession]) -> None:
+def test_testplan_named(unnamed_constellations: list[TestPlanConstellation], unnamed_session_template: TestPlanSessionTemplate) -> None:
     """
     Only test the naming.
     """
     TESTPLAN_NAME = 'My test plan'
-    test_plan = construct_testplan(unnamed_constellations, unnamed_session_templates, TESTPLAN_NAME)
+    test_plan = construct_testplan(unnamed_constellations, unnamed_session_template, TESTPLAN_NAME)
     assert test_plan.name == TESTPLAN_NAME
     assert str(test_plan) == TESTPLAN_NAME
 
