@@ -1,14 +1,13 @@
 """
 Test the equivalent of `feditest create-session-template`
 """
-from typing import Any
 
 import pytest
 
 import feditest
 from feditest import test
 from feditest.nodedrivers import Node
-from feditest.testplan import TestPlanConstellation, TestPlanConstellationNode, TestPlanSessionTemplate, TestPlanTestSpec
+from feditest.testplan import TestPlanSessionTemplate, TestPlanTestSpec
 
 
 @pytest.fixture(scope="module", autouse=True)
