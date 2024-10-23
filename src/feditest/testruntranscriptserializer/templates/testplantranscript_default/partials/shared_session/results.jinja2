@@ -30,7 +30,7 @@
 <h2>Test Results</h2>
 <div class="feditest tests">
 {%- for test_index, run_test in enumerate(run_session.run_tests) %}
-{%-     set plan_test_spec = transcript.plan.session.tests[run_test.plan_test_index] %}
+{%-     set plan_test_spec = transcript.plan.session_template.tests[run_test.plan_test_index] %}
 {%-     set test_meta = transcript.test_meta[plan_test_spec.name] %}
  <div class="test" id="test-{{ test_index }}">
   <h4><span class="prefix">Test:</span> {{ test_meta.name }}</h4>

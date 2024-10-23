@@ -54,7 +54,7 @@
       </tr>
 {%-     for spec_level in [ feditest.SpecLevel.SHOULD, feditest.SpecLevel.IMPLIED, feditest.SpecLevel.UNSPECIFIED ] %}
       <tr>
-       <th>{{ spec_level.formatted_name() }}</th>
+       <th>{{ spec_level.formatted_name }}</th>
 {%-         for interop_level in feditest.InteropLevel %}
        <td class="status {{ spec_level.name.lower() }} {{ interop_level.name.lower() }} moreinfo">
         <div>

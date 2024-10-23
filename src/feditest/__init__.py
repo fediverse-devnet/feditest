@@ -242,6 +242,7 @@ class SpecLevel(Enum):
     UNSPECIFIED = 4
 
 
+    @property
     def formatted_name(self):
         return self.name.capitalize()
 
@@ -253,6 +254,7 @@ class InteropLevel(Enum):
     UNKNOWN = 4
 
 
+    @property
     def formatted_name(self):
         return self.name.capitalize()
 
@@ -268,7 +270,7 @@ class AssertionFailure(Exception):
 
 
     def __str__(self):
-        return str(self.msg)
+        return f'AssertionFailure ({ self.spec_level.formatted_name }, { self.interop_level.formatted_name }): { self.msg }'
 
 
 def _assert_match(
