@@ -50,6 +50,9 @@ def test_tests_registered() -> None:
 def test_functions() -> None:
     functions = [ testInstance for testInstance in feditest.all_tests.values() if isinstance(testInstance, TestFromTestFunction) ]
     assert len(functions) == 3
+    functions[0].name.endswith('test1')
+    functions[1].name.endswith('test2')
+    functions[2].name.endswith('test3')
 
 
 def test_classes() -> None:
@@ -57,5 +60,8 @@ def test_classes() -> None:
     assert len(classes) == 1
 
     singleClass = classes[0]
-    assert len(singleClass.steps) == 2
+    assert singleClass.name.endswith('TestA')
 
+    assert len(singleClass.steps) == 2
+    singleClass.steps[0].name.startswith('testa')
+    singleClass.steps[1].name.startswith('testa')

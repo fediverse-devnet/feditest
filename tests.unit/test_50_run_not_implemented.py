@@ -6,7 +6,7 @@ import pytest
 
 import feditest
 from feditest.nodedrivers import AccountManager, Node, NodeConfiguration, NodeDriver, NotImplementedByNodeError
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSession, TestPlanTestSpec
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanSessionTemplate, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
 from feditest import test
@@ -59,7 +59,6 @@ def init_tests():
 
         raise NotImplementedByNodeError(node, DummyNode.missing_method)
 
-
     ##
     ## FediTest tests end here
     ## (Don't forget the next two lines)
@@ -70,22 +69,22 @@ def init_tests():
 
 
 @pytest.fixture(autouse=True)
-def the_test_plan() -> TestPlan:
+def test_plan_fixture() -> TestPlan:
     """
     The test plan tests all known tests.
     """
 
     constellation = TestPlanConstellation({}, 'No nodes needed')
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
-    session = TestPlanSession(constellation, tests, "Test tests that throw NotImplemented errors")
-    ret = TestPlan( [ session ] )
+    session = TestPlanSessionTemplate(tests, "Test tests that throw NotImplemented errors")
+    ret = TestPlan(session, [ constellation ])
     return ret
 
 
-def test_run_testplan(the_test_plan: TestPlan):
-    the_test_plan.check_can_be_executed()
+def test_run_testplan(test_plan_fixture: TestPlan):
+    test_plan_fixture.check_can_be_executed()
 
-    test_run = TestRun(the_test_plan)
+    test_run = TestRun(test_plan_fixture)
     controller = AutomaticTestRunController(test_run)
     test_run.run(controller)
 

@@ -11,6 +11,7 @@ from feditest.nodedrivers import NodeDriver
 
 @pytest.fixture(scope="module", autouse=True)
 def init():
+    """ Keep these isolated to this module """
     feditest.all_node_drivers = {}
     feditest._loading_node_drivers = True
 

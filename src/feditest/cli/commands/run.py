@@ -3,10 +3,11 @@ Run one or more tests
 """
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
+from typing import cast
 
 import feditest
 from feditest.cli.utils import (
-    create_plan_from_session_templates_and_constellations,
+    create_plan_from_session_and_constellations,
     create_plan_from_testplan
 )
 from feditest.registry import Registry, set_registry_singleton
@@ -14,17 +15,12 @@ from feditest.reporting import fatal, warning
 from feditest.testplan import TestPlan
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController, InteractiveTestRunController, TestRunController
-from feditest.testruntranscript import (
-    JsonTestRunTranscriptSerializer,
-    MultifileRunTranscriptSerializer,
-    SummaryTestRunTranscriptSerializer,
-    TapTestRunTranscriptSerializer,
-    TestRunTranscriptSerializer,
-)
+from feditest.testruntranscriptserializer.json import JsonTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.html import HtmlRunTranscriptSerializer
+from feditest.testruntranscriptserializer.summary import SummaryTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.tap import TapTestRunTranscriptSerializer
 from feditest.utils import FEDITEST_VERSION, hostname_validate
 
-
-DEFAULT_TEMPLATE = 'default'
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -49,7 +45,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     if args.testplan:
         plan = create_plan_from_testplan(args)
     else:
-        plan = create_plan_from_session_templates_and_constellations(args)
+        plan = create_plan_from_session_and_constellations(args)
 
     if not plan:
         fatal('Cannot find or create test plan ')
@@ -71,22 +67,21 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
 
     transcript : feditest.testruntranscript.TestRunTranscript = test_run.transcribe()
 
-    summary_serializer = SummaryTestRunTranscriptSerializer(transcript)
-    serializer : TestRunTranscriptSerializer | None = None
     if isinstance(args.tap, str) or args.tap:
-        serializer = TapTestRunTranscriptSerializer(transcript)
-        serializer.write(args.tap)
+        TapTestRunTranscriptSerializer().write(transcript, cast(str|None, args.tap))
 
-    if isinstance(args.html, str) or args.html:
-        multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template)
-        multifile_serializer.write(transcript)
+    if isinstance(args.html, str):
+        HtmlRunTranscriptSerializer(args.template_path).write(transcript, args.html)
+    elif args.html:
+        warning('--html requires a filename: skipping')
+    elif args.template_path:
+        warning('--template-path only supported with --html. Ignoring.')
 
     if isinstance(args.json, str) or args.json:
-        serializer = JsonTestRunTranscriptSerializer(transcript)
-        serializer.write(args.json)
+        JsonTestRunTranscriptSerializer().write(transcript, args.json)
 
-    if isinstance(args.summary, str) or args.summary or serializer is None:
-        summary_serializer.write(args.summary)
+    if isinstance(args.summary, str) or args.summary:
+        SummaryTestRunTranscriptSerializer().write(transcript, args.summary)
 
     if transcript.build_summary().n_failed > 0:
         print('FAILED.')
@@ -112,7 +107,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
     parser.add_argument('--testplan', help='Name of the file that contains the test plan to run')
     parser.add_argument('--constellation', action='append', help='File(s) each containing a JSON fragment defining a constellation')
-    parser.add_argument('--session', '--session-template', action='append', help='File(s) each containing a JSON fragment defining a test session')
+    parser.add_argument('--session', '--session-template', required=False, help='File(s) each containing a JSON fragment defining a test session')
     parser.add_argument('--node', action='append',
                         help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
@@ -124,8 +119,8 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     html_group = parser.add_argument_group('html', 'HTML options')
     html_group.add_argument('--html',
                         help="Write results in HTML format to the provided file.")
-    html_group.add_argument('--template', default=DEFAULT_TEMPLATE,
-                        help=f"When specifying --html, use this template (defaults to '{ DEFAULT_TEMPLATE }').")
+    html_group.add_argument('--template-path', required=False,
+                        help="When specifying --html, use this template path override (comma separated directory names)")
     parser.add_argument('--json', '--testresult', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,

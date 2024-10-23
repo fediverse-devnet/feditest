@@ -10,7 +10,7 @@ import pytest
 import feditest
 from feditest import assert_that, step, test, SpecLevel
 from feditest.protocols.sandbox import SandboxLogEvent, SandboxMultClient, SandboxMultServer
-from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSession, TestPlanTestSpec
+from feditest.testplan import TestPlan, TestPlanConstellation, TestPlanConstellationNode, TestPlanSessionTemplate, TestPlanTestSpec
 from feditest.testrun import TestRun
 from feditest.testruncontroller import AutomaticTestRunController
 
@@ -34,6 +34,10 @@ def init_tests():
     feditest._registered_as_test = {}
     feditest._registered_as_test_step = {}
     feditest._loading_tests = True
+
+    ##
+    ## FediTest tests start here
+    ##
 
     @test
     class ExampleTest1:
@@ -68,6 +72,7 @@ def init_tests():
             assert_that(log[0].a, equal_to(self.a))
             assert_that(log[0].b, equal_to(self.b))
             assert_that(log[0].c, equal_to(self.c))
+
 
         @step
         def step2(self):
@@ -134,12 +139,17 @@ def init_tests():
 
         assert_that(c, equal_to(a * b))
 
+    ##
+    ## FediTest tests end here
+    ## (Don't forget the next two lines)
+    ##
+
     feditest._loading_tests = False
     feditest._load_tests_pass2()
 
 
 @pytest.fixture(autouse=True)
-def the_test_plan() -> TestPlan:
+def test_plan_fixture() -> TestPlan:
     """
     The test plan tests all known tests.
     """
@@ -149,15 +159,15 @@ def the_test_plan() -> TestPlan:
     }
     constellation = TestPlanConstellation(roles, 'clientA vs server1')
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
-    session = TestPlanSession(constellation, tests, "clientA vs server")
-    ret = TestPlan( [ session ], "All sandbox tests running clientA against server1")
+    session = TestPlanSessionTemplate(tests, "clientA vs server")
+    ret = TestPlan(session, [ constellation ], "All sandbox tests running clientA against server1")
     return ret
 
 
-def test_run_testplan(the_test_plan: TestPlan):
-    the_test_plan.check_can_be_executed()
+def test_run_testplan(test_plan_fixture: TestPlan):
+    test_plan_fixture.check_can_be_executed()
 
-    test_run = TestRun(the_test_plan)
+    test_run = TestRun(test_plan_fixture)
     controller = AutomaticTestRunController(test_run)
     test_run.run(controller)
 

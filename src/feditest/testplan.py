@@ -339,52 +339,36 @@ class TestPlanTestSpec(msgspec.Struct):
                 self.rolemapping = new_rolemapping
 
 
-class TestPlanSession(msgspec.Struct):
+class TestPlanSessionTemplate(msgspec.Struct):
     """
-    A TestPlanSession spins up and tears down a constellation of Nodes against which a sequence of tests
-    is run. The constellation has 1 or more roles, which are bound to nodes that communicate with
-    each other according to the to-be-tested protocol(s) during the test.
-
-    This class is used in two ways:
-    1. as part of a TestPlan, which means the roles in the constellation are bound to particular NodeDrivers
-    2. as a template in TestPlan generation, which means the roles in the constellation have been defined
-       but aren't bound to particular NodeDrivers yet
+    A TestPlanSessionTemplate defines a list of tests that will be executed in the context of
+    a particular TestPlanConstellation. The session template and the constellation together make the session.
     """
-    constellation : TestPlanConstellation
     tests : list[TestPlanTestSpec]
     name: str | None = None
 
 
     @staticmethod
-    def load(filename: str) -> 'TestPlanSession':
+    def load(filename: str) -> 'TestPlanSessionTemplate':
         """
         Read a file, and instantiate a TestPlanSession from what we find.
         """
         with open(filename, 'r', encoding='utf-8') as f:
             testplansession_json = json.load(f)
 
-        return msgspec.convert(testplansession_json, type=TestPlanSession)
+        return msgspec.convert(testplansession_json, type=TestPlanSessionTemplate)
 
 
     def __str__(self):
         return self.name if self.name else 'Unnamed'
 
 
-    def is_template(self):
-        """
-        Returns true if the roles in the constellation have not all been bound to NodeDrivers.
-        """
-        return self.constellation.is_template()
-
-
-    def check_can_be_executed(self, context_msg: str = "") -> None:
-        self.constellation.check_can_be_executed(context_msg)
-
+    def check_can_be_executed(self, constellation: TestPlanConstellation, context_msg: str = "") -> None:
         if not self.tests:
             raise TestPlanError(context_msg + 'No tests have been defined.')
 
         for index, test_spec in enumerate(self.tests):
-            test_spec.check_can_be_executed(self.constellation, context_msg + f'Test (index {index}): ')
+            test_spec.check_can_be_executed(constellation, context_msg + f'Test (index {index}): ')
 
 
     def needed_constellation_role_names(self) -> set[str]:
@@ -392,15 +376,6 @@ class TestPlanSession(msgspec.Struct):
         for test in self.tests:
             ret |= test.needed_constellation_role_names()
         return ret
-
-
-    def instantiate_with_constellation(self, constellation: TestPlanConstellation, name: str | None = None) -> 'TestPlanSession':
-        """
-        Treat this session as a template. Create a new (non-template) session that's like this one
-        and that uses the provided constellation.
-        """
-        constellation.check_defines_all_role_names(self.needed_constellation_role_names())
-        return TestPlanSession(constellation=constellation,tests=self.tests, name=name)
 
 
     def simplify(self) -> None:
@@ -428,10 +403,10 @@ class TestPlanSession(msgspec.Struct):
 
 class TestPlan(msgspec.Struct):
     """
-    A TestPlan defines one or more TestPlanSessions. TestPlanSessions can be run sequentially, or
-    (in theory; no code yet) in parallel.
+    A TestPlan runs the same TestPlanSession with one or more TestPlanConstellations.
     """
-    sessions : list[TestPlanSession] = []
+    session_template : TestPlanSessionTemplate
+    constellations : list[TestPlanConstellation]
     name: str | None = None
     type: str = 'feditest-testplan'
     feditest_version: str = FEDITEST_VERSION
@@ -441,8 +416,7 @@ class TestPlan(msgspec.Struct):
         """
         If possible, simplify this test plan.
         """
-        for session in self.sessions:
-            session.simplify()
+        self.session_template.simplify()
 
 
     @staticmethod
@@ -489,8 +463,6 @@ class TestPlan(msgspec.Struct):
         """
         Check that this TestPlan is ready for execution. If not, raise a TestPlanEerror that explains the problem.
         """
-        if not self.sessions:
-            raise TestPlanError('No TestPlanSessions have been defined in TestPlan')
-
-        for index, session in enumerate(self.sessions):
-            session.check_can_be_executed(context_msg + f'TestPlanSession {index}: ')
+        for constellation in self.constellations:
+            constellation.check_can_be_executed(context_msg + f'Constellation { constellation }: ')
+            self.session_template.check_can_be_executed(constellation, context_msg + f'TestPlanSession with Constellation { constellation }: ')

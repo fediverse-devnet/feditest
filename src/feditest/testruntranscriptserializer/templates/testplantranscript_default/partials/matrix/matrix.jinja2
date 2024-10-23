@@ -1,0 +1,54 @@
+{%  macro column_headings(first) %}
+       <tr>
+        <th>{{ first }}</th>
+{%-     for run_session in transcript.sessions %}
+{%-         set constellation = run_session.constellation %}
+        <th>
+         <div class="title">
+          <a href="{{ session_file_path(run_session) }}">
+           <dl class="roles">
+{%-         for role, node in constellation.nodes.items() %}
+             <dt>{{ role }}</dt>
+             <dd>{{ node.node_driver }}</dd>
+{%-         endfor %}
+           </dl>
+          </a>
+         </div>
+        </th>
+{%-     endfor %}
+       </tr>
+{%  endmacro %}
+
+    <div class="feditest tests">
+     <table class="tests">
+      <colgroup>
+       <col>
+{%- for run_session in transcript.sessions %}
+       <col class="session">
+{%- endfor %}
+      </colgroup>
+      <thead>
+{{  column_headings("{0} tests in {1} sessions (alphabetical order)".format(len(transcript.test_meta), len(transcript.sessions))) }}
+      </thead>
+      <tbody>
+{%- for test_index, ( _, test_meta ) in enumerate(sorted(transcript.test_meta.items())) %}
+       <tr>
+        <td class="namedesc">
+         <span class="name">{{ permit_line_breaks_in_identifier(test_meta.name) }}</span>
+{%-     if test_meta.description %}
+         <span class="description">{{ test_meta.description }}</span>
+{%-     endif %}
+        </td>
+{%-     for session_index, run_session in enumerate(transcript.sessions) %}
+{%-         for result in get_results_for(transcript, run_session, test_meta) %}
+{%              include "partials/matrix/testresult.jinja2" %}
+{%-         endfor %}
+{%-     endfor %}
+       </tr>
+{%- endfor %}
+      </tbody>
+      <tfoot>
+{{  column_headings("") }}
+      </tfoot>
+     </table>
+    </div>
