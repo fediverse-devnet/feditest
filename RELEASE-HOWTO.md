@@ -1,11 +1,5 @@
 # Release How-To
 
-## Merge
-
-1. Repo `feditest`: merge `develop` into `main`
-1. Repo `feditest-tests-fediverse`: merge `develop` into `main`
-1. Repo `feditest-tests-sandbox`: merge `develop` into `main`
-
 ## Smoke test and test with sandbox
 
 1. On the Mac:
@@ -35,11 +29,8 @@
       1. `make tests`: unit tests and smoke tests show no errors
    1. Repo `feditest-tests-fediverse`: `git checkout develop`
    1. Clean re-run and report generation of the sandbox tests:
-      1. `make -f Makefile.create clean FEDITEST=../feditest/venv.linux.main/bin/feditest`
-      1. `make -f Makefile.run clean FEDITEST=../feditest/venv.linux.main/bin/feditest`
-      1. `make -f Makefile.create examples FEDITEST=../feditest/venv.linux.main/bin/feditest`
-      1. `make -f Makefile.run examples FEDITEST=../feditest/venv.linux.main/bin/feditest`
-      1. `xdg-open examples/testresults/*.html` and check for plausbility of reports
+      1. Run quickstart examples from https://feditest.org/quickstart/evaluate/ (staged website version), but instead of `feditest` use `../feditest/venv.linux.default/bin/feditest`.
+      1. `xdg-open results/*.html` and check for plausbility of reports
 
 ## Tag versions
 
@@ -53,7 +44,6 @@
       1. `git push`
       1. `git push --tags`
    1. Update repo `feditest`, branch `develop`:
-      1. `git commit` to `main`
       1. `git tag -a vVERSION -m vVERSION`
       1. `git push`
       1. `git push --tags`
@@ -68,9 +58,10 @@
 ## Publish to PyPi
 
 1. On the Mac:
+    1. Repo `feditest`, branch `main`
     1. `make release`
     1. `venv.release/bin/twine upload dist/*`
-    1. `pip install --upgrade feditest`
+    1. `pip3.11 install --upgrade feditest`
     1. `feditest version` now shows `VERSION`
 
 ## Publish to UBOS repos
