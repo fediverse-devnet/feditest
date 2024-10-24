@@ -5,32 +5,46 @@ build-backend = "hatchling.build"
 
 [project]
 name = "feditest"
-version = "0.3"
+version = "0.4"
 authors = [
   { name="Johannes Ernst", email="git@j12t.org" },
   { name="Steve Bate", email="svc-github@stevebate.net" }
 ]
+maintainers = [
+  { name="Johannes Ernst", email="git@j12t.org" },
+  { name="Steve Bate", email="svc-github@stevebate.net" }
+]
 dependencies = [
+  "cryptography",
   "httpx",
   "langcodes",
   "msgspec",
   "multidict",
   "jinja2",
   "pyhamcrest",
-  "pytest"
+  "pytest",
+  "requests",
+  "types-requests",
+  "pre-commit"
 ]
-description = "Testing federated protocols"
-readme = "README.md"
-requires-python = ">=3.11" # type annotations changed in 3.9, @override in 3.12
+description = "Test framework to test distributed, heterogeneous systems with complex protocols such as the Fediverse"
+readme = "README-PyPI.md"
+
+# We develop on 3.11, so we can support debian 12 (including Raspberry PI OS) systems,
+# which have not been upgraded to 3.12 yet.
+requires-python = ">=3.11.2, <3.12.0"
+# For production, we'd like to say this, but there does not seem to be a syntax for that
+# requires-python = ">=3.11"
+# We really want 3.12 so we can use @override
+
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Environment :: Console",
-    "Framework :: Pytest",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Topic :: Internet",
     "Topic :: Software Development :: Testing"
 ]
 
@@ -40,11 +54,7 @@ feditest = "feditest.cli:main"
 
 
 [project.urls]
-"Fediverse Developer Network" = "https://fedidevs.org/"
-Documentation = "https://fedidevs.org/projects/testing/feditest/"
-Homepage = "https://github.com/fediverse-devnet/feditest"
-Issues = "https://github.com/fediverse-devnet/feditest/issues"
-
+Homepage = "https://feditest.org/"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -56,8 +66,9 @@ exclude = [
 max-line-length=120
 disable="arguments-renamed, empty-docstring, global-variable-not-assigned, line-too-long, missing-class-docstring, missing-function-docstring, too-few-public-methods, too-many-arguments"
 
-
 [tool.pytest.ini_options]
-python_files = "test_*.py"
-python_classes = "DoNotCollect" # Is there a better way of doing this?
-python_functions = "test_*"
+pythonpath = ["src"]
+testpaths = [ "tests.unit" ]
+
+[tool.ruff]
+target-version = "py311"

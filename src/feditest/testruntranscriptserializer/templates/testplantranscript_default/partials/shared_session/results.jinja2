@@ -1,0 +1,59 @@
+<h2>Constellation</h2>
+<div class="roles">
+{%- for role_name, node in run_session.constellation.nodes.items() %}
+ <div class="role">
+  <h3 class="name">{{ role_name }}</h3>
+  <div class="driver">{{ local_name_with_tooltip(node.node_driver) }}</div>
+  <div class="app">{{ node.appdata['app'] }}</div>
+  <div class="appversion">{{ node.appdata['app_version'] or '?'}}</div>
+{%-     if node.parameters %}
+  <table class="parameters">
+   <thead>
+    <tr>
+     <th colspan="2">Parameters:</th>
+    </tr>
+   </thead>
+   <tbody>
+{%-         for key, value in node.parameters.items() %}
+    <tr>
+     <td class="key">{{ key }}</td>
+     <td class="value">{{ value }}</td>
+    </tr>
+{%-         endfor %}
+   </tbody>
+  </table>
+{%-     endif %}
+ </div>
+{%- endfor %}
+</div>
+
+<h2>Test Results</h2>
+<div class="feditest tests">
+{%- for test_index, run_test in enumerate(run_session.run_tests) %}
+{%-     set plan_test_spec = transcript.plan.session_template.tests[run_test.plan_test_index] %}
+{%-     set test_meta = transcript.test_meta[plan_test_spec.name] %}
+ <div class="test" id="test-{{ test_index }}">
+  <h4><span class="prefix">Test:</span> {{ test_meta.name }}</h4>
+{%-     if test_meta.description %}
+  <div class="description">{{ test_meta.description}}</div>
+{%-     endif %}
+  <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }} (duration: {{ format_duration(run_test.ended - run_test.started) }})</p>
+{%-     with result=run_test.worst_result %}
+{%-         include "partials/shared_session/testresult.jinja2" %}
+{%-     endwith %}
+{%-     for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
+  <div class="step">
+{%          set test_step_meta = test_meta.steps[run_step.plan_step_index] %}
+   <h5><span class="prefix">Test step:</span> {{ test_step_meta.name }}</h5>
+{%-         if test_step_meta.description %}
+   <div class="description">{{ test_step_meta.description}}</div>
+{%-         endif %}
+   <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }} (duration: {{ format_duration(run_test.ended - run_test.started) }})</p>
+{%-         with result=run_step.result, idmod='step' %}
+{%-             include "partials/shared_session/testresult.jinja2" %}
+{%-         endwith %}
+  </div>
+{%-     endfor %}
+ </div>
+{%- endfor %}
+</div>

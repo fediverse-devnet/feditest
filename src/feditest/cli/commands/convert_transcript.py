@@ -5,17 +5,12 @@ Convert a TestRunTranscript to a different format
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
 from feditest.reporting import warning
-from feditest.testruntranscript import (
-    JsonTestRunTranscriptSerializer,
-    MultifileRunTranscriptSerializer,
-    SummaryTestRunTranscriptSerializer,
-    TapTestRunTranscriptSerializer,
-    TestRunTranscript,
-    TestRunTranscriptSerializer,
-)
+from feditest.testruntranscript import TestRunTranscript
+from feditest.testruntranscriptserializer.json import JsonTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.html import HtmlRunTranscriptSerializer
+from feditest.testruntranscriptserializer.summary import SummaryTestRunTranscriptSerializer
+from feditest.testruntranscriptserializer.tap import TapTestRunTranscriptSerializer
 from feditest.utils import FEDITEST_VERSION
-
-DEFAULT_TEMPLATE = 'default'
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
@@ -23,25 +18,27 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     """
 
     transcript = TestRunTranscript.load(args.in_file)
+    if not transcript.is_compatible_type():
+        warning(f'Transcript has unexpected type { transcript.type }: incompatibilities may occur.')
+
     if not transcript.has_compatible_version():
         warning(f'Transcript was created by FediTest { transcript.feditest_version }, you are running FediTest { FEDITEST_VERSION }: incompatibilities may occur.')
 
-    serializer : TestRunTranscriptSerializer | None = None
-    if isinstance(args.tap, str) or args.tap:
-        serializer = TapTestRunTranscriptSerializer(transcript)
-        serializer.write(args.tap)
+    if isinstance(args.html, str):
+        HtmlRunTranscriptSerializer(args.template_path).write(transcript, args.html)
+    elif args.html:
+        warning('--html requires a filename: skipping')
+    elif args.template_path:
+        warning('--template-path only supported with --html. Ignoring.')
 
-    if isinstance(args.html, str) or args.html:
-        multifile_serializer = MultifileRunTranscriptSerializer(args.html, args.template)
-        multifile_serializer.write(transcript)
+    if isinstance(args.tap, str) or args.tap:
+        TapTestRunTranscriptSerializer().write(transcript, args.tap)
 
     if isinstance(args.json, str) or args.json:
-        serializer = JsonTestRunTranscriptSerializer(transcript)
-        serializer.write(args.json)
+        JsonTestRunTranscriptSerializer().write(transcript, args.json)
 
     if isinstance(args.summary, str) or args.summary:
-        serializer = SummaryTestRunTranscriptSerializer(transcript)
-        serializer.write(args.json)
+        SummaryTestRunTranscriptSerializer().write(transcript, args.summary)
 
     return 0
 
@@ -59,9 +56,11 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     html_group = parser.add_argument_group('html', 'HTML options')
     html_group.add_argument('--html',
                         help="Write results in HTML format to the provided file.")
-    html_group.add_argument('--template', default=DEFAULT_TEMPLATE,
-                        help=f"When specifying --html, use this template (defaults to '{ DEFAULT_TEMPLATE }').")
+    html_group.add_argument('--template-path', required=False,
+                        help="When specifying --html, use this template path override (comma separated directory names)")
     parser.add_argument('--json', nargs="?", const=True, default=False,
                         help="Write results in JSON format to stdout, or to the provided file (if given).")
     parser.add_argument('--summary', nargs="?", const=True, default=False,
                         help="Write summary to stdout, or to the provided file (if given). This is the default if no other output option is given")
+
+    return parser

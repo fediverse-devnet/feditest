@@ -1,0 +1,17 @@
+{
+    "constellation": {
+        "roles": {
+            "leader_node": null,
+            "follower_node": null
+        },
+        "name": null
+    },
+    "tests": [
+        {
+            "name": "nodes_with_mastodon_api_communicate::FollowTest",
+            "rolemapping": null,
+            "skip": null
+        }
+    ],
+    "name": null
+}

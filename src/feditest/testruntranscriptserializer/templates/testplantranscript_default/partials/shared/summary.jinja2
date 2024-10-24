@@ -1,0 +1,136 @@
+{%  if summary.n_total %}
+<table class="feditest summary">
+ <thead>
+  <tr>
+   <th>Status</th>
+   <th>Count</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr>
+   <th>Passed</th>
+{%-     if summary.n_passed != 0 %}
+   <td class="status passed">
+    <div>{{ summary.n_passed }} <span class="percentage">({{ '%.1f' % ( summary.n_passed * 100.0 / summary.n_total ) }}%)</span></div>
+   </td>
+{%-     else %}
+   <td>
+    <div>0</div>
+   </td>
+{%-     endif %}
+  </tr>
+  <tr>
+   <th>Failed</th>
+   <td class="status failed">
+    <table class="failed">
+     <thead>
+      <tr>
+       <td colspan="2" rowspan="2"></td>
+       <th colspan="5">Interoperability</th>
+      </tr>
+      <tr>
+       <th>Compromised</th>
+       <th>Degraded</th>
+       <th>Unaffected</th>
+       <th>Unknown</th>
+       <th>Total</th>
+      </tr>
+     </thead>
+     <tbody>
+      <tr>
+       <th rowspan="5">Conformance</th>
+       <th>Must</th>
+{%-     for interop_level in feditest.InteropLevel %}
+       <td class="status must {{ interop_level.name.lower() }} moreinfo">
+        <div>{{ summary.count_failures_for(feditest.SpecLevel.MUST, interop_level) }}</div>
+       </td>
+{%-     endfor %}
+       <td class="status must total">
+        <div>
+{{      summary.count_failures_for(feditest.SpecLevel.MUST, None) }}
+         <span class="percentage">({{ '%.1f' % ( summary.count_failures_for(feditest.SpecLevel.MUST, None) * 100.0 / summary.n_total ) }}%)</span>
+        </div>
+       </td>
+      </tr>
+{%-     for spec_level in [ feditest.SpecLevel.SHOULD, feditest.SpecLevel.IMPLIED, feditest.SpecLevel.UNSPECIFIED ] %}
+      <tr>
+       <th>{{ spec_level.formatted_name }}</th>
+{%-         for interop_level in feditest.InteropLevel %}
+       <td class="status {{ spec_level.name.lower() }} {{ interop_level.name.lower() }} moreinfo">
+        <div>
+{{              summary.count_failures_for(spec_level, interop_level) }}
+        </div>
+       </td>
+{%-         endfor %}
+       <td class="status {{ spec_level.name.lower() }} total">
+        <div>
+{{              summary.count_failures_for(spec_level, None) }}
+         <span class="percentage">({{ '%.1f' % ( summary.count_failures_for(spec_level, None) * 100.0 / summary.n_total ) }}%)</span>
+        </div>
+       </td>
+      </tr>
+{%-     endfor %}
+      <tr>
+       <th>Total</th>
+{%-     for interop_level in feditest.InteropLevel %}
+       <td class="status {{ interop_level.name.lower() }} total">
+        <div>
+{{          summary.count_failures_for(None, interop_level) }}
+         <span class="percentage">({{ '%.1f' % ( summary.count_failures_for(None, interop_level) * 100.0 / summary.n_total ) }}%)</span>
+        </div>
+       </td>
+{%-     endfor %}
+       <td class="status total">
+        <div>
+{{      summary.n_failed }}
+         <span class="percentage">({{ '%.1f' % ( summary.n_failed * 100.0 / summary.n_total ) }}%)</span>
+        </div>
+       </td>
+      </tr>
+     </tbody>
+    </table>
+   </td>
+  </tr>
+  <tr>
+   <th>Skipped</th>
+{%-     if summary.n_skipped != 0 %}
+   <td class="status skip">
+    <div>
+{{          summary.n_skipped }}
+     <span class="percentage">({{ '%.1f' % ( summary.n_skipped * 100.0 / summary.n_total ) }}%)</span>
+    </div>
+   </td>
+{%-     else %}
+   <td>
+    <div>0</div>
+   </td>
+{%-     endif %}
+  </tr>
+  <tr>
+   <th>Errors</th>
+{%-     if summary.n_errored != 0 %}
+   <td class="status error">
+    <div>
+{{          summary.n_errored }}
+     <span class="percentage">({{ '%.1f' % ( summary.n_errored * 100.0 / summary.n_total ) }}%)</span>
+    </div>
+   </td>
+{%-     else %}
+   <td>
+    <div>0</div>
+   </td>
+{%-     endif %}
+  </tr>
+ </tbody>
+ <tfoot>
+  <tr>
+   <th>Total</th>
+   <td>
+    <div>{{ summary.n_total }}</div>
+   </td>
+  </tr>
+ </tfoot>
+</table>
+{%- else %}
+<p class="feditest summary">No tests were run.</p>
+{%- endif %}

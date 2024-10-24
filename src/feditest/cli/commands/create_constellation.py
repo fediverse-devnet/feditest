@@ -4,8 +4,8 @@ Combine node definitions into a constellation.
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
+from feditest.cli.utils import create_constellation_from_nodes
 from feditest.testplan import TestPlanConstellation, TestPlanConstellationNode
-from feditest.reporting import fatal
 
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
@@ -16,22 +16,12 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     roles : dict[str,TestPlanConstellationNode | None] = {}
 
     if remaining:
-        parser.print_help() # Would be nice to print help for this sub-command but I can't figure out how to do it
+        parser.print_help()
         return 0
-
-    for nodepair in args.node:
-        rolename, nodefile = nodepair.split('=', 1)
-        if not rolename:
-            fatal('Rolename component must not be empty:', nodepair)
-        if rolename in roles:
-            fatal('Role is already taken:', rolename)
-        if not nodefile:
-            fatal('Filename component must not be empty:', nodepair)
-        node = TestPlanConstellationNode.load(nodefile)
-        roles[rolename] = node
 
     constellation = TestPlanConstellation(roles)
 
+    constellation = create_constellation_from_nodes(args)
     if args.name:
         constellation.name = args.name
 
@@ -54,3 +44,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--node', action='append', required=True,
                         help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
     parser.add_argument('--out', '-o', default=None, required=False, help='Name of the file for the generated constellation')
+
+    return parser

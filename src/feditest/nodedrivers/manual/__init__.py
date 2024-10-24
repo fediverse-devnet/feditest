@@ -2,45 +2,24 @@
 A NodeDriver that supports all protocols but doesn't automate anything.
 """
 
-from typing import Any
-
-from feditest import nodedriver
-from feditest.protocols import Node, NodeDriver
+from feditest.nodedrivers import AccountManager, Node, NodeConfiguration
+from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver, FallbackFediverseNode
 from feditest.protocols.fediverse import FediverseNode
-from feditest.utils import appname_validate, hostname_validate
+from feditest.utils import prompt_user
 
 
-class ManualFediverseNode(FediverseNode):
-    @property
-    def app_name(self):
-        return self._parameters.get('app')
-
-
-@nodedriver
-class ManualFediverseNodeDriver(NodeDriver):
+class FediverseManualNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
-    A NodeDriver that supports all protocols but doesn't automate anything.
+    A NodeDriver that supports all web server-side protocols but doesn't automate anything.
     """
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> ManualFediverseNode:
-        hostname = parameters.get('hostname')
-        if hostname:
-            self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
-                             + f' with hostname "{ hostname }" and hit return when done.')
-        else:
-            hostname = self.prompt_user(f'Manually provision a Node for constellation role "{ rolename }"'
-                                        + ' and enter the hostname when done: ',
-                                        parse_validate=hostname_validate)
-        parameters = dict(parameters)
-        parameters['hostname'] = hostname
-
-        app = parameters.get('app')
-        if not app:
-            parameters['app'] = self.prompt_user('Enter the name of the app you just provisioned'
-                                                 + f' at hostname { parameters["hostname"] }: ',
-                                                 parse_validate=appname_validate)
-
-        return ManualFediverseNode(rolename, parameters, self)
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FediverseNode:
+        prompt_user(
+                f'Manually provision the Node for constellation role { rolename }'
+                + f' at host { config.hostname } with app { config.app } and hit return when done.')
+        return FallbackFediverseNode(rolename, config, account_manager)
 
 
+    # Python 3.12 @override
     def _unprovision_node(self, node: Node) -> None:
-        self.prompt_user(f'Manually unprovision the Node for constellation role { node.rolename() } and hit return when done.')
+        prompt_user(f'Manually unprovision the Node for constellation role { node.rolename } and hit return when done.')

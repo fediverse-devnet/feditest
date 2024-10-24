@@ -2,15 +2,18 @@
 Core module.
 """
 
+import importlib
 from collections.abc import Callable
 from enum import Enum
 from inspect import getmembers, getmodule, isfunction
+import time
 from types import FunctionType
-from typing import Any,  Type, TypeVar, cast
+from typing import Any, Type, TypeVar, cast
 
 from hamcrest.core.matcher import Matcher
 from hamcrest.core.string_description import StringDescription
 
+import feditest.nodedrivers
 from feditest.reporting import fatal, warning
 from feditest.tests import (
     Test,
@@ -26,8 +29,8 @@ T = TypeVar("T")
 all_tests : dict[str,Test] = {}
 
 # Used to collect supposed tested during annotation processing, destructively processed, ignored afterwards
-_registered_as_test : dict[str,Any] = {}
-_registered_as_test_step : dict[str,Any] = {}
+_registered_as_test : dict[str,Callable[..., None] | type] = {}
+_registered_as_test_step : dict[str,Callable[..., None]] = {}
 
 _loading_tests = False
 
@@ -42,19 +45,31 @@ def _full_name_of_function( f: Callable[..., None]) -> str:
 
 def load_tests_from(dirs: list[str]) -> None:
     """
-    Load all tests found in the provided directories
+    Load all tests found in the provided directories. This is broken into two steps for easier testing.
     """
-    global all_tests
-    global _loading_tests
-    global _registered_as_test
-    global _registered_as_test_step
+    _load_tests_pass1(dirs)
+    _load_tests_pass2()
 
-    # Pass 1: let them all register without any error checking
+
+def _load_tests_pass1(dirs: list[str]) -> None:
+    """
+    Let all tests register themselves without error checking.
+    """
+    global _loading_tests
+
     _loading_tests = True
     load_python_from(dirs, True)
     _loading_tests = False
 
-    # Pass 2: make sense of what was being registered, error checking and connect them together
+
+def _load_tests_pass2() -> None:
+    """
+    Make sense of what was being registered, error checking and connect them together.
+    """
+    global all_tests
+    global _registered_as_test
+    global _registered_as_test_step
+
     for name, value in _registered_as_test.items():
         test : Test | None
         if isinstance(value, FunctionType):
@@ -97,7 +112,21 @@ def load_tests_from(dirs: list[str]) -> None:
               + '\n    '.join( _registered_as_test_step.keys() ))
 
 
-def test(to_register: type[Any]) -> type[Any]:
+def load_default_tests() -> None:
+    """
+    Load built-in tests. These don't really test anything, but are convenient when building feditest.
+    """
+    global all_tests
+
+    all_tests['noop0'] = TestFromTestFunction('noop0', 'This denegerate 0-node test does nothing', lambda: None, builtin=True )
+    all_tests['noop1'] = TestFromTestFunction('noop1', 'This denegerate 1-node test does nothing', lambda node1: None, builtin=True )
+    all_tests['noop2'] = TestFromTestFunction('noop2', 'This denegerate 2-node test does nothing', lambda node1, node2: None, builtin=True )
+    all_tests['noop3'] = TestFromTestFunction('noop3', 'This denegerate 3-node test does nothing', lambda node1, node2, node3: None, builtin=True )
+    all_tests['noop4'] = TestFromTestFunction('noop4', 'This denegerate 4-node test does nothing', lambda node1, node2, node3, node4: None, builtin=True )
+    # Do not replace those lambda parameters with _: we need to look up their names for role mapping
+
+
+def test(to_register: Callable[..., None] | type) -> Callable[..., None] | type:
     """
     Use as a decorator to register a supposed test. Use either on a function (running of which constitutes the entire test)
     or on a class (where the tests consists of running __init__ and then all the contained functions maked with @step).
@@ -161,7 +190,9 @@ def load_node_drivers_from(dirs: list[str]) -> None:
 # Holds all node drivers
 all_node_drivers : dict[str,Type[Any]]= {}
 
-def nodedriver(to_register: Type[Any]):
+TNodeDriver = TypeVar('TNodeDriver')
+
+def nodedriver(to_register: Type[TNodeDriver]) -> Type[TNodeDriver]:
     """
     Used as decorator of NodeDriver classes, like this:
 
@@ -174,8 +205,8 @@ def nodedriver(to_register: Type[Any]):
     if not _loading_node_drivers:
         fatal('Do not define NodeDrivers outside of nodedriversdir')
 
-    if not isinstance(to_register,type):
-        fatal('Cannot register a non-Class NodeDriver:', to_register.__name__)
+    if not issubclass(to_register,feditest.nodedrivers.NodeDriver):
+        fatal('Cannot register an object as NodeDriver that isn\'t a subclass of NodeDriver:', to_register.__name__)
 
     module = getmodule(to_register)
     if module is not None:
@@ -185,6 +216,24 @@ def nodedriver(to_register: Type[Any]):
             fatal('Cannot re-register NodeDriver', full_name )
         all_node_drivers[full_name] = to_register
 
+    return to_register
+
+def load_default_node_drivers() -> None:
+    for d in [ 'feditest.nodedrivers.imp.ImpInProcessNodeDriver',
+               'feditest.nodedrivers.manual.FediverseManualNodeDriver',
+               'feditest.nodedrivers.mastodon.MastodonSaasNodeDriver',
+               'feditest.nodedrivers.mastodon.ubos.MastodonUbosNodeDriver',
+               'feditest.nodedrivers.saas.FediverseSaasNodeDriver',
+               'feditest.nodedrivers.sandbox.SandboxMultClientDriver_ImplementationA',
+               'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation1',
+               'feditest.nodedrivers.sandbox.SandboxMultServerDriver_Implementation2Faulty',
+               'feditest.nodedrivers.wordpress.WordPressPlusPluginsSaasNodeDriver',
+               'feditest.nodedrivers.wordpress.ubos.WordPressPlusPluginsUbosNodeDriver']:
+
+        module_name, class_name = d.rsplit('.', 1)
+        if class_name not in all_node_drivers:
+            all_node_drivers[class_name] = getattr(importlib.import_module(module_name), class_name)
+
 
 class SpecLevel(Enum):
     MUST = 1
@@ -193,6 +242,7 @@ class SpecLevel(Enum):
     UNSPECIFIED = 4
 
 
+    @property
     def formatted_name(self):
         return self.name.capitalize()
 
@@ -204,6 +254,7 @@ class InteropLevel(Enum):
     UNKNOWN = 4
 
 
+    @property
     def formatted_name(self):
         return self.name.capitalize()
 
@@ -219,7 +270,7 @@ class AssertionFailure(Exception):
 
 
     def __str__(self):
-        return str(self.msg)
+        return f'AssertionFailure ({ self.spec_level.formatted_name }, { self.interop_level.formatted_name }): { self.msg }'
 
 
 def _assert_match(
@@ -277,14 +328,54 @@ def assert_that(
         _assert_bool(assertion=cast(bool, actual_or_assertion), reason=cast(str, matcher), spec_level=spec_level, interop_level=interop_level)
 
 
-class SkipTestException(Exception):
+def poll_until(
+    condition: Callable[[], T | None],
+    msg: str | None = None,
+    retry_count: int = 5,
+    retry_interval: float = 1.0,
+    spec_level: SpecLevel | None = None,
+    interop_level: InteropLevel | None = None
+) -> T:
     """
-    Indicates that the test wanted to be skipped. It can be thrown if the test recognizes
-    the circumstances in which it should be run are not currently present.
-    Modeled after https://github.com/hamcrest/PyHamcrest/blob/main/src/hamcrest/core/assert_that.py
+    Keep invoking condition() until it returns a non-None value or it times out.
+    If it times out, raise an AssertionFailure, otherwise return the found value..
     """
-    def __init__(self, msg: str) :
-        """
-        Provide reasoning why this test was skipped.
-        """
-        super().__init__(msg)
+    for _ in range(retry_count):
+        response = condition()
+        if response:
+            return response
+        time.sleep(retry_interval)
+    if not msg:
+        msg = 'Expected object has not arrived in time'
+    if spec_level is None:
+        spec_level = SpecLevel.MUST
+    if interop_level is None:
+        interop_level = InteropLevel.UNKNOWN
+    raise AssertionFailure(spec_level, interop_level, msg)
+
+
+def poll_but_not(
+    condition: Callable[[], T | None],
+    msg: str | None = None,
+    retry_count: int = 5,
+    retry_interval: float = 1.0,
+    spec_level: SpecLevel | None = None,
+    interop_level: InteropLevel | None = None
+) -> None:
+    """
+    Keep invoking condition() until it returns a non-None value or it times out.
+    If it times out, all is well.
+    If it finds a value, raise an AssertionFailure.
+    This is the opposite of poll_until.
+    """
+    for _ in range(retry_count):
+        response = condition()
+        if response:
+            if not msg:
+                msg = f'Unexpected object has arrived: { response }'
+            if spec_level is None:
+                spec_level = SpecLevel.MUST
+            if interop_level is None:
+                interop_level = InteropLevel.UNKNOWN
+            raise AssertionFailure(spec_level, interop_level, msg)
+        time.sleep(retry_interval)

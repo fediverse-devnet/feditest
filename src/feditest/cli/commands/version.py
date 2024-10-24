@@ -4,8 +4,6 @@ Show version
 
 from argparse import ArgumentParser, Namespace, _SubParsersAction
 
-import feditest
-import feditest.cli
 from feditest.utils import FEDITEST_VERSION
 
 def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
@@ -16,7 +14,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
         parser.print_help()
         return 0
 
-    print(f'feditest version { FEDITEST_VERSION }')
+    print(FEDITEST_VERSION)
     return 0
 
 
@@ -27,3 +25,5 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     cmd_name: name of this command
     """
     parser = parent_parser.add_parser( cmd_name, help='Show feditest version')
+
+    return parser

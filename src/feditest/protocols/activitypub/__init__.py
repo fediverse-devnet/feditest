@@ -2,116 +2,46 @@
 Abstractions for the ActivityPub protocol
 """
 
-from typing import Any, cast
-
-from hamcrest import is_not
-from feditest.protocols.activitypub.utils import is_member_of_collection_at
-
-from feditest import InteropLevel, SpecLevel, assert_that
+from feditest.nodedrivers import NotImplementedByNodeError
 from feditest.protocols.web import WebServer
-from feditest.utils import http_https_uri_validate
-
-
-class Actor:
-    """
-    A local copy of the content of an Actor at the ActivityPubNode.
-    FIXME: incomplete
-    """
-    def __init__(self, actor_uri: str):
-        self.actor_uri : str = actor_uri
-        self.followers : list[str] = []
-        self.following : list[str] = []
-
-
-# Note:
-# The data elements held by the classes here are all untyped. That's because we want to be able
-# to store data we receive even if it is invalid according to the spec.
-# check_integrity() helps figure out whether it is valid or not.
-
-class AnyObject:
-    """
-    This container is used to hold any instance of any of the ActivityStreams types.
-    We use a generic container because we also want to be able to hold objects
-    that are invalid according to the spec.
-    """
-    def __init__(self, uri: str, json_data: Any):
-        self.uri = uri
-        self.json = json_data
-
-
-    def check_is_valid_object(self):
-        """
-        Interpret this instance as an ActivityStreams Object, and check whether it is valid.
-        """
-        return 'type' in self.json and 'Object' == self.json['type']
-
-
-    def as_actor(self):
-        """
-        Interpret this instance as an Actor, and return an instance of the Actor class.
-        """
 
 
 class ActivityPubNode(WebServer):
     """
     A Node that can speak ActivityPub.
     """
-    # Use superclass constructor
-
-    def obtain_actor_document_uri(self, actor_rolename: str | None = None) -> str:
+    def obtain_actor_document_uri(self, rolename: str | None = None) -> str:
         """
-        Return the URI that leads to an Actor document that either exists already or is
-        newly created.
-        rolename: refer to this actor by this rolename; used to disambiguate multiple actors on the same server
+        Smart factory method to return the https URI to an Actor document on this Node that
+        either exists already or is newly created. Different rolenames produce different
+        results; the same rolename produces the same result.
+        rolename: refer to this Actor by this rolename; used to disambiguate multiple
+           Actors on the same server by how they are used in tests
         return: the URI
         """
-        if actor_rolename:
-            return cast(str, self.prompt_user(
-                    f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document for the actor in role "{actor_rolename}": ',
-                    self.parameter('node-uri'),
-                    http_https_uri_validate))
+        raise NotImplementedByNodeError(self, ActivityPubNode.obtain_actor_document_uri)
 
-        return cast(str, self.prompt_user(
-                f'Please enter an URI at Node "{self._rolename}" that serves an ActivityPub Actor document: ',
-                self.parameter('node-uri'),
-                http_https_uri_validate))
-
-
-    def obtain_followers_collection_uri(self, actor_uri: str) -> str:
-        """
-        Determine the URI that points to the provided actor's followers collection.
-        """
-        return cast(str, self.prompt_user(
-                f'Enter the URI of the followers collection of actor "{actor_uri}": ',
-                http_https_uri_validate))
-
-
-    def obtain_following_collection_uri(self, actor_uri: str) -> str:
-        """
-        Determine the URI that points to the provided actor's following collection.
-        """
-        return cast(str, self.prompt_user(
-                f'Enter the URI of the following collection of actor "{actor_uri}": ',
-                http_https_uri_validate))
-
-
-    def assert_member_of_collection_at(self,
-        candidate_member_uri: str,
-        collection_uri: str,
-        spec_level: SpecLevel | None = None,
-        interop_level: InteropLevel | None= None):
-        """
-        Raise an AssertionError if candidate_member_uri is a member of the collection at collection_uri
-        """
-        assert_that(candidate_member_uri, is_member_of_collection_at(collection_uri, self), spec_level=spec_level, interop_level=interop_level)
-
-
-    def assert_not_member_of_collection_at(self,
-        candidate_member_uri: str,
-        collection_uri: str,
-        spec_level: SpecLevel | None = None,
-        interop_level: InteropLevel | None= None):
-        """
-        Raise an AssertionError if candidate_member_uri is not a member of the collection at collection_uri
-        """
-        assert_that(candidate_member_uri, is_not(is_member_of_collection_at(collection_uri, self)), spec_level=spec_level, interop_level=interop_level)
+    # You might expect lots of more methods here. Sorry to disappoint. But there's a reason:
+    #
+    # Example: you might expect a method that checks that some actor A is following actor B
+    # (which is hosted on this ActivityPubNode). You might think that could be implemented
+    # in one of the following ways:
+    #
+    #  * an API call to the ActivityPubNode or a database query. Yep, it could, but that's
+    #    a lot of work to implement, and many applications don't have such an API.
+    #
+    #  * find the following collection of actor B, and look into that collection. That would
+    #    require "something" to perform HTTP GET requests oforn B's actor document, and the
+    #    collection URIs. That works, but who is that "something"? It cannot be FediTest,
+    #    otherwise FediTest would become its own Node in the current Constellation, thereby
+    #    changing it quite a bit. This is particularly important when applications require
+    #    authorized fetch to fetch follower collections, and suddenly FediTest needs to
+    #    first exchange public keys etc. and for that it would have to be an HTTP server,
+    #    with DNS and TLS certs and nope, we are not going there.
+    #
+    # Instead, we ask an ActivityPubDiagNode in the Constellation to perform the fetch
+    # of the followers collection on our behalf. It is already part of the Constellation
+    # and likely has already exchanged keys.
+    #
+    # So: you find what you want on the "other" Node which is likeley an ActivityPubDiagNode
+    # anyway.

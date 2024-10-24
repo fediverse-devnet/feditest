@@ -2,13 +2,13 @@
 ActivityPub testing utils
 """
 
-from typing import Any, cast
+from typing import Any
 
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from feditest.protocols import Node
-from feditest.utils import boolean_response_parse_validate
+from feditest.nodedrivers import Node
+from feditest.utils import boolean_response_parse_validate, prompt_user_parse_validate
 
 
 class MemberOfCollectionMatcher(BaseMatcher[Any]):
@@ -24,10 +24,10 @@ class MemberOfCollectionMatcher(BaseMatcher[Any]):
 
 
     def _matches(self, member_candidate_uri: str) -> bool:
-        ret = self._node.prompt_user(
+        ret = prompt_user_parse_validate(
                 f'Is "{ member_candidate_uri }" a member of the collection at URI "{ self._collection_uri }"? ',
                 parse_validate=boolean_response_parse_validate)
-        return cast(bool, ret)
+        return ret
 
 
     def describe_to(self, description: Description) -> None:

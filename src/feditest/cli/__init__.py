@@ -2,13 +2,13 @@
 Main entry point for CLI invocation
 """
 
-from argparse import ArgumentParser, Action
+from argparse import ArgumentError, ArgumentParser, Action
 import importlib
 import sys
 import traceback
 from types import ModuleType
 
-from feditest.reporting import fatal, set_reporting_level
+from feditest.reporting import fatal, set_reporting_level, warning
 from feditest.utils import find_submodules
 import feditest.cli.commands
 
@@ -24,20 +24,27 @@ def main() -> None:
     parser.add_argument('-v', '--verbose', action='count', default=0,
             help='Display extra output. May be repeated for even more output' )
     cmd_parsers : Action = parser.add_subparsers(dest='command', required=True)
+    cmd_sub_parsers : dict[str,ArgumentParser] = {}
 
     for cmd_name, cmd in cmds.items():
-        cmd.add_sub_parser(cmd_parsers, cmd_name)
+        cmd_sub_parsers[cmd_name] = cmd.add_sub_parser(cmd_parsers, cmd_name)
 
     args,remaining = parser.parse_known_args(sys.argv[1:])
     cmd_name = args.command
 
     set_reporting_level(args.verbose)
 
+    if sys.version_info.major != 3 or sys.version_info.minor != 11:
+        warning(f"feditest currently requires Python 3.11. You are using { sys.version }"
+                + " and may get unpredictable results. We'll get to other versions in the future.")
+
     if cmd_name in cmds:
         try :
-            ret = cmds[cmd_name].run(parser, args, remaining)
+            ret = cmds[cmd_name].run(cmd_sub_parsers[cmd_name], args, remaining)
             sys.exit( ret )
 
+        except ArgumentError as e:
+            fatal(e.message)
         except Exception as e: # pylint: disable=broad-exception-caught
             if args.verbose > 1:
                 traceback.print_exception( e )
@@ -60,11 +67,6 @@ def find_commands() -> dict[str,ModuleType]:
 
     return cmds
 
-
-default_node_drivers_dir = [ feditest.__file__[ : -11] + 'nodedrivers' ]
-"""
-Default directory for where to look for node drivers
-"""
 
 if __name__ == '__main__':
     main()

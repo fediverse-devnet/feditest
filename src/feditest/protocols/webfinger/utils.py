@@ -1,14 +1,69 @@
 """
-Webfinger testing utils
+WebFinger testing utils
 """
 
+from urllib.parse import quote, urlparse
 from typing import Any, Type
 
 from multidict import MultiDict
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest.core.description import Description
 
-from feditest.protocols.webfinger.traffic import ClaimedJrd, WebFingerQueryResponse
+from .diag import ClaimedJrd, WebFingerQueryDiagResponse
+
+
+class UnsupportedUriSchemeError(RuntimeError):
+    """
+    Raised when a WebFinger resource uses a scheme other than http, https, acct
+    """
+    def __init__(self, resource_uri: str):
+        self.resource_uri = resource_uri
+
+
+class CannotDetermineWebFingerHostError(RuntimeError):
+    """
+    Raised when the WebFinger host could not be determined.
+    """
+    def __init__(self, resource_uri: str):
+        self.resource_uri = resource_uri
+
+
+def construct_webfinger_uri_for(
+    resource_uri: str,
+    rels: list[str] | None = None,
+    hostname: str | None = None
+) -> str:
+    """
+    Helper method to construct the WebFinger URI from a resource URI, an optional list
+    of rels to ask for, and (if given) a non-default hostname
+    """
+    if not hostname:
+        parsed_resource_uri = urlparse(resource_uri)
+        match parsed_resource_uri.scheme:
+            case "acct":
+                _, hostname = parsed_resource_uri.path.split(
+                    "@", maxsplit=1
+                )  # 1: number of splits, not number of elements
+
+            case 'http':
+                hostname = parsed_resource_uri.netloc
+
+            case 'https':
+                hostname = parsed_resource_uri.netloc
+
+            case _:
+                raise UnsupportedUriSchemeError(resource_uri)
+
+    if not hostname:
+        raise CannotDetermineWebFingerHostError(resource_uri)
+
+    uri = f"https://{hostname}/.well-known/webfinger?resource={quote(resource_uri)}"
+    if rels:
+        for rel in rels:
+            uri += f"&rel={ quote(rel) }"
+
+    return uri
+
 
 class RecursiveEqualToMatcher(BaseMatcher):
     """
@@ -148,23 +203,15 @@ def none_except(*allowed_excs : Type[Exception]) -> NoneExceptMatcher :
     return NoneExceptMatcher(list(allowed_excs))
 
 
-def wf_error(response: WebFingerQueryResponse) -> str:
+def wf_error(response: WebFingerQueryDiagResponse) -> str:
     """
     Construct an error message
     """
-    if not response.exc:
+    if not response.exceptions:
         return 'ok'
 
-    if isinstance(response.exc, ExceptionGroup):
-        # Make this more compact than the default
-        msg = str(response.exc.args[0]).split('\n', maxsplit=1)[0]
-        msg += f' ({ len(response.exc.exceptions) })'
-        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
-        for i, exc in enumerate(response.exc.exceptions):
-            msg += f'\n{ i }: { exc }'
+    msg = f'Accessed URI: "{ response.http_request_response_pair.request.parsed_uri.uri }":'
+    for i, exc in enumerate(response.exceptions):
+        msg += f'\n{ i }: { exc }'
 
-    else:
-        msg = str(response.exc).split('\n', maxsplit=1)[0]
-        msg += f'\nAccessed URI: "{ response.http_request_response_pair.request.uri.get_uri() }".'
-        msg += '\n'.join(str(response.exc).split('\n')[1:])
     return msg

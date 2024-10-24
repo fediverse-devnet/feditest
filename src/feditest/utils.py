@@ -8,16 +8,28 @@ import importlib.util
 import pkgutil
 import re
 import sys
-from importlib.metadata import version
+import importlib.metadata
 from types import ModuleType
-from typing import List, Optional
+from typing import Any, Callable, List, Optional, TypeVar
 from urllib.parse import ParseResult, parse_qs, urlparse
 from langcodes import Language
 
-FEDITEST_VERSION = version('feditest')
+from feditest.reporting import warning
+
+def _version(default_version="0.0.0"):
+    try:
+        return importlib.metadata.version("feditest")
+    except importlib.metadata.PackageNotFoundError:
+        return default_version
+
+FEDITEST_VERSION = _version('feditest')
 
 # From https://datatracker.ietf.org/doc/html/rfc7565#section-7, but simplified
 ACCT_REGEX = re.compile(r"acct:([-a-zA-Z0-9\._~][-a-zA-Z0-9\._~!$&'\(\)\*\+,;=%]*)@([-a-zA-Z0-9\.:]+)")
+SSH_REGEX = re.compile(r"ssh://([-a-z-A-Z0-9\._~!$&'\(\)\*\+,;=%:]+@)?([-a-zA-Z0-9\.:]+)(:[0-9]+)?")
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+$")
+
+T = TypeVar("T")
 
 
 class ParsedUri(ABC):
@@ -43,8 +55,15 @@ class ParsedUri(ABC):
         return ParsedNonAcctUri(parsed.scheme, parsed.netloc, parsed.path, parsed.params, parsed.query, parsed.fragment)
 
 
+    @property
     @abstractmethod
-    def get_uri(self) -> str:
+    def scheme(self) -> str:
+        ...
+
+
+    @property
+    @abstractmethod
+    def uri(self) -> str:
         ...
 
 
@@ -53,26 +72,59 @@ class ParsedNonAcctUri(ParsedUri):
     ParsedUris that are "normal" URIs such as http URIs.
     """
     def __init__(self, scheme: str, netloc: str, path: str, params: str, query: str, fragment: str):
-        self.scheme = scheme
-        self.netloc = netloc
-        self.path = path
-        self.params = params
-        self.query = query
-        self.fragment = fragment
+        self._scheme = scheme
+        self._netloc = netloc
+        self._path = path
+        self._params = params
+        self._query = query
+        self._fragment = fragment
         self._query_params : dict[str,list[str]] | None = None
 
 
-    def get_uri(self) -> str:
-        ret = f'{ self.scheme }:'
-        if self.netloc:
-            ret += f'//{ self.netloc}'
-        ret += self.path
-        if self.params:
-            ret += f';{ self.params}'
-        if self.query:
-            ret += f'?{ self.query }'
-        if self.fragment:
-            ret += f'#{ self.fragment }'
+    # Python 3.12 @override
+    @property
+    def scheme(self) -> str:
+        return self._scheme
+
+
+    @property
+    def netloc(self) -> str:
+        return self._netloc
+
+
+    @property
+    def path(self) -> str:
+        return self._path
+
+
+    @property
+    def params(self) -> str:
+        return self._params
+
+
+    @property
+    def fragment(self) -> str:
+        return self._fragment
+
+
+    @property
+    def query(self) -> str:
+        return self._query
+
+
+    # Python 3.12 @override
+    @property
+    def uri(self) -> str:
+        ret = f'{ self._scheme }:'
+        if self._netloc:
+            ret += f'//{ self._netloc}'
+        ret += self._path
+        if self._params:
+            ret += f';{ self._params}'
+        if self._query:
+            ret += f'?{ self._query }'
+        if self._fragment:
+            ret += f'#{ self._fragment }'
         return ret
 
 
@@ -103,14 +155,15 @@ class ParsedNonAcctUri(ParsedUri):
         return None
 
 
+    # Python 3.12 @override
     def __repr__(self):
-        return f'ParsedNonAcctUri({ self.get_uri() })'
+        return f'ParsedNonAcctUri({ self.uri })'
 
 
     def _parse_query_params(self):
         if self._query_params:
             return
-        if self.query:
+        if self._query:
             self._query_params = parse_qs(self.query)
         else:
             self._query_params = {}
@@ -121,16 +174,35 @@ class ParsedAcctUri(ParsedUri):
     ParsedUris that are acct: URIs
     """
     def __init__(self, user: str, host: str):
-        self.user = user
-        self.host = host
+        self._user = user
+        self._host = host
 
 
-    def get_uri(self) -> str:
+    # Python 3.12 @override
+    @property
+    def scheme(self) -> str:
+        return 'acct'
+
+
+    @property
+    def user(self) -> str:
+        return self._user
+
+
+    @property
+    def host(self) -> str:
+        return self._host
+
+
+    # Python 3.12 @override
+    @property
+    def uri(self) -> str:
         return f'acct:{ self.user }@{ self.host }'
 
 
+    # Python 3.12 @override
     def __repr__(self):
-        return f'ParsedAcctUri({ self.get_uri() })'
+        return f'ParsedAcctUri({ self.uri })'
 
 
 
@@ -170,12 +242,35 @@ def load_python_from(dirs: list[str], skip_init_files: bool) -> None:
                 if spec is not None and spec.loader is not None:
                     module = importlib.util.module_from_spec(spec)
                     sys.modules[module_name] = module
-                    spec.loader.exec_module(module)
+                    try :
+                        spec.loader.exec_module(module)
+                    except BaseException as e:
+                        warning(f'Attempt to lead module { module_name } failed. Skipping.', e)
         finally:
             sys.path = sys_path_before
 
 
-def account_id_parse_validate(candidate: str) -> ParsedUri | None:
+def boolean_parse_validate(candidate: Any | None) -> bool | None:
+    """
+    Validate that the provided string represents a boolean.
+    Return the boolean if valid, None otherwise
+    """
+    if candidate is None:
+        return False
+    if isinstance(candidate, bool):
+        return candidate
+    if isinstance(candidate,str):
+        lower = candidate.lower()
+    else:
+        lower = str(candidate).lower()
+    if lower in ("yes", "true", "y", "t", "1"):
+        return True
+    if lower in ("no", "false", "n", "f", "0"):
+        return False
+    return None
+
+
+def acct_uri_parse_validate(candidate: str) -> ParsedUri | None:
     """
     Validate that the provided string is of the form 'acct:foo@bar.com'.
     return ParsedUri if valid, None otherwise
@@ -186,11 +281,43 @@ def account_id_parse_validate(candidate: str) -> ParsedUri | None:
     return None
 
 
-def account_id_validate(candidate: str) -> str | None:
-    parsed = account_id_parse_validate(candidate)
+def acct_uri_validate(candidate: str) -> str | None:
+    parsed = acct_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
+
+
+def acct_uri_list_validate(candidate: str) -> str | None:
+    for uri in candidate.split():
+        if not acct_uri_validate(uri):
+            return None
+    return candidate
+
+
+def https_uri_parse_validate(candidate: str) -> ParsedUri | None:
+    """
+    Validate that the provided string is a valid HTTPS URI.
+    return: ParsedUri if valid, None otherwise
+    """
+    parsed = ParsedUri.parse(candidate)
+    if isinstance(parsed, ParsedNonAcctUri) and parsed.scheme == 'https' and len(parsed.netloc) > 0:
+        return parsed
+    return None
+
+
+def https_uri_validate(candidate: str) -> str | None:
+    parsed = https_uri_parse_validate(candidate)
+    if parsed:
+        return parsed.uri
+    return None
+
+
+def https_uri_list_validate(candidate: str) -> str | None:
+    for uri in candidate.split():
+        if not https_uri_validate(uri):
+            return None
+    return candidate
 
 
 def http_https_uri_parse_validate(candidate: str) -> ParsedUri | None:
@@ -207,7 +334,7 @@ def http_https_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def http_https_uri_validate(candidate: str) -> str | None:
     parsed = http_https_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -231,7 +358,7 @@ def http_https_root_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def http_https_root_uri_validate(candidate: str) -> str | None:
     parsed = http_https_root_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -254,7 +381,7 @@ def http_https_acct_uri_parse_validate(candidate: str) -> ParsedUri | None:
 def http_https_acct_uri_validate(candidate: str) -> str | None:
     parsed = http_https_acct_uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
     return None
 
 
@@ -270,7 +397,22 @@ def uri_parse_validate(candidate: str) -> ParsedUri | None:
 def uri_validate(candidate: str) -> str | None:
     parsed = uri_parse_validate(candidate)
     if parsed:
-        return parsed.get_uri()
+        return parsed.uri
+    return None
+
+
+def ssh_uri_validate(candidate: str) -> str | None:
+    """
+    Form ssh://[user@]hostname[:port] per 'man ssh'
+    """
+    if SSH_REGEX.match(candidate):
+        return candidate
+    return None
+
+
+def email_validate(candidate: str) -> str | None:
+    if EMAIL_REGEX.match(candidate):
+        return candidate
     return None
 
 
@@ -306,6 +448,14 @@ def appname_validate(candidate: str) -> str | None:
     return candidate if len(candidate) > 0 else None
 
 
+def appversion_validate(candidate: str) -> str | None:
+    """
+    Validate that the provided string is a valid application version.
+    return: string if value, None otherwise
+    """
+    return candidate if len(candidate) > 0 else None
+
+
 def boolean_response_parse_validate(candidate:str) -> bool | None:
     """
     The provided string was entered by the user as a response a boolean question.
@@ -323,6 +473,16 @@ def boolean_response_parse_validate(candidate:str) -> bool | None:
         return False
     if candidate.startswith('f'):
         return False
+    return None
+
+
+def find_first_in_array(array: List[T], condition: Callable[[T], bool]) -> T | None:
+    """
+    IMHO this should be a python built-in function. The next() workaround confuses me more than I like.
+    """
+    for t in array:
+        if condition(t):
+            return t
     return None
 
 
@@ -358,4 +518,32 @@ def format_name_value_string(data: dict[str,str | None]) -> str:
             ret += line
             ret += '\n'
 
+    return ret
+
+
+def prompt_user_parse_validate(question: str, parse_validate: Callable[[str],T | None]) -> T:
+    """
+    Prompt the user to enter a text string at the console. Parse/validate the entered
+    String, and keep asking until validation passes. Return the parsed string.
+
+    question: the text to be emitted to the user as a prompt
+    parse_validate: function that attempts to parse and validate the provided user input.
+    return: the value entered by the user (parsed)
+    """
+    while True:
+        ret = input(f'TESTER ACTION REQUIRED: { question }')
+        ret_parsed = parse_validate(ret)
+        if ret_parsed is not None:
+            return ret_parsed
+        print(f'INPUT ERROR: invalid input, try again. Was: "{ ret }"')
+
+
+def prompt_user(question: str) -> str:
+    """
+    Prompt the user to enter a text string at the console.
+
+    question: the text to be emitted to the user as a prompt
+    return: the value entered by the user
+    """
+    ret = input(f'TESTER ACTION REQUIRED: { question }')
     return ret

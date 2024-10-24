@@ -1,0 +1,11 @@
+{%- if result %}
+<div class="status {{ result.css_classes() }} moreinfo">
+	<label for="details-{{ result.id() }}{{ idmod }}">{{ result.short_title() }}</label>
+    <input id="details-{{ result.id() }}{{ idmod }}" type="checkbox">
+    <pre class="stacktrace">{{ html_escape(result) }}</pre>
+</div>
+{%- else %}
+<div class="status passed">
+    <div>Passed</div>
+</div>
+{%- endif %}

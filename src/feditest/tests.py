@@ -12,9 +12,10 @@ class Test(ABC):
     """
     Captures the notion of a Test, such as "see whether a follower is told about a new post".
     """
-    def __init__(self, name: str, description: str | None ) -> None:
+    def __init__(self, name: str, description: str | None, builtin: bool) -> None:
         self.name: str = name
         self.description: str | None = description
+        self._builtin: bool = builtin
 
 
     def __str__(self):
@@ -35,16 +36,25 @@ class Test(ABC):
         ...
 
 
+    @property
+    def builtin(self):
+        """
+        If true, do not add this test to a test session when the session is created by collecting tests.
+        """
+        return self._builtin
+
+
 class TestFromTestFunction(Test):
     """
     A test that is defined as a single function.
     """
-    def __init__(self, name: str, description: str | None, test_function: Callable[..., None]) -> None:
-        super().__init__(name, description)
+    def __init__(self, name: str, description: str | None, test_function: Callable[..., None], builtin: bool = False) -> None:
+        super().__init__(name, description, builtin)
 
         self.test_function = test_function
 
 
+    # Python 3.12 @override
     def metadata(self) -> dict[str, Any]:
         return {
             'Name:' : self.name,
@@ -52,6 +62,7 @@ class TestFromTestFunction(Test):
         }
 
 
+    # Python 3.12 @override
     def needed_local_role_names(self) -> set[str]:
         ret = {}
         function_spec = getfullargspec(self.test_function)
@@ -73,14 +84,19 @@ class TestStepInTestClass:
         self.test_step_function: Callable[[Any], None] = test_step_function
 
 
+    def __str__(self):
+        return self.name
+
+
 class TestFromTestClass(Test):
-    def __init__(self, name: str, description: str | None, clazz: type) -> None:
-        super().__init__(name, description)
+    def __init__(self, name: str, description: str | None, clazz: type, builtin: bool = False) -> None:
+        super().__init__(name, description, builtin)
 
         self.clazz = clazz
         self.steps : list[TestStepInTestClass] = []
 
 
+    # Python 3.12 @override
     def metadata(self) -> dict[str, Any]:
         return {
             'Name:' : self.name,
@@ -88,6 +104,8 @@ class TestFromTestClass(Test):
             'Steps:' : len(self.steps)
         }
 
+
+    # Python 3.12 @override
     def needed_local_role_names(self) -> set[str]:
         """
         Determines the names of the constellation roles this test step needs.

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+{%  include "partials/shared/head.jinja2" %}
+  <title>{{ transcript.plan.name }} | Feditest</title>
+ </head>
+ <body>
+  <header class="feditest title">
+   <h1><span class="prefix"><a href="https://feditest.org/">Feditest</a> Report:</span> {{ transcript.plan.name }}</h1>
+   <p class="id">{{ transcript.id }}</p>
+  </header>
+{%  include "partials/shared/mobile.jinja2" %}
+  <nav class="feditest matrix">
+   <ul>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#metadata">Metadata</a></li>
+   </ul>
+  </nav>
+  <div id="summary" class="feditest module summary">
+   <h2>Test Run Summary</h2>
+{%  include "partials/shared/summary.jinja2" %}
+  </div>
+  <div id="results" class="feditest module results">
+{%  include "partials/shared_session/results.jinja2" %}
+  </div>
+  <div id="metadata" class="feditest module metadata">
+   <h2>Test Run Metadata</h2>
+{%  include "partials/shared_session/metadata.jinja2" %}
+  </div>
+{%  include "partials/shared/footer.jinja2" %}
+ </body>
+</html>

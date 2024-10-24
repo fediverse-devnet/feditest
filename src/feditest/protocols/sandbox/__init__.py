@@ -5,7 +5,7 @@ Abstractions for the toy "Sandbox" protocol.
 from datetime import datetime, UTC
 from typing import List
 
-from feditest.protocols import Node, NotImplementedByNodeError
+from feditest.nodedrivers import Node, NotImplementedByNodeError
 
 class SandboxLogEvent:
     """

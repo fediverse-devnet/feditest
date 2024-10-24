@@ -1,38 +1,19 @@
 """
-A NodeDriver that supports all protocols but doesn't automate anything and assumes the
-Node under test exists as a website that we don't have/can provision/unprovision.
 """
 
-from typing import Any
-
-from feditest import nodedriver
-from feditest.protocols import NodeDriver
-from feditest.protocols.fediverse import FediverseNode
-from feditest.utils import appname_validate, hostname_validate
+from feditest.nodedrivers import AccountManager, NodeConfiguration
+from feditest.nodedrivers.fallback.fediverse import AbstractFallbackFediverseNodeDriver, FallbackFediverseNode
 
 
-class SaasFediverseNode(FediverseNode):
-    @property
-    def app_name(self):
-        return self._parameters.get('app')
-
-
-@nodedriver
-class SaasFediverseNodeDriver(NodeDriver):
+class FediverseSaasNodeDriver(AbstractFallbackFediverseNodeDriver):
     """
     A NodeDriver that supports all protocols but doesn't automate anything and assumes the
     Node under test exists as a website that we don't have/can provision/unprovision.
     """
-    def _provision_node(self, rolename: str, parameters: dict[str,Any]) -> SaasFediverseNode:
-        hostname = parameters.get('hostname')
-        if not hostname:
-            hostname = self.prompt_user(f'Enter the hostname for "{ rolename }": ', parse_validate=hostname_validate)
-            parameters= dict(parameters)
-            parameters['hostname'] = hostname
+    # Python 3.12 @override
+    def _provision_node(self, rolename: str, config: NodeConfiguration, account_manager: AccountManager | None) -> FallbackFediverseNode:
+        return FallbackFediverseNode(rolename, config, account_manager)
 
-        app = parameters.get('app')
-        if not app:
-            parameters['app'] = self.prompt_user('Enter the name of the app you just provisioned'
-                                                 + f' at hostname { parameters["hostname"] }: ',
-                                                 parse_validate=appname_validate)
-        return SaasFediverseNode(rolename, parameters, self)
+
+    # No need to override _unprovision_node()
+
