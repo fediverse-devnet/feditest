@@ -89,7 +89,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     return 0
 
 
-def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> ArgumentParser:
     """
     Add command-line options for this sub-command
     parent_parser: the parent argparse parser
@@ -109,7 +109,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
     parser.add_argument('--constellation', action='append', help='File(s) each containing a JSON fragment defining a constellation')
     parser.add_argument('--session', '--session-template', required=False, help='File(s) each containing a JSON fragment defining a test session')
     parser.add_argument('--node', action='append',
-                        help="Use role=file to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
+                        help="Use <role>=<file> to specify that the node definition in 'file' is supposed to be used for constellation role 'role'")
     parser.add_argument('--filter-regex', default=None, help='Only include tests whose name matches this regular expression')
     parser.add_argument('--test', action='append', help='Run this/these named tests(s)')
 

@@ -25,7 +25,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     return 0
 
 
-def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> ArgumentParser:
     """
     Add command-line options for this sub-command
     parent_parser: the parent argparse parser
