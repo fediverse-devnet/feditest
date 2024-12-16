@@ -61,7 +61,8 @@ class HtmlRunTranscriptSerializer(TestRunTranscriptSerializer):
             self.template_path = [ os.path.join(os.path.dirname(__file__), "templates/testplantranscript_default") ]
 
         self.jinja2_env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(self.template_path)
+            loader=jinja2.FileSystemLoader(self.template_path),
+            autoescape=jinja2.select_autoescape()
         )
         self.jinja2_env.filters["regex_sub"] = lambda s, pattern, replacement: re.sub(
             pattern, replacement, s
