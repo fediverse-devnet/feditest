@@ -118,6 +118,8 @@ def create_constellation_from_nodes(args: Namespace) -> TestPlanConstellation:
     roles : dict[str, TestPlanConstellationNode | None] = {}
     if args.node:
         for nodepair in args.node:
+            if '=' not in nodepair:
+                raise ArgumentError(None, 'Syntax error in argument: need --node <role>=<file>')
             rolename, nodefile = nodepair.split('=', 1)
             if not rolename:
                 raise ArgumentError(None, f'Rolename component of --node must not be empty: "{ nodepair }".')
