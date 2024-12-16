@@ -445,7 +445,13 @@ def appname_validate(candidate: str) -> str | None:
     Validate that the provided string is a valid application name.
     return: string if valid, None otherwise
     """
-    return candidate if len(candidate) > 0 else None
+    if len(candidate) > 255:
+        return None
+    if len(candidate) == 0:
+        return None
+    if any(c in candidate for c in ['<', '>', '&'] ):
+        return None
+    return candidate
 
 
 def appversion_validate(candidate: str) -> str | None:
@@ -453,7 +459,13 @@ def appversion_validate(candidate: str) -> str | None:
     Validate that the provided string is a valid application version.
     return: string if value, None otherwise
     """
-    return candidate if len(candidate) > 0 else None
+    if len(candidate) > 255:
+        return None
+    if len(candidate) == 0:
+        return None
+    if any(c in candidate for c in ['<', '>', '&'] ):
+        return None
+    return candidate
 
 
 def boolean_response_parse_validate(candidate:str) -> bool | None:
