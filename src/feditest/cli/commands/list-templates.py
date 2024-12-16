@@ -28,7 +28,7 @@ def run(parser: ArgumentParser, args: Namespace, remaining: list[str]) -> int:
     return 0
 
 
-def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> None:
+def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> ArgumentParser:
     help = "List the available templates"
     parser = parent_parser.add_parser(cmd_name, help=help, description=help)
 
