@@ -15,14 +15,14 @@
 {%- for key in ['username', 'hostname', 'platform'] -%}
 {%-     if getattr(transcript,key) %}
      <tr>
-      <th>{{ key.capitalize() }}</th>
-      <td>{{ getattr(transcript, key) }}</td>
+      <th>{{ key.capitalize() | e }}</th>
+      <td>{{ getattr(transcript, key) | e }}</td>
      </tr>
 {%-     endif %}
 {%- endfor %}
      <tr>
       <th>Feditest&nbsp;version</th>
-      <td>{{ getattr(transcript, 'feditest_version') }}</td>
+      <td>{{ getattr(transcript, 'feditest_version') | e }}</td>
      </tr>
     </tbody>
    </table>

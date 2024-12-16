@@ -2,11 +2,11 @@
 <html lang="en">
  <head>
 {%  include "partials/shared/head.jinja2" %}
-  <title>{{ run_session.name }} | Feditest</title>
+  <title>{{ run_session.name | e }} | Feditest</title>
  </head>
  <body>
     <header class="feditest title" style="text-align: center">
-      <h1><span class="prefix"><a href="https://feditest.org/">Feditest</a> Session Report:</span> {{ run_session }}</h1>
+      <h1><span class="prefix"><a href="https://feditest.org/">Feditest</a> Session Report:</span> {{ run_session | e }}</h1>
       <p class="id">{{ transcript.id }} [<a href="{{ matrix_file_path }}">Summary</a>]</p>
     </header>
 

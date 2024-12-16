@@ -1,6 +1,6 @@
 {%- if result %}
 <td class="status {{ result.css_classes() }} moreinfo" id="test-{{ session_index }}-{{ test_index }}">
-    <div>{{ result.short_title() }}</div>
+    <div>{{ result.short_title() | e }}</div>
 </td>
 {%- else %}
 <td class="status passed" id="test-{{ session_index }}-{{ test_index }}">
