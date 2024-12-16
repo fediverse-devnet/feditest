@@ -179,7 +179,8 @@ def the_test_plan() -> TestPlan:
     constellation = TestPlanConstellation({}, 'No nodes needed')
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
     session = TestPlanSessionTemplate(tests, "Test tests that raise various AssertionFailures")
-    ret = TestPlan( session, [ constellation ] )
+    ret = TestPlan(session, [ constellation ])
+    ret.properties_validate()
     return ret
 
 

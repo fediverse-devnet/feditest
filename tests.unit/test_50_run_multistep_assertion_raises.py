@@ -181,6 +181,7 @@ def test_plan_fixture() -> TestPlan:
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
     session = TestPlanSessionTemplate(tests, "Test a test whose steps raises multiple AssertionFailures")
     ret = TestPlan(session, [ constellation ])
+    ret.properties_validate()
     return ret
 
 
