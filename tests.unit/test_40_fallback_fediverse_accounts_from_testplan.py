@@ -56,9 +56,10 @@ def test_plan_fixture() -> TestPlan:
         }
     ]
     node1 = TestPlanConstellationNode(node_driver, parameters, plan_accounts, plan_non_existing_accounts)
-    constellation = TestPlanConstellation( { NODE1_ROLE : node1 })
+    constellation = TestPlanConstellation({ NODE1_ROLE : node1 })
     session_template = TestPlanSessionTemplate([])
-    ret = TestPlan( session_template, [ constellation ] )
+    ret = TestPlan(session_template, [ constellation ])
+    ret.properties_validate()
     return ret
 
 

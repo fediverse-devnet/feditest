@@ -10,8 +10,7 @@ from typing import Any, Callable, Final
 import msgspec
 
 import feditest
-from feditest.utils import hostname_validate, FEDITEST_VERSION
-
+from feditest.utils import hostname_validate, symbolic_name_validate, FEDITEST_VERSION
 
 class InvalidAccountSpecificationException(Exception):
     """
@@ -143,6 +142,43 @@ class TestPlanConstellationNode(msgspec.Struct):
     non_existing_accounts: list[dict[str, str | None]] | None = None
 
 
+    def properties_validate(self) -> None:
+        """
+        Validate properties for correctness and safety.
+        """
+        # Unclear whether we can validate the values of the dicts; currently not done.
+
+        if self.parameters:
+            for par_name, _ in self.parameters.items():
+                if not par_name:
+                    raise ValueError('Invalid TestPlanConstellationNode parameter name: cannot be empty')
+
+                if not symbolic_name_validate(par_name):
+                    raise ValueError(f'Invalid TestPlanConstellationNode parameter name: { par_name }')
+
+        if self.accounts:
+            for account in self.accounts:
+                if 'role' not in account:
+                    raise ValueError('No role name given in account')
+
+                if not account['role']:
+                    raise ValueError('Invalid TestPlanConstellationNode account role name: cannot be empty')
+
+                if not symbolic_name_validate(account['role']):
+                    raise ValueError(f'Invalid role name in account: "{ account["role" ]}')
+
+        if self.non_existing_accounts:
+            for non_existing_account in self.non_existing_accounts:
+                if 'role' not in non_existing_account:
+                    raise ValueError('No role name given in non_existing_account')
+
+                if not non_existing_account['role']:
+                    raise ValueError('Invalid TestPlanConstellationNode non_existing_account role name: cannot be empty')
+
+                if not symbolic_name_validate(non_existing_account['role']):
+                    raise ValueError(f'Invalid role name in non_existing_account: "{ non_existing_account["role" ]}')
+
+
     @staticmethod
     def load(filename: str) -> 'TestPlanConstellationNode':
         """
@@ -224,6 +260,18 @@ class TestPlanConstellation(msgspec.Struct):
     roles : dict[str,TestPlanConstellationNode | None] # can be None if used as template
     name: str | None = None
 
+    def properties_validate(self) -> None:
+        """
+        Validate properties for correctness and safety.
+        """
+        for role_name, role_value in self.roles.items():
+            if not symbolic_name_validate(role_name):
+                raise ValueError(f'Invalid TestPlanConstellation role name: { role_name }')
+            if role_value:
+                role_value.properties_validate()
+
+        # Not checking self.name: can be any human-readable name
+
 
     @staticmethod
     def load(filename: str) -> 'TestPlanConstellation':
@@ -288,6 +336,21 @@ class TestPlanTestSpec(msgspec.Struct):
     skip: str | None = None # if a string is given, it's a reason message why this test spec should be skipped
 
 
+    def properties_validate(self) -> None:
+        """
+        Validate properties for correctness and safety.
+        """
+        # Not checking self.name: can be any human-readable name
+
+        if self.rolemapping:
+            for role_mapping_key, role_mapping_value in self.rolemapping.items():
+                if not symbolic_name_validate(role_mapping_key):
+                    raise ValueError(f'Invalid TestPlanTestSpec role mapping key: { role_mapping_key }')
+
+                if not symbolic_name_validate(role_mapping_value):
+                    raise ValueError(f'Invalid TestPlanTestSpec role mapping value: { role_mapping_value }')
+
+
     def __str__(self):
         return self.name
 
@@ -346,6 +409,16 @@ class TestPlanSessionTemplate(msgspec.Struct):
     """
     tests : list[TestPlanTestSpec]
     name: str | None = None
+
+
+    def properties_validate(self) -> None:
+        """
+        Validate properties for correctness and safety.
+        """
+        for test in self.tests:
+            test.properties_validate()
+
+        # Not checking self.name: can be any human-readable name
 
 
     @staticmethod
@@ -410,6 +483,25 @@ class TestPlan(msgspec.Struct):
     name: str | None = None
     type: str = 'feditest-testplan'
     feditest_version: str = FEDITEST_VERSION
+
+
+    def properties_validate(self) -> None:
+        """
+        Validate properties for correctness and safety.
+        """
+        if self.session_template is None:
+            raise ValueError('No session_template in TestPlan')
+        self.session_template.properties_validate()
+
+        for constellation in self.constellations:
+            constellation.properties_validate()
+
+        # Not checking self.name: can be any human-readable name
+        if self.type != 'feditest-testplan':
+            raise ValueError(f'TestPlan type is not feditest-testplan: "{ self.type }".')
+
+        if not symbolic_name_validate(self.feditest_version):
+            raise ValueError(f'Invalid TestPlan FediTest version: "{ self.feditest_version }".')
 
 
     def simplify(self) -> None:

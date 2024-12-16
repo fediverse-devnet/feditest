@@ -61,6 +61,7 @@ def the_test_plan() -> TestPlan:
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
     session = TestPlanSessionTemplate(tests, "Test a test that wants to be skipped")
     ret = TestPlan(session, [ constellation ])
+    ret.properties_validate()
     return ret
 
 

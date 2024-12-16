@@ -77,6 +77,7 @@ def test_faulty_node_driver_reporting() -> None:
             }),
         ]
     )
+    plan.properties_validate()
     run = TestRun(plan)
     controller = AutomaticTestRunController(run)
 

@@ -488,6 +488,19 @@ def boolean_response_parse_validate(candidate:str) -> bool | None:
     return None
 
 
+def symbolic_name_validate(candidate_name: str) -> str | None:
+    """
+    Validate a symbolic name, as used, for example, as the name of a role in a TestPlan.
+    """
+    if not candidate_name:
+        return None
+    if len(candidate_name) > 255:
+        return None
+    if re.fullmatch('[-_a-z-A-Z0-9.]+', candidate_name):
+        return candidate_name
+    return None
+
+
 def find_first_in_array(array: List[T], condition: Callable[[T], bool]) -> T | None:
     """
     IMHO this should be a python built-in function. The next() workaround confuses me more than I like.

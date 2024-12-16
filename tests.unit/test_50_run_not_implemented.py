@@ -78,6 +78,7 @@ def test_plan_fixture() -> TestPlan:
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
     session = TestPlanSessionTemplate(tests, "Test tests that throw NotImplemented errors")
     ret = TestPlan(session, [ constellation ])
+    ret.properties_validate()
     return ret
 
 
