@@ -2,11 +2,11 @@
 <html lang="en">
  <head>
 {%  include "partials/shared/head.jinja2" %}
-  <title>{{ transcript.plan.name }} | Feditest</title>
+  <title>{{ transcript.plan.name | e }} | Feditest</title>
  </head>
  <body>
   <header class="feditest title">
-   <h1><span class="prefix"><a href="https://feditest.org/">Feditest</a> Report:</span> {{ transcript.plan.name }}</h1>
+   <h1><span class="prefix"><a href="https://feditest.org/">Feditest</a> Report:</span> {{ transcript.plan.name | e }}</h1>
    <p class="id">{{ transcript.id }}</p>
   </header>
 {%  include "partials/shared/mobile.jinja2" %}

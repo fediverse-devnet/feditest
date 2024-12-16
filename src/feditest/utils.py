@@ -445,7 +445,13 @@ def appname_validate(candidate: str) -> str | None:
     Validate that the provided string is a valid application name.
     return: string if valid, None otherwise
     """
-    return candidate if len(candidate) > 0 else None
+    if len(candidate) > 255:
+        return None
+    if len(candidate) == 0:
+        return None
+    if any(c in candidate for c in ['<', '>', '&'] ):
+        return None
+    return candidate
 
 
 def appversion_validate(candidate: str) -> str | None:
@@ -453,7 +459,13 @@ def appversion_validate(candidate: str) -> str | None:
     Validate that the provided string is a valid application version.
     return: string if value, None otherwise
     """
-    return candidate if len(candidate) > 0 else None
+    if len(candidate) > 255:
+        return None
+    if len(candidate) == 0:
+        return None
+    if any(c in candidate for c in ['<', '>', '&'] ):
+        return None
+    return candidate
 
 
 def boolean_response_parse_validate(candidate:str) -> bool | None:
@@ -473,6 +485,19 @@ def boolean_response_parse_validate(candidate:str) -> bool | None:
         return False
     if candidate.startswith('f'):
         return False
+    return None
+
+
+def symbolic_name_validate(candidate_name: str) -> str | None:
+    """
+    Validate a symbolic name, as used, for example, as the name of a role in a TestPlan.
+    """
+    if not candidate_name:
+        return None
+    if len(candidate_name) > 255:
+        return None
+    if re.fullmatch('[-_a-z-A-Z0-9.]+', candidate_name):
+        return candidate_name
     return None
 
 

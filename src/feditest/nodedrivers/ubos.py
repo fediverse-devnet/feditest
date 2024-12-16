@@ -1,5 +1,5 @@
 """
-Nodes managed via UBOS Gears https://ubos.net/
+Nodes managed via UBOS Gears https://ubos.net/docs/gears/
 """
 from abc import abstractmethod
 import hashlib
@@ -440,10 +440,10 @@ class UbosNodeDriver(NodeDriver):
 
         if config._rshcmd:
             if self._exec_shell('which ubos-admin', config._rshcmd).returncode:
-                raise OSError(f'{ type(self).__name__ } with an rshcmd requires UBOS Gears on the remote system (see ubos.net).')
+                raise OSError(f'{ type(self).__name__ } with an rshcmd requires UBOS Gears on the remote system (see https://feditest.org/glossary/ubosgears/).')
         else:
             if not shutil.which('ubos-admin'):
-                raise OSError(f'{ type(self).__name__ } without an rshcmd requires a local system running UBOS Gears (see ubos.net).')
+                raise OSError(f'{ type(self).__name__ } without an rshcmd requires a local system running UBOS Gears (see https://feditest.org/glossary/ubosgears/).')
 
         if account_manager is None:
             raise RuntimeError(f'No AccountManager set for rolename { rolename } with UbosNodeDriver { self }')

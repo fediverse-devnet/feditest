@@ -161,6 +161,7 @@ def test_plan_fixture() -> TestPlan:
     tests = [ TestPlanTestSpec(name) for name in sorted(feditest.all_tests.keys()) if feditest.all_tests.get(name) is not None ]
     session = TestPlanSessionTemplate(tests, "clientA vs server")
     ret = TestPlan(session, [ constellation ], "All sandbox tests running clientA against server1")
+    ret.properties_validate()
     return ret
 
 

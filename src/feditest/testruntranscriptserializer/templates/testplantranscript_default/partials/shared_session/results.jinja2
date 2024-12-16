@@ -2,10 +2,10 @@
 <div class="roles">
 {%- for role_name, node in run_session.constellation.nodes.items() %}
  <div class="role">
-  <h3 class="name">{{ role_name }}</h3>
+  <h3 class="name">{{ role_name | e }}</h3>
   <div class="driver">{{ local_name_with_tooltip(node.node_driver) }}</div>
-  <div class="app">{{ node.appdata['app'] }}</div>
-  <div class="appversion">{{ node.appdata['app_version'] or '?'}}</div>
+  <div class="app">{{ node.appdata['app'] | e }}</div>
+  <div class="appversion">{{ node.appdata['app_version'] or '?' | e }}</div>
 {%-     if node.parameters %}
   <table class="parameters">
    <thead>
@@ -16,8 +16,8 @@
    <tbody>
 {%-         for key, value in node.parameters.items() %}
     <tr>
-     <td class="key">{{ key }}</td>
-     <td class="value">{{ value }}</td>
+     <td class="key">{{ key | e }}</td>
+     <td class="value">{{ value | e }}</td>
     </tr>
 {%-         endfor %}
    </tbody>
@@ -33,9 +33,9 @@
 {%-     set plan_test_spec = transcript.plan.session_template.tests[run_test.plan_test_index] %}
 {%-     set test_meta = transcript.test_meta[plan_test_spec.name] %}
  <div class="test" id="test-{{ test_index }}">
-  <h4><span class="prefix">Test:</span> {{ test_meta.name }}</h4>
+  <h4><span class="prefix">Test:</span> {{ test_meta.name | e }}</h4>
 {%-     if test_meta.description %}
-  <div class="description">{{ test_meta.description}}</div>
+  <div class="description">{{ test_meta.description | e }}</div>
 {%-     endif %}
   <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }} (duration: {{ format_duration(run_test.ended - run_test.started) }})</p>
 {%-     with result=run_test.worst_result %}
@@ -44,9 +44,9 @@
 {%-     for test_step_index, run_step in enumerate(run_test.run_steps or []) %}
   <div class="step">
 {%          set test_step_meta = test_meta.steps[run_step.plan_step_index] %}
-   <h5><span class="prefix">Test step:</span> {{ test_step_meta.name }}</h5>
+   <h5><span class="prefix">Test step:</span> {{ test_step_meta.name | e }}</h5>
 {%-         if test_step_meta.description %}
-   <div class="description">{{ test_step_meta.description}}</div>
+   <div class="description">{{ test_step_meta.description | e }}</div>
 {%-         endif %}
    <p class="when">Started {{ format_timestamp(run_test.started) }}, ended {{ format_timestamp(run_test.ended) }} (duration: {{ format_duration(run_test.ended - run_test.started) }})</p>
 {%-         with result=run_step.result, idmod='step' %}

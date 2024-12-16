@@ -59,6 +59,7 @@ def construct_testplan(constellations: list[TestPlanConstellation], session_temp
     Helper to put it together.
     """
     test_plan = TestPlan(session_template, constellations, testplan_name)
+    test_plan.properties_validate()
     test_plan.simplify()
 
     return test_plan

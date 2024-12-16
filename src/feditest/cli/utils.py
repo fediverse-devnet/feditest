@@ -29,6 +29,7 @@ def create_plan_from_session_and_constellations(args: Namespace) -> TestPlan | N
     constellations = create_constellations(args)
 
     plan = TestPlan(session, constellations, args.name)
+    plan.properties_validate()
     plan.simplify()
     return plan
 
