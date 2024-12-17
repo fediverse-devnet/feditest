@@ -296,6 +296,7 @@ class TestRunSessionTranscript(msgspec.Struct):
     Captures information about the run of a single session in a transcript.
     """
     run_session_index: int
+    total_sessions: int
     started : datetime
     ended : datetime
     constellation: TestRunConstellationTranscript
@@ -315,7 +316,8 @@ class TestRunSessionTranscript(msgspec.Struct):
 
 
     def __str__(self):
-        return f"Session {self.run_session_index}"
+        return f"Test Run Session { self.run_session_index + 1 }/{ self.total_sessions }"
+        # +1 for what humans expect when it says 1/2
 
 
 class TestRunTranscript(msgspec.Struct):
@@ -383,6 +385,6 @@ class TestRunTranscript(msgspec.Struct):
 
     def __str__(self):
         if self.plan.name:
-            return f'{ self.id } ({ self.plan.name })'
-        return self.id
+            return str(self.plan.name)
+        return 'Test Run'
 

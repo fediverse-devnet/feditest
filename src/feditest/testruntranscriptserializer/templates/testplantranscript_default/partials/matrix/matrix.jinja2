@@ -5,14 +5,13 @@
 {%-         set constellation = run_session.constellation %}
         <th>
          <div class="title">
-          <a href="{{ session_file_path(run_session) }}">
-           <dl class="roles">
+          <p><a href="{{ session_file_path(run_session) }}">{{ run_session }}</a></p>
+          <dl class="roles">
 {%-         for role, node in constellation.nodes.items() %}
-             <dt>{{ role | e }}</dt>
-             <dd>{{ node.node_driver | e }}</dd>
+           <dt>{{ role | e }}</dt>
+           <dd>{{ node.appdata['app'] | e }}</dd>
 {%-         endfor %}
-           </dl>
-          </a>
+          </dl>
          </div>
         </th>
 {%-     endfor %}

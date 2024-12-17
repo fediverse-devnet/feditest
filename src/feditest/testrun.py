@@ -496,6 +496,7 @@ class TestRun(HasStartEndResults):
 
             trans_sessions.append(TestRunSessionTranscript(
                     run_session.plan_constellation_index,
+                    len(self.run_sessions),
                     cast(datetime, run_session.started),
                     cast(datetime, run_session.ended),
                     trans_constellation,
