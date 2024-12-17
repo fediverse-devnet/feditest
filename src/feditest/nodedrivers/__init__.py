@@ -454,11 +454,11 @@ class Node(ABC):
 
 
     def add_cert_to_trust_store(self, root_cert: str) -> None:
-        prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n' + root_cert)
+        prompt_user(f'Please add this temporary certificate to the trust root of node { self } and hit return when done:\n{ root_cert }\nHit return: ')
 
 
     def remove_cert_from_trust_store(self, root_cert: str) -> None:
-        prompt_user(f'Please remove this previously-added temporary certificate from the trust store of node { self } and hit return when done:\n' + root_cert)
+        prompt_user(f'Please remove this previously-added temporary certificate from the trust store of node { self } and hit return when done:\n{ root_cert }\nHit return: ')
 
 
     def __str__(self) -> str:
