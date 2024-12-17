@@ -1,6 +1,8 @@
-:root:not([data-theme="dark"]), [data-theme="light"] {
-	--feditest-background-color: #f8f8f8;
-	--feditest-h4-background-color: #e8e8e8;
+:root {
+    --feditest-background-color: #f8f8f8;
+    --feditest-h4-background-color: #e8e8e8;
+    --feditest-color-a: #0172ad;
+    --feditest-color-a-hover: #01A6FF;
     --feditest-color-status: inherit;
     --feditest-color-status-passed: #BBF5CA;
     --feditest-color-status-failed: #FFF0F0;
@@ -22,9 +24,13 @@
 }
 
 @media only screen and (prefers-color-scheme: dark) {
-	:root:not([data-theme]) {
-		--feditest-background-color: #000;
-		--feditest-h4-background-color: #242c38;
+    :root {
+        --feditest-background-color: #000;
+        --feditest-h4-background-color: #242c38;
+
+        --feditest-color-a: #01A6FF;
+        --feditest-color-a-hover: #0172ad;
+
         --feditest-color-status: #000;
         --feditest-color-status-passed: #BBF5CA;
         --feditest-color-status-failed: #FFF0F0;
@@ -49,10 +55,18 @@
 :root {
     --pico-font-size: 100%;
 }
+a {
+    color: var(--feditest-color-a);
+    text-decoration-color: var(--feditest-color-a);
+}
+a:hover {
+    color: var(--feditest-color-a-hover);
+    text-decoration-color: var(--feditest-color-a-hover);
+}
 
 body {
     padding: 2rem;
-	background: var(--feditest-background-color);
+    background: var(--feditest-background-color);
 }
 
 header.feditest {
@@ -68,11 +82,11 @@ div.title {
 }
 div.feditest span.prefix,
 div.feditest span.prefix a {
-		color: var(--pico-muted-color);
+    color: var(--pico-muted-color);
 }
 
 div.feditest.title .id::before {
-	content: "TestRun ID: "
+    content: "TestRun ID: "
 }
 
 div.feditest.module {
@@ -100,7 +114,7 @@ div.feditest.session > h3 {
 
 div.feditest.session > h3::before {
     content: "Session: ";
-	color: var(--pico-muted-color);
+    color: var(--pico-muted-color);
 }
 
 .feditest h4 {
@@ -108,14 +122,14 @@ div.feditest.session > h3::before {
 }
 
 .feditest div.session + div.session {
-	padding-top: 2em;
-	margin-top: 2em;
-	border-top: 1px solid var(--pico-table-border-color);
+    padding-top: 2em;
+    margin-top: 2em;
+    border-top: 1px solid var(--pico-table-border-color);
 }
 
 .feditest div.constellation > h4::before {
     content: "Constellation: ";
-	color: var(--pico-muted-color);
+    color: var(--pico-muted-color);
 }
 
 .feditest div.roles {
@@ -459,6 +473,11 @@ div.feditest.mobile {
     table.feditest.summary td.status {
         color: black;
     }
+    .feditest .status label,
+    .feditest .status div {
+            color: black;
+    }
+
     :target {
         border: 2px solid white;
         background: #282828;
