@@ -78,20 +78,20 @@ class FallbackFediverseNode(FediverseNode):
     def make_follow(self, actor_acct_uri: str, to_follow_actor_acct_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" follow actor "{ to_follow_actor_acct_uri }"'
-                + ' and hit return when done.')
+                + ' and hit return when done: ')
 
 
     def make_unfollow(self, actor_acct_uri: str, following_actor_acct_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" unfollow actor "{ following_actor_acct_uri }"'
-                + ' and hit return when done.')
+                + ' and hit return when done: ')
 
 
     # Python 3.12 @override
     def actor_is_following_actor(self, actor_acct_uri: str, leader_actor_acct_uri: str) -> bool:
         answer = prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", is actor "{ actor_acct_uri }" following actor "{ leader_actor_acct_uri }"?'
-                + ' Enter "true" or "false".',
+                + ' Enter "true" or "false": ',
                 parse_validate=boolean_parse_validate)
         return answer
 
@@ -100,7 +100,7 @@ class FallbackFediverseNode(FediverseNode):
     def actor_is_followed_by_actor(self, actor_acct_uri: str, follower_actor_acct_uri: str) -> bool:
         answer = prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", is actor "{ actor_acct_uri }" being followed by actor "{ follower_actor_acct_uri }"?'
-                + ' Enter "true" or "false".',
+                + ' Enter "true" or "false": ',
                 parse_validate=boolean_parse_validate)
         return answer
 
@@ -113,12 +113,12 @@ class FallbackFediverseNode(FediverseNode):
                     f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" create a Note'
                     + ' to be delivered to ' + ", ".join(deliver_to)
                     + ' and enter its URI when created.'
-                    + f' Note content:"""\n{ content }\n"""',
+                    + f' Note content (between the quotes):\n"""\n{ content }\n"""\nURI: ',
                 parse_validate=https_uri_validate)
         return prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" create a Note'
                 + ' and enter its URI when created.'
-                + f' Note content:"""\n{ content }\n"""',
+                + f' Note content (between the quotes):\n"""\n{ content }\n"""\nURI: ',
                 parse_validate=https_uri_validate)
 
 
@@ -126,15 +126,15 @@ class FallbackFediverseNode(FediverseNode):
     def update_note(self, actor_acct_uri: str, note_uri: str, new_content: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" update the note at "{ note_uri }"'
-                + ' with new content:"""\n{ new_content }\n"""'
-                + ' and hit return when done.')
+                + ' with new conten (between the quotes):\n"""\n{ new_content }\n"""\n'
+                + 'and hit return when done: ')
 
 
     # Python 3.12 @override
     def delete_object(self, actor_acct_uri: str, object_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" delete the object at "{ object_uri }"'
-                + ' and hit return when done.')
+                + ' and hit return when done:')
 
 
     # Python 3.12 @override
@@ -142,7 +142,7 @@ class FallbackFediverseNode(FediverseNode):
         return prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" reply to object with "{ to_be_replied_to_object_uri }"'
                 + ' and enter the reply note\'s URI when created.'
-                + f' Reply content:"""\n{ reply_content }\n"""',
+                + f' Reply content (between the quotes):\n"""\n{ reply_content }\n"""\nURI: ',
                 parse_validate=https_uri_validate)
 
 
@@ -150,21 +150,21 @@ class FallbackFediverseNode(FediverseNode):
     def like_object(self, actor_acct_uri: str, object_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" like the object at "{ object_uri }"'
-                + ' and hit return when done.')
+                + ' and hit return when done: ')
 
 
     # Python 3.12 @override
     def unlike_object(self, actor_acct_uri: str, object_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" unlike the object at "{ object_uri }"'
-                + ' and hit return when done.')
+                + ' and hit return when done: ')
 
 
     # Python 3.12 @override
     def announce_object(self, actor_acct_uri: str, object_uri: str) -> None:
         prompt_user(
                 f'On FediverseNode "{ self.hostname }", make actor "{ actor_acct_uri }" announce/reblog/boost the object at "{ object_uri }"'
-                + ' and hit return when done.')
+                + ' and hit return when done: ')
 
 
     # Python 3.12 @override
@@ -178,21 +178,21 @@ class FallbackFediverseNode(FediverseNode):
     def actor_has_received_object(self, actor_acct_uri: str, object_uri: str) -> str | None:
         answer = prompt_user(
                 f'On FediverseNode "{ self.hostname }", has actor "{ actor_acct_uri }" received the object "{ object_uri }"?'
-                + ' Enter the content of the object, or leave empty if it didn\'t happen.')
+                + ' Enter the content of the object, or leave empty if it didn\'t happen: ')
         return answer if answer else None
 
 
     # Python 3.12 @override
     def note_content(self, actor_acct_uri: str, note_uri: str) -> str | None:
         answer = prompt_user(
-                f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access note "{ note_uri }" and enter its content.')
+                f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access note "{ note_uri }" and enter its content: ')
         return answer if answer else None
 
 
     # Python 3.12 @override
     def object_author(self, actor_acct_uri: str, object_uri: str) -> str | None:
         answer = prompt_user_parse_validate(
-                f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access object "{ object_uri }" and enter the acct URI of the object\'s author.',
+                f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access object "{ object_uri }" and enter the acct URI of the object\'s author: ',
                 parse_validate=acct_uri_validate)
         return answer
 
@@ -201,7 +201,7 @@ class FallbackFediverseNode(FediverseNode):
     def direct_replies_to_object(self, actor_acct_uri: str, object_uri: str) -> list[str]:
         answer = prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access object "{ object_uri }"'
-                + ' and enter the https URIs of all objects that directly reply to it (space-separated list).',
+                + ' and enter the https URIs of all objects that directly reply to it (space-separated list): ',
                 parse_validate=https_uri_list_validate)
         return answer.split()
 
@@ -210,7 +210,7 @@ class FallbackFediverseNode(FediverseNode):
     def object_likers(self, actor_acct_uri: str, object_uri: str) -> list[str]:
         answer = prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access object "{ object_uri }"'
-                + ' and enter the acct URIs of all accounts that like it (space-separated list).',
+                + ' and enter the acct URIs of all accounts that like it (space-separated list): ',
                 parse_validate=acct_uri_list_validate)
         return answer.split()
 
@@ -219,7 +219,7 @@ class FallbackFediverseNode(FediverseNode):
     def object_announcers(self, actor_acct_uri: str, object_uri: str) -> list[str]:
         answer = prompt_user_parse_validate(
                 f'On FediverseNode "{ self.hostname }", have actor "{ actor_acct_uri }" access object "{ object_uri }"'
-                + ' and enter the acct URIs of all accounts that have announced/reblogged/boosted it (space-separated list).',
+                + ' and enter the acct URIs of all accounts that have announced/reblogged/boosted it (space-separated list): ',
                 parse_validate=acct_uri_list_validate)
         return answer.split()
 
