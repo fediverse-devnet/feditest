@@ -54,7 +54,7 @@ class HtmlRunTranscriptSerializer(TestRunTranscriptSerializer):
     A CSS file will be written to the provided destination with an extra extension.
     """
 
-    def __init__(self, template_path: str):
+    def __init__(self, template_path: str | None = None):
         if template_path:
             self.template_path = [ t.strip() for t in template_path.split(",") ]
         else:
