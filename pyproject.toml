@@ -22,11 +22,15 @@ dependencies = [
   "multidict",
   "jinja2",
   "pyhamcrest",
-  "pytest",
   "requests",
   "types-requests",
-  "pre-commit"
+  "pre-commit",
+
+  # For testing: not sure how to specify this just for testing
+  "pytest",
+  "beautifulsoup4"
 ]
+
 description = "Test framework to test distributed, heterogeneous systems with complex protocols such as the Fediverse"
 readme = "README-PyPI.md"
 
