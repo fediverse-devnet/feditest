@@ -1,0 +1,9 @@
+# Attempting to follow https://reuse.software/spec-3.3/#reusetoml
+# If this is wrong or misleading, please point it out
+
+version = 1
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2023 and later, Johannes Ernst https://j12t.org/ and other FediTest contributors"
+SPDX-License-Identifier = "MIT"
