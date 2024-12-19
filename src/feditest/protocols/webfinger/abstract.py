@@ -1,6 +1,7 @@
 """
 Functionality that may be shared by several WebFinger Node implementations.
 """
+
 from typing import cast
 
 from feditest.protocols.web.diag import HttpRequest, HttpRequestResponsePair, WebDiagClient
@@ -18,10 +19,12 @@ class AbstractWebFingerDiagClient(WebFingerDiagClient):
         rels: list[str] | None = None,
         server: WebFingerServer | None = None
     ) -> WebFingerQueryDiagResponse:
+
         query_url = construct_webfinger_uri_for(resource_uri, rels, server.hostname() if server else None )
         parsed_uri = ParsedUri.parse(query_url)
         if not parsed_uri:
             raise ValueError('Not a valid URI:', query_url) # can't avoid this
+
         first_request = HttpRequest(parsed_uri)
         current_request = first_request
         pair : HttpRequestResponsePair | None = None
