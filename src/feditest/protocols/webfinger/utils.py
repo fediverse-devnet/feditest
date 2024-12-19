@@ -3,7 +3,7 @@ WebFinger testing utils
 """
 
 from urllib.parse import quote, urlparse
-from typing import Any, Type
+from typing import Any, Type, cast
 
 from multidict import MultiDict
 from hamcrest.core.base_matcher import BaseMatcher
@@ -155,7 +155,7 @@ class MultiDictHasKeyMatcher(BaseMatcher):
         description.append_text(f'MultiDict has key: { self._key }')
 
 
-class NoneExceptMatcher(BaseMatcher):
+class NoExceptionOtherThanMatcher(BaseMatcher):
     """
     Custom matcher: decode whether an Exception (which may be an ExceptionGroup) contains
     any Exception other than the provided allowed exceptions.
@@ -164,19 +164,25 @@ class NoneExceptMatcher(BaseMatcher):
         self._allowed_excs = allowed_excs
 
 
-    def _matches(self, candidate: Exception | None ) -> bool:
+    def _matches(self, candidate: Exception | list[Exception] | None) -> bool:
         if candidate is None:
             return True
-        if isinstance(candidate, ExceptionGroup):
-            for cand in candidate.exceptions:
-                found = False
-                for allowed in self._allowed_excs:
-                    if isinstance(cand, allowed):
-                        found = True
-                if not found:
+        if type(candidate) is list:
+            for cand in candidate:
+                if not self._matches_single(cand):
                     return False
             return True
 
+        return self._matches_single(cast(Exception, candidate))
+
+
+    def _matches_single(self, candidate: Exception) -> bool:
+        if isinstance(candidate, ExceptionGroup):
+            for cand in candidate.exceptions:
+                if not self._matches_single(cand):
+                    return False
+            return True
+        
         for allowed in self._allowed_excs:
             if isinstance(candidate, allowed):
                 return True
@@ -184,7 +190,10 @@ class NoneExceptMatcher(BaseMatcher):
 
 
     def describe_to(self, description: Description) -> None:
-        description.append_text(f'No exception other than: { ",".join( [ x.__name__ for x in self._allowed_excs ] ) }')
+        if self._allowed_excs:
+            description.append_text(f'No exception other than: { ",".join( [ x.__name__ for x in self._allowed_excs ] ) }')
+        else:
+            description.append_text('No exception')
 
 
 def recursive_equal_to(arg: object) -> RecursiveEqualToMatcher :
@@ -199,8 +208,12 @@ def multi_dict_has_key(arg: str) -> MultiDictHasKeyMatcher :
     return MultiDictHasKeyMatcher(arg)
 
 
-def none_except(*allowed_excs : Type[Exception]) -> NoneExceptMatcher :
-    return NoneExceptMatcher(list(allowed_excs))
+def no_exception_other_than(allowed_excs : list[type[Exception]]) -> NoExceptionOtherThanMatcher :
+    return NoExceptionOtherThanMatcher(allowed_excs)
+
+
+def no_exception() -> NoExceptionOtherThanMatcher :
+    return NoExceptionOtherThanMatcher([])
 
 
 def wf_error(response: WebFingerQueryDiagResponse) -> str:
