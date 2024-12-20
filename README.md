@@ -1,4 +1,4 @@
-# Feditest: test federated protocols such as those in the Fediverse
+# `feditest`: test federated protocols such as those in the Fediverse
 
 This repo contains:
 

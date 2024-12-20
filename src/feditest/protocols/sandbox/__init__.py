@@ -20,7 +20,7 @@ class SandboxLogEvent:
 
 class SandboxMultServer(Node):
     """
-    This is a "Server" Node in a to-be-tested toy protocol. It is only useful to illustrate how Feditest works.
+    This is a "Server" Node in a to-be-tested toy protocol. It is only useful to illustrate how FediTest works.
     """
     def mult(self, a: float, b: float) -> float:
         """
@@ -46,7 +46,7 @@ class SandboxMultServer(Node):
 
 class SandboxMultClient(Node):
     """
-    This is a "Client" Node in a to-be-tested toy protocol. It is only useful to illustrate how Feditest works.
+    This is a "Client" Node in a to-be-tested toy protocol. It is only useful to illustrate how FediTest works.
     """
     def cause_mult(self, server: SandboxMultServer, a: float, b: float) -> float:
         """
