@@ -44,7 +44,7 @@ def _derive_full_and_local_filename(base: str, suffix: str) -> tuple[str,str]:
 
 class HtmlRunTranscriptSerializer(TestRunTranscriptSerializer):
     """
-    Generates the Feditest reports as HTML.
+    Generates the FediTest reports as HTML.
     If the transcript contains one session, it will generate one HTML file to the provided destination.
 
     If the transcript contains multiple sessions, it will generate one HTML file per session and
