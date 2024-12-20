@@ -16,7 +16,7 @@
       1. `make -f Makefile.run clean FEDITEST=../feditest/venv.darwin.default/bin/feditest`
       1. `make -f Makefile.create examples FEDITEST=../feditest/venv.darwin.default/bin/feditest`
       1. `make -f Makefile.run sandbox FEDITEST=../feditest/venv.darwin.default/bin/feditest`
-      1. `open examples/testresults/*.html` and check for plausbility of reports
+      1. `open examples/testresults/*.html` and check for plausibility of reports
 
 ## Smoke test and test quickstart
 
@@ -26,11 +26,11 @@
       1. `rm -rf venv.*`
       1. `make venv`
       1. `make lint`: ruff and mypy show no errors
-      1. `make tests`: unit tests and smoke tests show no errors
+      1. `make tests`: unit tests and smoke tests show no errors (other than WordPress timeout-related)
    1. Repo `feditest-tests-fediverse`: `git checkout develop`
-   1. Clean re-run and report generation of the sandbox tests:
-      1. Run quickstart examples from https://feditest.org/quickstart/evaluate/ (staged website version), but instead of `feditest` use `../feditest/venv.linux.default/bin/feditest`.
-      1. `xdg-open results/*.html` and check for plausbility of reports
+   1. Clean re-run and report generation of the quickstart tests:
+      1. Run quickstart examples from https://feditest.org/quickstart/evaluate/, but instead of `feditest` use `../feditest/venv.linux.default/bin/feditest`.
+      1. `xdg-open results/*.html` and check for plausibility of reports
 
 ## Tag versions
 

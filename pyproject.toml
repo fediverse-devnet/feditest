@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "feditest"
-version = "0.4"
+version = "0.5"
 authors = [
   { name="Johannes Ernst", email="git@j12t.org" },
   { name="Steve Bate", email="svc-github@stevebate.net" }
