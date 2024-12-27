@@ -38,7 +38,7 @@ $(VENV) :
 	$(VENV)/bin/pip install ruff mypy pylint
 
 lint : build
-	$(VENV)/bin/ruff check src
+	$(VENV)/bin/ruff check
 	MYPYPATH=src $(VENV)/bin/mypy --namespace-packages --explicit-package-bases --install-types --non-interactive src
 	@# These options should be the same flags as in .pre-commit-config.yml, except that I can't get it to
 	@# work there without the "--ignore-missing-imports" flag, while it does work without it here
