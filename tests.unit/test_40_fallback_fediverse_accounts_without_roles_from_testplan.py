@@ -10,8 +10,6 @@ import pytest
 import feditest
 from feditest.nodedrivers.saas import FediverseSaasNodeDriver
 from feditest.protocols.fediverse import (
-    ROLE_ACCOUNT_FIELD,
-    ROLE_NON_EXISTING_ACCOUNT_FIELD,
     USERID_ACCOUNT_FIELD,
     USERID_NON_EXISTING_ACCOUNT_FIELD,
     FediverseAccount,
