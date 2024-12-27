@@ -33,7 +33,7 @@
 {%- for test_index, ( _, test_meta ) in enumerate(sorted(transcript.test_meta.items())) %}
        <tr>
         <td class="namedesc">
-         <span class="name">{{ permit_line_breaks_in_identifier(test_meta.name) | e }}</span>
+         <span class="name">{{ permit_line_breaks_in_identifier(test_meta.name) | safe }}</span>
 {%-     if test_meta.description %}
          <span class="description">{{ test_meta.description | e }}</span>
 {%-     endif %}

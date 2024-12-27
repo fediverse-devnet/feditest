@@ -158,25 +158,21 @@ class TestPlanConstellationNode(msgspec.Struct):
 
         if self.accounts:
             for account in self.accounts:
-                if 'role' not in account:
-                    raise ValueError('No role name given in account')
+                if 'role' in account:
+                    if not account['role']:
+                        raise ValueError('Invalid TestPlanConstellationNode account role name: cannot be empty')
 
-                if not account['role']:
-                    raise ValueError('Invalid TestPlanConstellationNode account role name: cannot be empty')
-
-                if not symbolic_name_validate(account['role']):
-                    raise ValueError(f'Invalid role name in account: "{ account["role" ]}')
+                    if not symbolic_name_validate(account['role']):
+                        raise ValueError(f'Invalid role name in account: "{ account["role" ]}')
 
         if self.non_existing_accounts:
             for non_existing_account in self.non_existing_accounts:
-                if 'role' not in non_existing_account:
-                    raise ValueError('No role name given in non_existing_account')
+                if 'role' in non_existing_account:
+                    if not non_existing_account['role']:
+                        raise ValueError('Invalid TestPlanConstellationNode non_existing_account role name: cannot be empty')
 
-                if not non_existing_account['role']:
-                    raise ValueError('Invalid TestPlanConstellationNode non_existing_account role name: cannot be empty')
-
-                if not symbolic_name_validate(non_existing_account['role']):
-                    raise ValueError(f'Invalid role name in non_existing_account: "{ non_existing_account["role" ]}')
+                    if not symbolic_name_validate(non_existing_account['role']):
+                        raise ValueError(f'Invalid role name in non_existing_account: "{ non_existing_account["role" ]}')
 
 
     @staticmethod

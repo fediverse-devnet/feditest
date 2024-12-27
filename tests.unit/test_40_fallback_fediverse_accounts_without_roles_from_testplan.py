@@ -1,6 +1,6 @@
 """
 Test that Accounts and NonExistingAccounts are parsed correctly when given in a TestPlan that
-specifies a FallbackFediverseNode
+specifies a FallbackFediverseNode. This is the test in which the Accounts do not have pre-assigned roles.
 """
 
 from typing import cast
@@ -10,8 +10,6 @@ import pytest
 import feditest
 from feditest.nodedrivers.saas import FediverseSaasNodeDriver
 from feditest.protocols.fediverse import (
-    ROLE_ACCOUNT_FIELD,
-    ROLE_NON_EXISTING_ACCOUNT_FIELD,
     USERID_ACCOUNT_FIELD,
     USERID_NON_EXISTING_ACCOUNT_FIELD,
     FediverseAccount,
@@ -45,13 +43,11 @@ def test_plan_fixture() -> TestPlan:
     }
     plan_accounts = [
         {
-            ROLE_ACCOUNT_FIELD.name : 'role1',
             USERID_ACCOUNT_FIELD.name : 'foo'
         }
     ]
     plan_non_existing_accounts = [
         {
-            ROLE_NON_EXISTING_ACCOUNT_FIELD.name : 'nonrole1',
             USERID_NON_EXISTING_ACCOUNT_FIELD.name : 'nonfoo'
         }
     ]
@@ -63,7 +59,7 @@ def test_plan_fixture() -> TestPlan:
     return ret
 
 
-def test_parse(test_plan_fixture: TestPlan) -> None:
+def test_populate(test_plan_fixture: TestPlan) -> None:
     """
     Tests parsing the TestPlan
     """
@@ -75,12 +71,21 @@ def test_parse(test_plan_fixture: TestPlan) -> None:
 
     acc1 = cast(FediverseAccount | None, account_manager.get_account_by_role('role1'))
 
+    assert acc1 is None
+
+    acc1 =  account_manager.obtain_account_by_role('role1')
+
     assert acc1
-    assert acc1.role == 'role1'
+    assert acc1.role is None
     assert acc1.actor_acct_uri == 'acct:foo@example.com'
 
     non_acc1 = cast(FediverseNonExistingAccount | None, account_manager.get_non_existing_account_by_role('nonrole1'))
+
+    assert non_acc1 is None
+
+    non_acc1 =  account_manager.obtain_non_existing_account_by_role('nonrole1')
+
     assert non_acc1
-    assert non_acc1.role == 'nonrole1'
+    assert non_acc1.role is None
     assert non_acc1.actor_acct_uri == 'acct:nonfoo@example.com'
 
