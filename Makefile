@@ -70,9 +70,9 @@ release :
 	[[ -d venv.release ]] && rm -rf venv.release || true
 	[[ -d dist ]] && rm -rf dist || true
 	$(PYTHON) -mvenv venv.release
-	venv.release/bin/pip install twine
-	venv.release/bin/pip install --upgrade build
-	venv.release/bin/python -m build
+	FEDITEST_RELEASE_VERSION=y venv.release/bin/pip install twine
+	FEDITEST_RELEASE_VERSION=y venv.release/bin/pip install --upgrade build
+	FEDITEST_RELEASE_VERSION=y venv.release/bin/python -m build
 	@echo WARNING: YOU ARE NOT DONE YET
 	@echo The actual push to pypi.org you need to do manually. Enter:
 	@echo venv.release/bin/twine upload dist/*
