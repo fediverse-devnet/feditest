@@ -5,7 +5,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "feditest"
-version = "0.5"
+base_version = "0.6"
+dynamic = ["version"]
 authors = [
   { name="Johannes Ernst", email="git@j12t.org" },
   { name="Steve Bate", email="svc-github@stevebate.net" }
@@ -61,6 +62,9 @@ Homepage = "https://feditest.org/"
 exclude = [
     "docs/"
 ]
+
+[tool.hatch.metadata.hooks.custom]
+# Empty: https://hatch.pypa.io/dev/how-to/config/dynamic-metadata/
 
 [tool.pylint."MESSAGES CONTROL"]
 max-line-length=120
