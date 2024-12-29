@@ -47,6 +47,9 @@ def load_tests_from(dirs: list[str]) -> None:
     """
     Load all tests found in the provided directories. This is broken into two steps for easier testing.
     """
+    if not dirs:
+        dirs = ['tests']
+
     _load_tests_pass1(dirs)
     _load_tests_pass2()
 
