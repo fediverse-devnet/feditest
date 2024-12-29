@@ -38,7 +38,7 @@ def add_sub_parser(parent_parser: _SubParsersAction, cmd_name: str) -> ArgumentP
     """
     # general flags and options
     parser = parent_parser.add_parser(cmd_name, help='Create a test plan by running all provided test sessions in all provided constellations')
-    parser.add_argument('--testsdir', action='append', default=['tests'], help='Directory or directories where to find tests')
+    parser.add_argument('--testsdir', action='append', help='Directory or directories where to find tests')
 
     # test plan options
     parser.add_argument('--name', default=None, required=False, help='Name of the generated test plan')
